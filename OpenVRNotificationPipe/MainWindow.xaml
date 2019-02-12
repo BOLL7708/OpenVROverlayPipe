@@ -5,8 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OpenVRNotificationPipe"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        Title="OpenVRNotificationPipe" Height="200.803" Width="357.973">
     <Grid>
-        
+        <TextBox x:Name="textBox_Port" HorizontalAlignment="Left" Height="23" Margin="45,14,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="89" IsEnabled="False" Grid.ColumnSpan="2"/>
+        <Button x:Name="button_Edit" Content="Edit" HorizontalAlignment="Left" Margin="139,14,0,0" VerticalAlignment="Top" Width="38" Click="Button_Edit_Click" Height="22"/>
+        <CheckBox x:Name="checkBox_MinimizeToTray" Content="Minimize to tray" HorizontalAlignment="Left" Margin="10,42,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
+        <CheckBox x:Name="checkBox_MinimizeOnLaunch" Content="Minimize on launch" HorizontalAlignment="Left" Margin="10,62,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
+        <Label HorizontalContentAlignment="Center" VerticalContentAlignment="Center" x:Name="label_StatusVR" Content="Status" HorizontalAlignment="Left" Margin="139,42,0,0" VerticalAlignment="Top" Height="35" Width="148" Foreground="White" Background="#FF646464"/>
+        <Label Content="Port:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+        <Label HorizontalContentAlignment="Center" VerticalContentAlignment="Center" x:Name="label_StatusHTTP" Content="Status" HorizontalAlignment="Left" Margin="139,82,10,10" VerticalAlignment="Top" Height="35" Width="148" Foreground="White" Background="#FF646464"/>
+        <Button x:Name="button_Test" Content="Open example" HorizontalAlignment="Left" Margin="10,82,0,0" VerticalAlignment="Top" Width="120" Click="Button_Test_Click" Height="35" Grid.ColumnSpan="2"/>
     </Grid>
 </Window>
