@@ -139,7 +139,7 @@ namespace OpenVRNotificationPipe
                 var hash = MD5.Create().ComputeHash(imageBytes);
                 var key = Convert.ToBase64String(hash);
                 Bitmap bmp;
-                if (bitmapCache.ContainsKey(key))
+                if (key != null && bitmapCache.ContainsKey(key))
                 {
                     bitmapCache.TryGetValue(key, out bmp);
                 }
@@ -152,7 +152,7 @@ namespace OpenVRNotificationPipe
                     }
                 }
                 Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
-                RGBtoBGR(bmp);
+                RGBtoBGR(bmp); // Without this the bitmap is discolored and garbage collected (!!!)
                 bitmap = BitmapUtils.NotificationBitmapFromBitmap(bmp);
             }
             catch (Exception e)
@@ -264,6 +264,7 @@ namespace OpenVRNotificationPipe
                 var stream = req.InputStream;
                 stream.Read(input, 0, len);
                 var str = System.Text.Encoding.Default.GetString(input);
+                Debug.WriteLine($"Request body: {str}");
                 var dict = HttpUtility.ParseQueryString(str);
 
                 var title = dict.Get("title");
@@ -281,6 +282,14 @@ namespace OpenVRNotificationPipe
                 Debug.WriteLine($"Requset error: {e.Message}");
                 context.Response.AppendHeader("Access-Control-Allow-Origin", "*");
                 context.Response.StatusCode = 500;
+
+                string responseString = $"Exception: {e.ToString()}, {e.Message}";
+                var buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
+                context.Response.ContentLength64 = buffer.Length;
+                var output = context.Response.OutputStream;
+                output.Write(buffer, 0, buffer.Length);
+                Debug.WriteLine(output);
+                output.Close();
                 context.Response.Close();
             }
         }
