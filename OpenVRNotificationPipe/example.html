@@ -1,0 +1,87 @@
+<html>
+    <head>
+        <title>OpenVR2JSON Sample Loading Script</title>
+		<script src="port.js"></script><!-- TODO: Remove this and just read the port of the URL instead -->
+	</head>
+	<body>
+		<p><input id="title" type="text" size="32" name="title" maxlength=127 value="Overlay title"/></p>
+		<p><textarea id="message" cols=32 rows=3 name="message">This is a test text.</textarea></p>
+		<p><canvas id="mycanvas"></canvas></p>
+		<p><input type='file' id="fileUpload" accept="image/*"/></p>
+	<p><button onclick="submit();">Send notification</button></p>
+	<script>
+		var title = document.querySelector('#title');
+		var message = document.querySelector('#message');
+		var image = document.querySelector('#image');
+
+		var upload = document.getElementById('fileUpload');
+		var canvas = document.getElementById('mycanvas');
+		var ctx = canvas.getContext('2d');
+		ctx.canvas.width = 128;
+		ctx.canvas.height = 128;
+
+		upload.addEventListener('change', readImage);
+
+		function readImage() {
+		    if ( this.files && this.files[0] ) {
+		        var FR= new FileReader();
+		        FR.onload = function(e) {
+		           	var img = new Image();
+		           	img.addEventListener("load", function() {
+		           		// Clear
+						ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+						// Scale and draw
+						var x, y, w, h;
+						if(img.width > img.height) {
+							y = 0;
+							h = ctx.canvas.height;
+							w = img.width * (ctx.canvas.height / img.height);
+							x = -(w-ctx.canvas.width)/2;
+						} else {
+							x = 0;
+							w = ctx.canvas.width;
+							h = img.height * (ctx.canvas.width / img.width);
+							y = -(h-ctx.canvas.height)/2;
+						}
+		             	ctx.drawImage(img, x, y, w, h);
+		           	});
+		           	img.src = e.target.result;
+		        };       
+		        FR.readAsDataURL( this.files[0] );
+		    }
+		}
+
+		function submit() {	
+			var data = {
+				title: title.value,
+				message: message.value,
+				image: canvas.toDataURL().split(',')[1]; // Remove image spec
+			};
+			
+			var urlEncodedData = "";
+			var urlEncodedDataPairs = [];
+			var name;
+			for(name in data) {
+				urlEncodedDataPairs.push(encodeURIComponent(name) + '=' + encodeURIComponent(data[name]));
+			}
+			urlEncodedData = urlEncodedDataPairs.join('&').replace(/%20/g, '+');
+
+			var port = 65000;
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', 'http://localhost:'+port);
+			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+			xhr.onload = function() {
+				if (xhr.status === 200) {
+					alert('Success! ' + xhr.responseText);
+					// TODO: Print status as toast instead
+					// TODO: Clear the text field
+				}
+				else if (xhr.status !== 200) {
+					alert('Request failed.  Returned status of ' + xhr.status);
+				}
+			};
+			xhr.send(urlEncodedData);
+		}
+	</script>
+	</body>
+</html>

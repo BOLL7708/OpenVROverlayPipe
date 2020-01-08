@@ -30,6 +30,7 @@ namespace OpenVRNotificationPipe
             bitmapLock = new object();
         private int port = 0;
         private Dictionary<string, Bitmap> bitmapCache = new Dictionary<string, Bitmap>();
+        private Thread threadHTTP;
 
         public Action<bool, string, string> statusEventVR, statusEventHTTP;
 
@@ -37,7 +38,13 @@ namespace OpenVRNotificationPipe
         {
             var threadVR = new Thread(WorkerVR);
             if (!threadVR.IsAlive) threadVR.Start();
-            var threadHTTP = new Thread(WorkerHTTP);
+            InitHTTPThread();
+        }
+
+        private void InitHTTPThread()
+        {
+            if (threadHTTP != null && threadHTTP.IsAlive) threadHTTP.Abort();
+            threadHTTP = new Thread(WorkerHTTP);
             if (!threadHTTP.IsAlive) threadHTTP.Start();
         }
 
@@ -206,9 +213,10 @@ namespace OpenVRNotificationPipe
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        statusEventVR?.Invoke(false, "Listener error", $"An error occured while listening to HTTP: {e.Message}.");
+                        statusEventHTTP?.Invoke(false, "Listener error", $"An error occured while listening to HTTP.\nException: {e.Message}.");
                     });
                     Debug.WriteLine($"HTTP Listener error: {e.Message}");
+                    Thread.Sleep(1000);
                 }
             }
         }
@@ -217,6 +225,7 @@ namespace OpenVRNotificationPipe
         {
             Stop();
             this.port = port;
+            InitHTTPThread();
             Start();
         }
 
