@@ -7,6 +7,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -221,6 +222,19 @@ namespace OpenVRNotificationPipe
             }
         }
 
+        public static string GetLocalIPAddress()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            throw new Exception("No network adapters with an IPv4 address in the system!");
+        }
+
         public void SetPort(int port)
         {
             Stop();
@@ -235,7 +249,9 @@ namespace OpenVRNotificationPipe
             {
                 try
                 {
-                    var url = $"http://{IPAddress.Loopback}:{port}/";
+                    var ip = ""; // GetLocalIPAddress();
+                    if (ip.Length <= 0) ip = IPAddress.Loopback.ToString();
+                    var url = $"http://{ip}:{port}/";
                     Debug.WriteLine(url);
                     listener = new HttpListener();
                     listener.Prefixes.Add(url);
@@ -243,7 +259,9 @@ namespace OpenVRNotificationPipe
                     statusEventHTTP?.Invoke(true, "Listener running", $"Successfully started HTTP listener on port: {port}");
                 } catch(Exception e)
                 {
-                    statusEventHTTP?.Invoke(false, "Listener stopped", $"Failed to start HTTP listener on port: {port}\nException: {e.Message}");
+                    var message = $"Failed to start HTTP listener on port: {port}\nException: {e.Message}";
+                    Debug.WriteLine(message);
+                    statusEventHTTP?.Invoke(false, "Listener stopped", message);
                 }
             }
         }
@@ -269,38 +287,48 @@ namespace OpenVRNotificationPipe
             {
                 var req = context.Request;
                 var len = (int) req.ContentLength64;
-                var input = new byte[len];
-                var stream = req.InputStream;
-                stream.Read(input, 0, len);
-                var str = System.Text.Encoding.Default.GetString(input);
-                Debug.WriteLine($"Request body: {str}");
-                var dict = HttpUtility.ParseQueryString(str);
+                if(len <= 0)
+                {
+                    string html = File.ReadAllText("example.html");
+                    RequestResponse(context, 200, html);
+                } else {
+                    var input = new byte[len];
+                    var stream = req.InputStream;
+                    stream.Read(input, 0, len);
+                    var str = System.Text.Encoding.Default.GetString(input);
+                    Debug.WriteLine($"Request body: {str}");
+                    var dict = HttpUtility.ParseQueryString(str);
 
-                var title = dict.Get("title");
-                var message = dict.Get("message");
-                var image = dict.Get("image");
+                    var title = dict.Get("title");
+                    var message = dict.Get("message");
+                    var image = dict.Get("image");
 
-                PostNotification(title, message, image);
-
-                context.Response.AppendHeader("Access-Control-Allow-Origin", "*");
-                context.Response.StatusCode = 200;
-                context.Response.Close();
+                    PostNotification(title, message, image);
+                    RequestResponse(context);
+                }
             }
             catch (Exception e)
             {
-                Debug.WriteLine($"Requset error: {e.Message}");
-                context.Response.AppendHeader("Access-Control-Allow-Origin", "*");
-                context.Response.StatusCode = 500;
+                Debug.WriteLine($"Request error: {e.Message}");
+                string responseText = $"Exception: {e.ToString()}, {e.Message}";
+                RequestResponse(context, 500, responseText);
+            }
+        }
 
-                string responseString = $"Exception: {e.ToString()}, {e.Message}";
-                var buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
+        private void RequestResponse(HttpListenerContext context, int code=200, string responseText="")
+        {
+            context.Response.AppendHeader("Access-Control-Allow-Origin", "*");
+            context.Response.StatusCode = code;
+            if(responseText.Length > 0)
+            {
+                var buffer = System.Text.Encoding.UTF8.GetBytes(responseText);
                 context.Response.ContentLength64 = buffer.Length;
                 var output = context.Response.OutputStream;
                 output.Write(buffer, 0, buffer.Length);
                 Debug.WriteLine(output);
                 output.Close();
-                context.Response.Close();
             }
+            context.Response.Close();
         }
         #endregion
     }

@@ -1,7 +1,7 @@
 <html>
     <head>
         <title>OpenVR2JSON Sample Loading Script</title>
-		<script src="port.js"></script><!-- TODO: Remove this and just read the port of the URL instead -->
+		<!--<script src="port.js"></script>--><!-- TODO: Remove this and just read the port of the URL instead -->
 	</head>
 	<body>
 		<p><input id="title" type="text" size="32" name="title" maxlength=127 value="Overlay title"/></p>
@@ -55,7 +55,7 @@
 			var data = {
 				title: title.value,
 				message: message.value,
-				image: canvas.toDataURL().split(',')[1]; // Remove image spec
+				image: canvas.toDataURL().split(',')[1] // Remove image spec
 			};
 			
 			var urlEncodedData = "";
@@ -66,7 +66,8 @@
 			}
 			urlEncodedData = urlEncodedDataPairs.join('&').replace(/%20/g, '+');
 
-			var port = 65000;
+			var url = window.location.href;
+			var port = url.split(':')[2];
 			var xhr = new XMLHttpRequest();
 			xhr.open('POST', 'http://localhost:'+port);
 			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
