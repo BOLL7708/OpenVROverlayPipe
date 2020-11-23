@@ -1,5 +1,8 @@
 ﻿using BOLL7708;
+using Newtonsoft.Json;
+using SuperSocket.WebSocket;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -21,98 +24,71 @@ namespace OpenVRNotificationPipe
 {
     class MainController
     {
-        private bool ovrInit = false;
+        private bool openVRConnected = false;
         private EasyOpenVRSingleton ovr = EasyOpenVRSingleton.Instance;
-        private Dictionary<string, ulong> overlayHandles = new Dictionary<string, ulong>();
-        private HttpListener listener;
-        private readonly object
-            overlayLock = new object(),
-            listenerLock = new object(),
-            bitmapLock = new object();
+        private SuperServer server = new SuperServer();
+        private ConcurrentDictionary<WebSocketSession, ulong> overlayHandles = new ConcurrentDictionary<WebSocketSession, ulong>();
+        private ConcurrentDictionary<WebSocketSession, byte[]> images = new ConcurrentDictionary<WebSocketSession, byte[]>();
         private int port = 0;
-        private Dictionary<string, Bitmap> bitmapCache = new Dictionary<string, Bitmap>();
-        private Thread threadHTTP;
-
-        public Action<bool, string, string> statusEventVR, statusEventHTTP;
 
         public MainController()
         {
-            var threadVR = new Thread(WorkerVR);
-            if (!threadVR.IsAlive) threadVR.Start();
-            InitHTTPThread();
-        }
-
-        private void InitHTTPThread()
-        {
-            if (threadHTTP != null && threadHTTP.IsAlive) threadHTTP.Abort();
-            threadHTTP = new Thread(WorkerHTTP);
-            if (!threadHTTP.IsAlive) threadHTTP.Start();
+            var thread = new Thread(Worker);
+            if (!thread.IsAlive) thread.Start();
+            server.MessageReceievedAction = (session, messageJson) =>
+            {
+                var message = new Payload();
+                try { message = JsonConvert.DeserializeObject<Payload>(messageJson); }
+                catch (Exception e) { Debug.WriteLine($"JSON Parsing Exception: {e.Message}"); }
+                Debug.WriteLine($"Message was received: {message}");
+                PostNotification(session, message);
+            };
+            server.DataReceievedAction = (session, bytes) => {
+                var success = images.TryAdd(session, bytes);
+                Debug.WriteLine($"Added image, size: {bytes.Length}, success: {success}");
+            };
+            server.StatusAction = (status, value) =>
+            {
+                Debug.WriteLine(status.ToString() + ": " + value);
+            };
+            server.StatusMessageAction = (session, state, message) =>
+            {
+                Debug.WriteLine($"{message}: {state}");
+            };
         }
 
         #region openvr
-        private void WorkerVR()
+        private void Worker()
         {
             Thread.CurrentThread.IsBackground = true;
             while (true)
             {
-                if (ovrInit)
+                if (openVRConnected)
                 {
                     var newEvents = new List<VREvent_t>(ovr.GetNewEvents());
-                    var shouldEnd = LookForSystemEvents(newEvents.ToArray());
-                    if (shouldEnd)
-                    {
-                        lock(overlayLock)
-                        {
-                            overlayHandles.Clear();
-                        }
-                        continue;
-                    }
+                    CheckEventsAndShutdownIfWeShould(newEvents.ToArray());
                     Thread.Sleep(250);
                 }
                 else
                 {
-                    if (!ovrInit)
+                    if (!openVRConnected)
                     {
                         Debug.WriteLine("Initializing OpenVR...");
-                        ovrInit = InitVr();
+                        openVRConnected = ovr.Init();
                     }
                     Thread.Sleep(5000);
                 }
             }            
         }
 
-        public bool InitVr()
-        {
-            try
-            {
-                var success = ovr.Init();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    var message = success ? "OpenVR Connected" : "OpenVR Disconnected";
-                    var toolTip = success ? "Successfully connected to OpenVR." : "Could not connect to any compatible OpenVR service.";
-                    statusEventVR?.Invoke(success, message, toolTip);
-                });
-                return success;
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Failed to init VR: " + e.Message);
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    statusEventVR?.Invoke(false, $"OpenVR Error: {e.Message}", "An error occured while connecting to an OpenVR service.");
-                });
-                return false;
-            }
-        }
-
-        private bool LookForSystemEvents(VREvent_t[] events)
+        private bool CheckEventsAndShutdownIfWeShould(VREvent_t[] events)
         {
             foreach (var e in events)
             {
                 switch ((EVREventType)e.eventType)
                 {
                     case EVREventType.VREvent_Quit:
-                        ovrInit = false;
+                        openVRConnected = false;
                         ovr.AcknowledgeShutdown();
                         ovr.Shutdown();
                         return true;
@@ -121,32 +97,28 @@ namespace OpenVRNotificationPipe
             return false;
         }
 
-        private void PostNotification(string title, string message, string image)
+        private void PostNotification(WebSocketSession session, Payload payload)
         {
             // Overlay
-            ulong handle = 0;
-            lock(overlayLock)
-            {
-                overlayHandles.TryGetValue(title, out handle);
-                if(handle == 0)
-                {
-                    handle = ovr.InitNotificationOverlay(title);
-                    if (handle != 0)
-                    {
-                        if (overlayHandles.Count >= 32) overlayHandles.Clear(); // Max 32, restart!
-                        overlayHandles.Add(title, handle);
-                    }
-                }
+            overlayHandles.TryGetValue(session, out ulong overlayHandle);
+            if (overlayHandle == 0L) {
+                if (overlayHandles.Count >= 32) overlayHandles.Clear(); // Max 32, restart!
+                overlayHandle = ovr.InitNotificationOverlay(payload.title);
+                overlayHandles.TryAdd(session, overlayHandle);
             }
+            // images.TryGetValue(session, out byte[] imageBytes);
+
             // Image
-            Debug.WriteLine($"Overlay handle {handle} for '{title}'");
+            Debug.WriteLine($"Overlay handle {overlayHandle} for '{payload.title}'");
+            Debug.WriteLine($"Image: {payload.image}");
             NotificationBitmap_t bitmap = new NotificationBitmap_t();
             try
             {
-                var imageBytes = Convert.FromBase64String(image);
-                var hash = MD5.Create().ComputeHash(imageBytes);
-                var key = Convert.ToBase64String(hash);
-                Bitmap bmp;
+                var imageBytes = Convert.FromBase64String(payload.image);
+                // var hash = MD5.Create().ComputeHash(imageBytes);
+                // var key = Convert.ToBase64String(hash);
+                var bmp = new Bitmap(new MemoryStream(imageBytes));
+                /*
                 if (key != null && bitmapCache.ContainsKey(key))
                 {
                     bitmapCache.TryGetValue(key, out bmp);
@@ -159,6 +131,7 @@ namespace OpenVRNotificationPipe
                         // bitmapCache.Add(key, bmp);
                     }
                 }
+                */
                 Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
                 RGBtoBGR(bmp); // Without this the bitmap is discolored and garbage collected (!!!)
                 bitmap = BitmapUtils.NotificationBitmapFromBitmap(bmp);
@@ -168,10 +141,10 @@ namespace OpenVRNotificationPipe
                 Debug.WriteLine($"Reading image failed: {e.Message}");
             }
             // Broadcast
-            if(handle != 0)
+            if(overlayHandle != 0)
             {
                 GC.KeepAlive(bitmap);
-                ovr.EnqueueNotification(handle, message, bitmap);
+                ovr.EnqueueNotification(overlayHandle, payload.message, bitmap);
             }
         }
 
@@ -196,140 +169,11 @@ namespace OpenVRNotificationPipe
         }
         #endregion
 
-        #region listener
-        private void WorkerHTTP()
-        {
-            Thread.CurrentThread.IsBackground = true;
-            while (true)
-            {
-                try
-                {
-                    if (listener != null && listener.IsListening)
-                    {
-                        HttpListenerContext context = listener.GetContext(); // Locks thread until request
-                        HandleRequest(context);
-                    }
-                }
-                catch (HttpListenerException e)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        statusEventHTTP?.Invoke(false, "Listener error", $"An error occured while listening to HTTP.\nException: {e.Message}.");
-                    });
-                    Debug.WriteLine($"HTTP Listener error: {e.Message}");
-                    Thread.Sleep(1000);
-                }
-            }
-        }
-
-        public static string GetLocalIPAddress()
-        {
-            var host = Dns.GetHostEntry(Dns.GetHostName());
-            foreach (var ip in host.AddressList)
-            {
-                if (ip.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    return ip.ToString();
-                }
-            }
-            throw new Exception("No network adapters with an IPv4 address in the system!");
-        }
-
         public void SetPort(int port)
         {
-            Stop();
             this.port = port;
-            InitHTTPThread();
-            Start();
+            server.Stop();
+            server.Start(port);
         }
-
-        private void Start()
-        {
-            lock(listenerLock)
-            {
-                try
-                {
-                    var ip = ""; // GetLocalIPAddress();
-                    if (ip.Length <= 0) ip = IPAddress.Loopback.ToString();
-                    var url = $"http://{ip}:{port}/";
-                    Debug.WriteLine(url);
-                    listener = new HttpListener();
-                    listener.Prefixes.Add(url);
-                    listener.Start();
-                    statusEventHTTP?.Invoke(true, "Listener running", $"Successfully started HTTP listener on port: {port}");
-                } catch(Exception e)
-                {
-                    var message = $"Failed to start HTTP listener on port: {port}\nException: {e.Message}";
-                    Debug.WriteLine(message);
-                    statusEventHTTP?.Invoke(false, "Listener stopped", message);
-                }
-            }
-        }
-
-        private void Stop()
-        {
-            lock(listenerLock)
-            {
-                if(listener != null)
-                {
-                    if(listener.IsListening) listener.Abort();
-                    listener.Close();
-                    listener = null;
-                }
-            }
-        }
-        #endregion
-
-        #region notification
-        private void HandleRequest(HttpListenerContext context)
-        {
-            try
-            {
-                var req = context.Request;
-                var len = (int) req.ContentLength64;
-                if(len <= 0)
-                {
-                    string html = File.ReadAllText("example.html");
-                    RequestResponse(context, 200, html);
-                } else {
-                    var input = new byte[len];
-                    var stream = req.InputStream;
-                    stream.Read(input, 0, len);
-                    var str = System.Text.Encoding.Default.GetString(input);
-                    Debug.WriteLine($"Request body: {str}");
-                    var dict = HttpUtility.ParseQueryString(str);
-
-                    var title = dict.Get("title");
-                    var message = dict.Get("message");
-                    var image = dict.Get("image");
-
-                    PostNotification(title, message, image);
-                    RequestResponse(context);
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine($"Request error: {e.Message}");
-                string responseText = $"Exception: {e.ToString()}, {e.Message}";
-                RequestResponse(context, 500, responseText);
-            }
-        }
-
-        private void RequestResponse(HttpListenerContext context, int code=200, string responseText="")
-        {
-            context.Response.AppendHeader("Access-Control-Allow-Origin", "*");
-            context.Response.StatusCode = code;
-            if(responseText.Length > 0)
-            {
-                var buffer = System.Text.Encoding.UTF8.GetBytes(responseText);
-                context.Response.ContentLength64 = buffer.Length;
-                var output = context.Response.OutputStream;
-                output.Write(buffer, 0, buffer.Length);
-                Debug.WriteLine(output);
-                output.Close();
-            }
-            context.Response.Close();
-        }
-        #endregion
     }
 }

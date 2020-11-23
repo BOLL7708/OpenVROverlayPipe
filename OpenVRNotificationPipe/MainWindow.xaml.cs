@@ -21,7 +21,7 @@ namespace OpenVRNotificationPipe
     /// </summary>
     public partial class MainWindow : Window
     {
-        private MainController ctrl = new MainController();
+        private MainController controller = new MainController();
         private Properties.Settings p = Properties.Settings.Default;
         private SolidColorBrush red = new SolidColorBrush(Colors.Tomato);
         private SolidColorBrush green = new SolidColorBrush(Colors.OliveDrab);
@@ -30,9 +30,9 @@ namespace OpenVRNotificationPipe
         {
             InitializeComponent();
             LoadSettings();
-            ctrl.statusEventVR += StatusEventVR;
-            ctrl.statusEventHTTP += StatusEventHTTP;
-            ctrl.SetPort(p.Port);
+            // ctrl.statusEventVR += StatusEventVR;
+            // ctrl.statusEventHTTP += StatusEventHTTP;
+            controller.SetPort(p.Port);
         }
 
         private void LoadSettings()
@@ -69,7 +69,7 @@ namespace OpenVRNotificationPipe
                 p.Port = dlg.value;
                 p.Save();
                 textBox_Port.Text = p.Port.ToString();
-                ctrl.SetPort(p.Port);
+                controller.SetPort(p.Port);
             }
         }
         #endregion

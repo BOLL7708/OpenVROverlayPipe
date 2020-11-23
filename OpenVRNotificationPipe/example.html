@@ -3,7 +3,7 @@
         <title>OpenVR2JSON Sample Loading Script</title>
 		<!--<script src="port.js"></script>--><!-- TODO: Remove this and just read the port of the URL instead -->
 	</head>
-	<body>
+	<body onload="init();">
 		<p><input id="title" type="text" size="32" name="title" maxlength=127 value="Overlay title"/></p>
 		<p><textarea id="message" cols=32 rows=3 name="message">This is a test text.</textarea></p>
 		<p><canvas id="mycanvas"></canvas></p>
@@ -21,6 +21,92 @@
 		ctx.canvas.height = 128;
 
 		upload.addEventListener('change', readImage);
+
+		var params = getParams(window.location.href);
+		var port  = (typeof params.port == "undefined") ? 8077 : params.port;
+		var wsUri = "ws://localhost:"+port;
+		var output, deviceId, input, inputAnalog, inputPose, requests, applicationInfo, playArea, properties;
+		var websocket;
+		var active = false, stop = false;
+
+		function getParams(url) {
+			var params = {};
+			var parser = document.createElement('a');
+			parser.href = url;
+			var query = parser.search.substring(1);
+			var vars = query.split('&');
+			for (var i = 0; i < vars.length; i++) {
+				var pair = vars[i].split('=');
+				params[pair[0]] = decodeURIComponent(pair[1]);
+			}
+			return params;
+		};
+		
+		function init()
+		{
+			/*
+			output = document.getElementById("output");
+			requests = document.getElementById("requests");
+			deviceIds = document.getElementById("deviceIds");
+			input = document.getElementById("input");
+			inputAnalog = document.getElementById("inputAnalog");
+			inputPose = document.getElementById("inputPose");
+			applicationInfo = document.getElementById("applicationInfo");
+			playArea = document.getElementById("playArea");
+			properties = document.getElementById("properties");
+			*/
+			connectLoop();
+		}
+
+		function connectLoop() 
+		{
+			if(!active) {
+				active = true;
+				if(typeof websocket !== 'undefined') websocket.close();
+				websocket = new WebSocket(wsUri);
+				websocket.onopen = function(evt) { onOpen(evt) };
+				websocket.onclose = function(evt) { onClose(evt) };
+				websocket.onmessage = function(evt) { onMessage(evt) };
+				websocket.onerror = function(evt) { onError(evt) };
+			}
+			setTimeout(connectLoop, 5000);
+		}
+
+		function onOpen(evt)
+		{
+			active = true;
+			writeToScreen("CONNECTED: "+JSON.stringify(evt, null, 2));
+		}
+		function onClose(evt)
+		{
+			active = false;
+			writeToScreen("DISCONNECTED: "+JSON.stringify(evt, null, 2));
+		}
+		function onMessage(evt)
+		{
+			var data = JSON.parse(evt.data);
+			var text = JSON.stringify(data, null, 2);
+			if(data == null) writeToScreen("Response: " + text);
+			else {
+				writeToScreen("Response: " + text);
+			}
+		}
+		function onError(evt) {
+			writeToScreen("ERROR: "+JSON.stringify(evt, null, 2));
+		}
+
+		function doSend(payload){
+			var text = JSON.stringify(payload);
+			writeToScreen("Sending: "+text);
+			websocket.send(text);
+		}
+		function doBytes(data) {
+			websocket.send(data);
+		}
+
+		function writeToScreen(message) {
+			console.log(message);
+		}
 
 		function readImage() {
 		    if ( this.files && this.files[0] ) {
@@ -52,10 +138,13 @@
 		}
 
 		function submit() {	
+			// var imageData = ctx.getImageData(0, 0, 128, 128).data;
+			// console.log("Sending image: "+imageData.length);
+			// doBytes(imageData);
 			var data = {
 				title: title.value,
 				message: message.value,
-				image: canvas.toDataURL().split(',')[1] // Remove image spec
+				image: canvas.toDataURL().split(',')[1] // .replace('+', '-').replace('/', '_').replace('=', '') // Remove image spec
 			};
 			
 			var urlEncodedData = "";
@@ -66,22 +155,7 @@
 			}
 			urlEncodedData = urlEncodedDataPairs.join('&').replace(/%20/g, '+');
 
-			var url = window.location.href;
-			var port = url.split(':')[2];
-			var xhr = new XMLHttpRequest();
-			xhr.open('POST', 'http://localhost:'+port);
-			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-			xhr.onload = function() {
-				if (xhr.status === 200) {
-					alert('Success! ' + xhr.responseText);
-					// TODO: Print status as toast instead
-					// TODO: Clear the text field
-				}
-				else if (xhr.status !== 200) {
-					alert('Request failed.  Returned status of ' + xhr.status);
-				}
-			};
-			xhr.send(urlEncodedData);
+			doSend(data);
 		}
 	</script>
 	</body>
