@@ -115,26 +115,9 @@ namespace OpenVRNotificationPipe
             try
             {
                 var imageBytes = Convert.FromBase64String(payload.image);
-                // var hash = MD5.Create().ComputeHash(imageBytes);
-                // var key = Convert.ToBase64String(hash);
                 var bmp = new Bitmap(new MemoryStream(imageBytes));
-                /*
-                if (key != null && bitmapCache.ContainsKey(key))
-                {
-                    bitmapCache.TryGetValue(key, out bmp);
-                }
-                else
-                {
-                    using (var ms = new MemoryStream(imageBytes))
-                    {
-                        bmp = new Bitmap(ms);
-                        // bitmapCache.Add(key, bmp);
-                    }
-                }
-                */
                 Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
-                RGBtoBGR(bmp); // Without this the bitmap is discolored and garbage collected (!!!)
-                bitmap = BitmapUtils.NotificationBitmapFromBitmap(bmp);
+                bitmap = BitmapUtils.NotificationBitmapFromBitmap(bmp, true);
             }
             catch (Exception e)
             {
@@ -146,26 +129,6 @@ namespace OpenVRNotificationPipe
                 GC.KeepAlive(bitmap);
                 ovr.EnqueueNotification(overlayHandle, payload.message, bitmap);
             }
-        }
-
-        private void RGBtoBGR(Bitmap bmp)
-        {
-            // based on http://stackoverflow.com/a/19189660
-
-            int bytesPerPixel = Bitmap.GetPixelFormatSize(bmp.PixelFormat) / 8;
-            BitmapData data = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite, bmp.PixelFormat);
-            int length = Math.Abs(data.Stride) * bmp.Height;
-            unsafe
-            {
-                byte* rgbValues = (byte*)data.Scan0.ToPointer();
-                for (int i = 0; i < length; i += bytesPerPixel)
-                {
-                    byte dummy = rgbValues[i];
-                    rgbValues[i] = rgbValues[i + 2];
-                    rgbValues[i + 2] = dummy;
-                }
-            }
-            bmp.UnlockBits(data);
         }
         #endregion
 
