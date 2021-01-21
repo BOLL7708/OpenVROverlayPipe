@@ -132,6 +132,21 @@ namespace OpenVRNotificationPipe
         }
         #endregion
 
+
+        private void PostImageNotification(WebSocketSession session, Payload payload) // WebSocketSession session, Payload payload) {
+        {
+            var imageBytes = Convert.FromBase64String(payload.image);
+            var transform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
+            transform.m11 = -2;
+            var handle = ovr.CreateOverlay("boll7708.notficationpipe.test", "Test Overlay", transform, 1, 0);
+            // var path = $"{Directory.GetCurrentDirectory()}\\iu.png";
+            OpenVR.Overlay.SetOverlayAlpha(handle, 0.5f);
+            OpenVR.Overlay.SetOverlayColor(handle, 0.8f, 0.5f, 0.2f);
+            Debug.WriteLine(path);
+            ovr.SetOverlayVisibility(handle, true);
+            ovr.SetOverlayTextureFromFile(handle, path);
+        }
+
         public void SetPort(int port)
         {
             this.port = port;

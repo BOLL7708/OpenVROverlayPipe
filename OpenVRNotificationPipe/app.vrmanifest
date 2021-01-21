@@ -1,0 +1,14 @@
+{
+	"applications": [{
+		"app_key": "boll7708.openvrnotificationpipe",
+		"launch_type": "binary",
+		"binary_path_windows": "OpenVRNotificationPipe.exe",
+		"is_dashboard_overlay": true,
+		"strings": {
+			"en_us": {
+				"name": "OpenVRNotificationPipe",
+				"description": "Display SteamVR notifications."
+			}
+		}
+	}]
+}
