@@ -5,10 +5,13 @@
     <Setting Name="Port" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">8077</Value>
     </Setting>
-    <Setting Name="MinimizeOnLaunch" Type="System.Boolean" Scope="User">
+    <Setting Name="LaunchMinimized" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="MinimizeToTray" Type="System.Boolean" Scope="User">
+    <Setting Name="Tray" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ExitWithSteam" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
   </Settings>

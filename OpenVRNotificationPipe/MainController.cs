@@ -17,60 +17,64 @@ namespace OpenVRNotificationPipe
 {
     class MainController
     {
-        private bool openVRConnected = false;
-        private EasyOpenVRSingleton ovr = EasyOpenVRSingleton.Instance;
-        private SuperServer server = new SuperServer();
-        private ConcurrentDictionary<WebSocketSession, ulong> overlayHandles = new ConcurrentDictionary<WebSocketSession, ulong>();
-        private ConcurrentDictionary<WebSocketSession, byte[]> images = new ConcurrentDictionary<WebSocketSession, byte[]>();
+        private bool _openVRConnected = false;
+        private EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
+        private SuperServer _server = new SuperServer();
+        private ConcurrentDictionary<WebSocketSession, ulong> _overlayHandles = new ConcurrentDictionary<WebSocketSession, ulong>();
+        private ConcurrentDictionary<WebSocketSession, byte[]> _images = new ConcurrentDictionary<WebSocketSession, byte[]>();
+        private Action<bool> _openvrStatusAction;
+        private bool _shouldShutDown = false;
 
-        public MainController()
+
+        public MainController(Action<WebSocketSession, bool, string> serverStatus, Action<bool> openvrStatus)
         {
+            _openvrStatusAction = openvrStatus;
+            InitServer(serverStatus);
             var thread = new Thread(Worker);
             if (!thread.IsAlive) thread.Start();
-            server.MessageReceievedAction = (session, payloadJson) =>
-            {
-                var payload = new Payload();
-                try { payload = JsonConvert.DeserializeObject<Payload>(payloadJson); }
-                catch (Exception e) { Debug.WriteLine($"JSON Parsing Exception: {e.Message}"); }
-                Debug.WriteLine($"Message was received: {payloadJson}");
-
-                if (payload.custom) PostImageNotification(payload);
-                else PostNotification(session, payload);
-            };
-            server.DataReceievedAction = (session, bytes) => {
-                var success = images.TryAdd(session, bytes);
-                Debug.WriteLine($"Added image, size: {bytes.Length}, success: {success}");
-            };
-            server.StatusAction = (status, value) =>
-            {
-                Debug.WriteLine(status.ToString() + ": " + value);
-            };
-            server.StatusMessageAction = (session, state, message) =>
-            {
-                Debug.WriteLine($"{message}: {state}");
-            };
         }
 
         #region openvr
         private void Worker()
         {
+            var initComplete = false;
+
             Thread.CurrentThread.IsBackground = true;
             while (true)
             {
-                if (openVRConnected)
+                if (_openVRConnected)
                 {
-                    var newEvents = new List<VREvent_t>(ovr.GetNewEvents());
-                    CheckEventsAndShutdownIfWeShould(newEvents.ToArray());
+                    if (!initComplete)
+                    {
+                        initComplete = true;
+                        CreateTextureOverlay();
+                        _vr.AddApplicationManifest("./app.vrmanifest", "boll7708.openvrnotificationpipe", true);
+                        _openvrStatusAction.Invoke(true);
+                    }
+                    else
+                    { 
+                        var newEvents = new List<VREvent_t>(_vr.GetNewEvents());
+                        CheckEventsAndShutdownIfWeShould(newEvents.ToArray());
+                        
+                    }
                     Thread.Sleep(250);
                 }
                 else
                 {
-                    if (!openVRConnected)
+                    if (!_openVRConnected)
                     {
                         Debug.WriteLine("Initializing OpenVR...");
-                        openVRConnected = ovr.Init();
+                        _openVRConnected = _vr.Init();
                     }
-                    Thread.Sleep(5000);
+                    Thread.Sleep(2000);
+                }
+                if (_shouldShutDown) {
+                    _shouldShutDown = false;
+                    initComplete = false;
+                    _vr.AcknowledgeShutdown();
+                    _vr.Shutdown();
+                    _openvrStatusAction.Invoke(false);
+                    // TODO: Also empty queue of notifications?
                 }
             }            
         }
@@ -82,9 +86,8 @@ namespace OpenVRNotificationPipe
                 switch ((EVREventType)e.eventType)
                 {
                     case EVREventType.VREvent_Quit:
-                        openVRConnected = false;
-                        ovr.AcknowledgeShutdown();
-                        ovr.Shutdown();
+                        _openVRConnected = false;
+                        _shouldShutDown = true;
                         return true;
                 }
             }
@@ -94,11 +97,11 @@ namespace OpenVRNotificationPipe
         private void PostNotification(WebSocketSession session, Payload payload)
         {
             // Overlay
-            overlayHandles.TryGetValue(session, out ulong overlayHandle);
+            _overlayHandles.TryGetValue(session, out ulong overlayHandle);
             if (overlayHandle == 0L) {
-                if (overlayHandles.Count >= 32) overlayHandles.Clear(); // Max 32, restart!
-                overlayHandle = ovr.InitNotificationOverlay(payload.title);
-                overlayHandles.TryAdd(session, overlayHandle);
+                if (_overlayHandles.Count >= 32) _overlayHandles.Clear(); // Max 32, restart!
+                overlayHandle = _vr.InitNotificationOverlay(payload.title);
+                _overlayHandles.TryAdd(session, overlayHandle);
             }
             // images.TryGetValue(session, out byte[] imageBytes);
 
@@ -121,14 +124,13 @@ namespace OpenVRNotificationPipe
             if(overlayHandle != 0)
             {
                 GC.KeepAlive(bitmap);
-                ovr.EnqueueNotification(overlayHandle, payload.message, bitmap);
+                _vr.EnqueueNotification(overlayHandle, payload.message, bitmap);
             }
         }
 
         private void PostImageNotification(Payload payload)
         {
             Debug.WriteLine("Posting image texture notification!");
-            CreateTextureOverlay();
             EnqueueImageNotification(payload);
         }
 
@@ -137,8 +139,8 @@ namespace OpenVRNotificationPipe
             if (_overlayHandle == 0L) {
                 var transform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
                 transform.m11 = -2;
-                _overlayHandle = ovr.CreateOverlay("boll7708.notficationpipe.test", "Test Overlay", transform, 1, 0);
-                ovr.SetOverlayVisibility(_overlayHandle, false);
+                _overlayHandle = _vr.CreateOverlay("boll7708.notficationpipe.test", "Test Overlay", transform, 1, 0);
+                _vr.SetOverlayVisibility(_overlayHandle, false);
             }
         }
 
@@ -204,14 +206,40 @@ namespace OpenVRNotificationPipe
              * and alpha of the notification, perhaps also size? Hmm.
              */
             LoadTexture(_overlayHandle, payload);
-            ovr.SetOverlayVisibility(_overlayHandle, true);
+            _vr.SetOverlayVisibility(_overlayHandle, true);
         }
         #endregion
 
+        private void InitServer(Action<WebSocketSession, bool, string> serverStatus)
+        {
+            _server.StatusMessageAction = serverStatus;
+            _server.MessageReceievedAction = (session, payloadJson) =>
+            {
+                var payload = new Payload();
+                try { payload = JsonConvert.DeserializeObject<Payload>(payloadJson); }
+                catch (Exception e) { Debug.WriteLine($"JSON Parsing Exception: {e.Message}"); }
+                Debug.WriteLine($"Payload was received: {payloadJson}");
+
+                if (payload.custom) PostImageNotification(payload);
+                else PostNotification(session, payload);
+            };
+            _server.DataReceievedAction = (session, bytes) => {
+                var success = _images.TryAdd(session, bytes);
+                Debug.WriteLine($"Added image, size: {bytes.Length}, success: {success}");
+            };
+        }
+
         public void SetPort(int port)
         {
-            server.Stop();
-            server.Start(port);
+            _server.Start(port);
+        }
+
+        public void Shutdown()
+        {
+            _openvrStatusAction = (status) => { };
+            _server.ResetActions();
+            _shouldShutDown = true;
+            _server.Stop();
         }
     }
 }

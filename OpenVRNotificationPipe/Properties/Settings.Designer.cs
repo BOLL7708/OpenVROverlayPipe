@@ -38,24 +38,36 @@ namespace OpenVRNotificationPipe.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool MinimizeOnLaunch {
+        public bool LaunchMinimized {
             get {
-                return ((bool)(this["MinimizeOnLaunch"]));
+                return ((bool)(this["LaunchMinimized"]));
             }
             set {
-                this["MinimizeOnLaunch"] = value;
+                this["LaunchMinimized"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool MinimizeToTray {
+        public bool Tray {
             get {
-                return ((bool)(this["MinimizeToTray"]));
+                return ((bool)(this["Tray"]));
             }
             set {
-                this["MinimizeToTray"] = value;
+                this["Tray"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ExitWithSteam {
+            get {
+                return ((bool)(this["ExitWithSteam"]));
+            }
+            set {
+                this["ExitWithSteam"] = value;
             }
         }
     }
