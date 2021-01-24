@@ -8,6 +8,7 @@ namespace OpenVRNotificationPipe
 {
     class Payload
     {
+        public bool custom = false;
         public string title = "";
         public string message = "";
         public string image = "";

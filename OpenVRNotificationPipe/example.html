@@ -7,12 +7,14 @@
 		<p><input id="title" type="text" size="32" name="title" maxlength=127 value="Overlay title"/></p>
 		<p><textarea id="message" cols=32 rows=3 name="message">This is a test text.</textarea></p>
 		<p><canvas id="mycanvas"></canvas></p>
-		<p><input type='file' id="fileUpload" accept="image/*"/></p>
+		<p><input type="file" id="fileUpload" accept="image/*"/></p>
+		<p>Custom notification: <input type="checkbox" id="custom"/></p>
 	<p><button onclick="submit();">Send notification</button></p>
 	<script>
 		var title = document.querySelector('#title');
 		var message = document.querySelector('#message');
 		var image = document.querySelector('#image');
+		var custom = document.querySelector('#custom');
 
 		var upload = document.getElementById('fileUpload');
 		var canvas = document.getElementById('mycanvas');
@@ -142,6 +144,7 @@
 			// console.log("Sending image: "+imageData.length);
 			// doBytes(imageData);
 			var data = {
+				custom: custom.checked,
 				title: title.value,
 				message: message.value,
 				image: canvas.toDataURL().split(',')[1] // .replace('+', '-').replace('/', '_').replace('=', '') // Remove image spec
