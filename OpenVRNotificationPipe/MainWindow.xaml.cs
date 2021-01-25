@@ -46,11 +46,11 @@ namespace OpenVRNotificationPipe
             }
 
             // Tray icon
-            // var icon = Properties.Resources.app_icon.Clone() as System.Drawing.Icon;
+            var icon = Properties.Resources.Icon.Clone() as System.Drawing.Icon;
             _notifyIcon = new System.Windows.Forms.NotifyIcon();
             _notifyIcon.Click += NotifyIcon_Click;
             _notifyIcon.Text = $"Click to show the {Properties.Resources.AppName} window";
-            // _notifyIcon.Icon = icon;
+            _notifyIcon.Icon = icon;
             _notifyIcon.Visible = true;
 
             Title = Properties.Resources.AppName;
