@@ -186,11 +186,8 @@
     <Content Include="example.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <EmbeddedResource Include="openvr_api.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <EmbeddedResource Include="costura64\openvr_api.dll" />
     <Resource Include="FodyWeavers.xml" />
-    <Content Include="openvr_api.pdb" />
     <Resource Include="resources\logo.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

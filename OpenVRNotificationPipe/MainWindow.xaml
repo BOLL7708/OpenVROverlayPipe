@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OpenVRNotificationPipe"
         mc:Ignorable="d"
-        Title="MainWindow" Height="240" Width="360" StateChanged="Window_StateChanged" Icon="resources/logo.ico" Closing="Window_Closing">
+        Title="MainWindow" Height="250" Width="360" StateChanged="Window_StateChanged" Icon="resources/logo.ico" Closing="Window_Closing">
     <StackPanel Orientation="Vertical" Margin="10">
         <GroupBox Header="Status &amp; Help"  Background="WhiteSmoke">
 
