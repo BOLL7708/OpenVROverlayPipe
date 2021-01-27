@@ -1,14 +1,13 @@
 <html>
     <head>
-        <title>OpenVR2JSON Sample Loading Script</title>
-		<!--<script src="port.js"></script>--><!-- TODO: Remove this and just read the port of the URL instead -->
+        <title>OpenVRNotificationPipe Example Page</title>
 	</head>
 	<body onload="init();">
 		<p><input id="title" type="text" size="32" name="title" maxlength=127 value="Overlay title"/></p>
 		<p><textarea id="message" cols=32 rows=3 name="message">This is a test text.</textarea></p>
 		<p><canvas id="mycanvas"></canvas></p>
 		<p><input type="file" id="fileUpload" accept="image/*"/></p>
-		<p>Custom notification: <input type="checkbox" id="custom"/></p>
+		<p style="display:none;">Custom notification: <input type="checkbox" id="custom"/></p>-->
 	<p><button onclick="submit();">Send notification</button></p>
 	<script>
 		var title = document.querySelector('#title');

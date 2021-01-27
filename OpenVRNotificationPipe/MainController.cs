@@ -26,7 +26,7 @@ namespace OpenVRNotificationPipe
         private bool _shouldShutDown = false;
 
 
-        public MainController(Action<WebSocketSession, bool, string> serverStatus, Action<bool> openvrStatus)
+        public MainController(Action<SuperServer.ServerStatus, int> serverStatus, Action<bool> openvrStatus)
         {
             _openvrStatusAction = openvrStatus;
             InitServer(serverStatus);
@@ -168,6 +168,12 @@ namespace OpenVRNotificationPipe
                 if (_lastTextureId != IntPtr.Zero)
                 {
                     OpenVR.Overlay.ClearOverlayTexture(overlayHandle);
+                    /* 
+                     * TODO: We get a crash here when spamming texture updates.
+                     * Might have to lock this so we don't initiate an update while SteamVR is still loading.
+                     * In theory it won't happen in the future if we enable the queue system and schedule things with animations,
+                     * but it's better to secure from crashes if possible, avoid deadlocks though.
+                     */
                     GL.DeleteTexture((int)_lastTextureId);
                 }
 
@@ -210,9 +216,9 @@ namespace OpenVRNotificationPipe
         }
         #endregion
 
-        private void InitServer(Action<WebSocketSession, bool, string> serverStatus)
+        private void InitServer(Action<SuperServer.ServerStatus, int> serverStatus)
         {
-            _server.StatusMessageAction = serverStatus;
+            _server.StatusAction = serverStatus;
             _server.MessageReceievedAction = (session, payloadJson) =>
             {
                 var payload = new Payload();

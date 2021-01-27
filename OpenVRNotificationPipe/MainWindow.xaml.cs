@@ -62,17 +62,23 @@ namespace OpenVRNotificationPipe
             Label_Version.Content = Properties.Resources.Version;
 #endif
             // Controller
-            _controller = new MainController((session, state, message) => {
+            _controller = new MainController((status, state) => {
                 Dispatcher.Invoke(() =>
                 {
-                    if(state)
+                    switch (status)
                     {
-                        label_ServerStatus.Background = Brushes.OliveDrab;
-                        label_ServerStatus.Content = "Connected";
-                    } else
-                    {
-                        label_ServerStatus.Background = Brushes.Tomato;
-                        label_ServerStatus.Content = "Disconnected";
+                        case SuperServer.ServerStatus.Connected:
+                            label_ServerStatus.Background = Brushes.OliveDrab;
+                            label_ServerStatus.Content = "Connected";
+                            break;
+                        case SuperServer.ServerStatus.Disconnected:
+                            label_ServerStatus.Background = Brushes.Tomato;
+                            label_ServerStatus.Content = "Disconnected";
+                            break;
+                        case SuperServer.ServerStatus.Error:
+                            label_ServerStatus.Background = Brushes.Gray;
+                            label_ServerStatus.Content = "Error";
+                            break;
                     }
                 });
             },
@@ -178,6 +184,11 @@ namespace OpenVRNotificationPipe
                 case WindowState.Minimized: ShowInTaskbar = !_settings.Tray; break; // Setting here for tray icon only
                 default: ShowInTaskbar = true; Show(); break;
             }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (_notifyIcon != null) _notifyIcon.Dispose();
         }
     }
 }
