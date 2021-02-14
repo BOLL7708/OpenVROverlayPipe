@@ -11,33 +11,40 @@
 				color: white;
 				font-weight: bold;
 			}
+			input[type="number"] {
+				width: 4em;
+			}
 		</style>
 	</head>
 	<body onload="init();">
 		<p id="status">N/A</p>
 		<h2>General</h2>
+		<p>Canvas size: <input type="number" id="canvasWidth" value="128"> x <input type="number" id="canvasHeight" value="128"> <button onclick="updateCanvas();">Update</button></p>
 		<p><canvas id="mycanvas"></canvas></p>
 		<p><input type="file" id="fileUpload" accept="image/*"/></p>
 
 		<h2>Standard Notification</h2>
-		<p><input id="title" type="text" size="32" name="title" maxlength=127 value="Overlay title"/></p>
-		<p><textarea id="message" cols=32 rows=3 name="message">This is a test text.</textarea></p>
+		<p>Title: <input id="title" type="text" size="32" name="title" maxlength=127 value="Overlay title"/></p>
+		<p>Message: <textarea id="message" cols=32 rows=3 name="message">This is a test text.</textarea></p>
 		<p><button onclick="submit(false);">Send notification</button></p>
 		
 		<h2>Custom Notification</h2>
 		<p>Anchor to headset: <input type="checkbox" id="headset"/></p>
-		<p>Fade transition: <input type="checkbox" id="fade" checked/></p>
 		<p>Duration (ms): <input type="number" id="duration" value="2000"/></p>
-		<p>Ease in duration: <input type="number" id="easeInDuration" value="500"/></p>
-		<p>Ease out duration: <input type="number" id="easeOutDuration" value="500"/></p>
+		<p>Width (m): <input type="number" id="width" value="1"/></p>
+		<p>Fade transition (ms): <input type="checkbox" id="fade" checked/></p>
+		<p>Ease in duration (ms): <input type="number" id="easeInDuration" value="500"/></p>
+		<p>Ease out duration (ms): <input type="number" id="easeOutDuration" value="500"/></p>
 		<p>Ease curving: <input type="number" id="easeCurving" value="3"/></p>
-		<p>Vertical angle: <input type="number" id="verticalAngle" value="-30"/></p>
-		<p>Appear distance: <input type="number" id="appearDistance" value="0.5"/></p>
+		<p>Vertical angle (deg): <input type="number" id="verticalAngle" value="-30"/></p>
+		<p>Appear distance (m): <input type="number" id="appearDistance" value="0.5"/></p>
 		<p><button onclick="submit(true);">Send notification</button></p>
 
 	<script>
 		// General
 		var _status = document.querySelector('#status');
+		var _canvasWidth = document.querySelector('#canvasWidth');
+		var _canvasHeight = document.querySelector('#canvasHeight');
 		var _canvas = document.querySelector('#mycanvas');
 		var _ctx = _canvas.getContext('2d');
 		_ctx.canvas.width = 128;
@@ -125,6 +132,11 @@
 		}
 		function doBytes(data) {
 			_websocket.send(data);
+		}
+
+		function updateCanvas() {
+			_ctx.canvas.width = _canvasWidth.value;
+			_ctx.canvas.height = _canvasHeight.value;
 		}
 
 		function readImage() {
