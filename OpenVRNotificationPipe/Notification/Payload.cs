@@ -18,7 +18,13 @@ namespace OpenVRNotificationPipe
         public bool headset = false; // Anchors to the headset
         public int duration = 2000; // Stay time for notification
         public float width = 1f; // Width in meters.
-        // TODO: Add more properties here like duration, animation types, anchor, alignment...
+        public float distance = 2f;
+        public int easeCurving = 3; // The ratio raised to this power, should be > 0
+        public int easeInDuration = 500;
+        public int easeOutDuration = 500;
+        public bool fade = true; // Fade in/out transition
+        public float verticalAngle = -30; // Degrees up/down
+        public float appearDistance = 0.5f; // Distance to slide up
 
         public bool isEmpty() {
             return title.Equals("") || message.Equals("") || image.Equals("");
