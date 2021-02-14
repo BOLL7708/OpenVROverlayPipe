@@ -32,10 +32,11 @@
 		<p>Anchor to headset: <input type="checkbox" id="headset"/></p>
 		<p>Duration (ms): <input type="number" id="duration" value="2000"/></p>
 		<p>Width (m): <input type="number" id="width" value="1"/></p>
-		<p>Fade transition (ms): <input type="checkbox" id="fade" checked/></p>
+		<p>Distance (m): <input type="number" id="distance" value="2"/></p>
+		<p>Ease curving: <input type="number" id="easeCurving" value="3"/></p>
 		<p>Ease in duration (ms): <input type="number" id="easeInDuration" value="500"/></p>
 		<p>Ease out duration (ms): <input type="number" id="easeOutDuration" value="500"/></p>
-		<p>Ease curving: <input type="number" id="easeCurving" value="3"/></p>
+		<p>Fade transition (ms): <input type="checkbox" id="fade" checked/></p>
 		<p>Vertical angle (deg): <input type="number" id="verticalAngle" value="-30"/></p>
 		<p>Appear distance (m): <input type="number" id="appearDistance" value="0.5"/></p>
 		<p><button onclick="submit(true);">Send notification</button></p>
@@ -58,11 +59,13 @@
 
 		// Custom
 		var _headset = document.querySelector('#headset');
-		var _fade = document.querySelector('#fade');
 		var _duration = document.querySelector('#duration');
+		var _width = document.querySelector('#width');
+		var _distance = document.querySelector('#distance');
+		var _easeCurving = document.querySelector('#easeCurving');
 		var _easeInDuration = document.querySelector('#easeInDuration');
 		var _easeOutDuration = document.querySelector('#easeOutDuration');
-		var _easeCurving = document.querySelector('#easeCurving');
+		var _fade = document.querySelector('#fade');
 		var _verticalAngle = document.querySelector('#verticalAngle');
 		var _appearDistance = document.querySelector('#appearDistance');
 
@@ -177,11 +180,13 @@
 				message: _message.value,
 
 				headset: _headset.checked,
-				fade: _fade.checked,
 				duration: _duration.value,
+				width: _width.value,
+				distance: _distance.value,
+				easeCurving: _easeCurving.value,
 				easeInDuration: _easeInDuration.value,
 				easeOutDuration: _easeOutDuration.value,
-				easeCurving: _easeCurving.value,
+				fade: _fade.checked,
 				verticalAngle: _verticalAngle.value,
 				appearDistance: _appearDistance.value
 			};
