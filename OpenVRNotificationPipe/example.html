@@ -29,16 +29,20 @@
 		<p><button onclick="submit(false);">Send notification</button></p>
 		
 		<h2>Custom Notification</h2>
+
+		<h3>Properties</h3>
 		<p>Anchor to headset: <input type="checkbox" id="headset"/></p>
 		<p>Duration (ms): <input type="number" id="duration" value="2000"/></p>
 		<p>Width (m): <input type="number" id="width" value="1"/></p>
 		<p>Distance (m): <input type="number" id="distance" value="2"/></p>
-		<p>Ease curving: <input type="number" id="easeCurving" value="3"/></p>
-		<p>Ease in duration (ms): <input type="number" id="easeInDuration" value="500"/></p>
+		<p>Pitch (deg): <input type="number" id="pitch" value="-30"/></p>
+		
+		<h3>Transition</h3>
+		<p>Interpolation: <input type="number" id="interpolation" value="3"/></p>
+		<p>Duration (ms): <input type="number" id="transitionDuration" value="500"/></p>
 		<p>Ease out duration (ms): <input type="number" id="easeOutDuration" value="500"/></p>
-		<p>Fade transition (ms): <input type="checkbox" id="fade" checked/></p>
-		<p>Vertical angle (deg): <input type="number" id="verticalAngle" value="-30"/></p>
-		<p>Appear distance (m): <input type="number" id="appearDistance" value="0.5"/></p>
+		<p>Opacity (0-1): <input type="number" id="opacity" value="0"/></p>
+		<p>Vertical distance (m): <input type="number" id="vertical" value="-0.5"/></p>
 		<p><button onclick="submit(true);">Send notification</button></p>
 
 	<script>
@@ -62,12 +66,12 @@
 		var _duration = document.querySelector('#duration');
 		var _width = document.querySelector('#width');
 		var _distance = document.querySelector('#distance');
-		var _easeCurving = document.querySelector('#easeCurving');
-		var _easeInDuration = document.querySelector('#easeInDuration');
-		var _easeOutDuration = document.querySelector('#easeOutDuration');
-		var _fade = document.querySelector('#fade');
-		var _verticalAngle = document.querySelector('#verticalAngle');
-		var _appearDistance = document.querySelector('#appearDistance');
+		var _pitch = document.querySelector('#pitch');
+
+		var _interpolation = document.querySelector('#interpolation');
+		var _transitionDuration = document.querySelector('#transitionDuration');
+		var _opacity = document.querySelector('#opacity');
+		var _vertical = document.querySelector('#vertical');
 
 		// Connection
 		var _websocket;
@@ -99,11 +103,15 @@
 				var wsUri = "ws://localhost:"+port;
 				_active = true;
 				if(typeof _websocket !== 'undefined') _websocket.close();
-				_websocket = new WebSocket(wsUri);
-				_websocket.onopen = function(evt) { onOpen(evt) };
-				_websocket.onclose = function(evt) { onClose(evt) };
-				_websocket.onmessage = function(evt) { onMessage(evt) };
-				_websocket.onerror = function(evt) { onError(evt) };
+				try {
+					_websocket = new WebSocket(wsUri);
+					_websocket.onopen = function(evt) { onOpen(evt) };
+					_websocket.onclose = function(evt) { onClose(evt) };
+					_websocket.onmessage = function(evt) { onMessage(evt) };
+					_websocket.onerror = function(evt) { onError(evt) };	
+				} catch (error) {
+					_status.innerHTML = `ERROR: ${error}`;
+				}
 			}
 			setTimeout(connectLoop, 5000);
 		}
@@ -120,10 +128,13 @@
 		}
 		function onMessage(evt)
 		{
+			/*
 			var data = JSON.parse(evt.data);
 			var text = JSON.stringify(data, null, 2);
 			if(data == null) console.log("Response: " + text);
 			else console.log("Response: " + text);
+			*/
+			console.log(evt.data);
 		}
 		function onError(evt) {
 			_status.innerHTML = "ERROR: "+JSON.stringify(evt, null, 2);
@@ -176,19 +187,24 @@
 				custom: custom,
 				image: _canvas.toDataURL().split(',')[1],
 				
+				// Standard
 				title: _title.value,
 				message: _message.value,
 
-				headset: _headset.checked,
-				duration: _duration.value,
-				width: _width.value,
-				distance: _distance.value,
-				easeCurving: _easeCurving.value,
-				easeInDuration: _easeInDuration.value,
-				easeOutDuration: _easeOutDuration.value,
-				fade: _fade.checked,
-				verticalAngle: _verticalAngle.value,
-				appearDistance: _appearDistance.value
+				// Custom
+				properties: {
+					headset: _headset.checked,
+					duration: _duration.value,
+					width: _width.value,
+					distance: _distance.value,
+					pitch: _pitch.value
+				},
+				transition: {
+					interpolation: _interpolation.value,
+					duration: _transitionDuration.value,
+					opacity: _opacity.value,
+					vertical: _vertical.value
+				}
 			};
 			
 			var urlEncodedData = "";
