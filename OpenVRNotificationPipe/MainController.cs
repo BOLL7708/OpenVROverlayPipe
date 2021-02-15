@@ -144,7 +144,11 @@ namespace OpenVRNotificationPipe
             {
                 var payload = new Payload();
                 try { payload = JsonConvert.DeserializeObject<Payload>(payloadJson); }
-                catch (Exception e) { Debug.WriteLine($"JSON Parsing Exception: {e.Message}"); }
+                catch (Exception e) {
+                    var message = $"JSON Parsing Exception: {e.Message}";
+                    Debug.WriteLine(message);
+                    _server.SendMessage(session, message);
+                }
                 Debug.WriteLine($"Payload was received: {payloadJson}");
 
                 if (payload.custom) PostImageNotification(payload);
