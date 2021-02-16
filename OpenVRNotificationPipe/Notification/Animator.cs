@@ -119,22 +119,22 @@ namespace OpenVRNotificationPipe.Notification
                     // TODO: Add support for more types of interpolation here...
                     if (transition.interpolation > 1) ratioReversed = (float)Math.Pow(ratioReversed, Math.Min(5, transition.interpolation));                  
                     var ratio = 1 - ratioReversed;
-                    // Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
 
                     // Transform
-                    // TODO: We should only really need to do this the first step of Staying... fix that.
-                    animationTransform = (properties.headset ? EasyOpenVRSingleton.Utils.GetEmptyTransform() : hmdTransform)
-                        .RotateY(-properties.yaw)
-                        .RotateX(properties.pitch)
-                        .Translate(new HmdVector3_t() {
-                            v0 = transition.horizontal * ratioReversed,
-                            v1 = transition.vertical * ratioReversed, 
-                            v2 = -properties.distance - (transition.distance * ratioReversed)
-                        });
-                    _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.headset ? 0 : uint.MaxValue);
-                    _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));
-                    _vr.SetOverlayWidth(_overlayHandle, width*(transition.scale+(ratio*(1f-transition.scale))));
-                    
+                    if (stage != AnimationStage.Staying || animationCount == easeInLimit) { 
+                        Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
+                        animationTransform = (properties.headset ? EasyOpenVRSingleton.Utils.GetEmptyTransform() : hmdTransform)
+                            .RotateY(-properties.yaw)
+                            .RotateX(properties.pitch)
+                            .Translate(new HmdVector3_t() {
+                                v0 = transition.horizontal * ratioReversed,
+                                v1 = transition.vertical * ratioReversed, 
+                                v2 = -properties.distance - (transition.distance * ratioReversed)
+                            });
+                        _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.headset ? 0 : uint.MaxValue);
+                        _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));
+                        _vr.SetOverlayWidth(_overlayHandle, width*(transition.scale+(ratio*(1f-transition.scale))));
+                    }
                     // Do not make overlay visible until we have applied all the movements etc, only needs to happen the first frame.
                     if (animationCount == 0) _vr.SetOverlayVisibility(_overlayHandle, true);
                     animationCount++;
