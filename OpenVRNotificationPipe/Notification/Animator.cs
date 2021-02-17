@@ -54,6 +54,7 @@ namespace OpenVRNotificationPipe.Notification
             var stage = AnimationStage.Idle;
             var hz = _hz; // Default used if there is none in payload
             var msPerFrame = 1000 / hz;
+            var timeStarted = 0l;
 
             var animationCount = 0;
             var easeInCount = 0;
@@ -67,9 +68,9 @@ namespace OpenVRNotificationPipe.Notification
             while (true)
             {
                 // TODO: Calculate time it takes to perform the entire animation frame, then deduct that from the time we should sleep.
-                // TODO: Only update the overlay the first frame of the Staying stage.
                 // TODO: See if we can keep the overlay horizontal, if that is even necessary?!
-
+                timeStarted = DateTime.Now.Ticks;
+                
                 if (_payload == null) // Get new payload
                 {
                     _requestForNewPayload();
@@ -107,7 +108,7 @@ namespace OpenVRNotificationPipe.Notification
                     else if (animationCount >= stayLimit) stage = AnimationStage.EasingOut;
                     else stage = AnimationStage.Staying;
 
-                    // Setup and ratio
+                    // Setup and normalized progression ratio
                     var transition = _payload.transition;
                     var ratioReversed = 0f;
                     if(stage == AnimationStage.EasingIn) {
@@ -121,8 +122,8 @@ namespace OpenVRNotificationPipe.Notification
                     var ratio = 1 - ratioReversed;
 
                     // Transform
-                    if (stage != AnimationStage.Staying || animationCount == easeInLimit) { 
-                        Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
+                    if (stage != AnimationStage.Staying || animationCount == easeInLimit) { // Only performs animation on first frame of Staying stage.
+                        // Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
                         animationTransform = (properties.headset ? EasyOpenVRSingleton.Utils.GetEmptyTransform() : hmdTransform)
                             .RotateY(-properties.yaw)
                             .RotateX(properties.pitch)
@@ -130,7 +131,8 @@ namespace OpenVRNotificationPipe.Notification
                                 v0 = transition.horizontal * ratioReversed,
                                 v1 = transition.vertical * ratioReversed, 
                                 v2 = -properties.distance - (transition.distance * ratioReversed)
-                            });
+                            })
+                            .RotateZ(transition.spin * ratio);
                         _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.headset ? 0 : uint.MaxValue);
                         _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));
                         _vr.SetOverlayWidth(_overlayHandle, width*(transition.scale+(ratio*(1f-transition.scale))));
@@ -159,7 +161,8 @@ namespace OpenVRNotificationPipe.Notification
                     Thread.CurrentThread.Abort();
                 }
 
-                Thread.Sleep(msPerFrame); // Animations frame-rate
+                var timeSpent = (int) Math.Round((double) (DateTime.Now.Ticks - timeStarted) / TimeSpan.TicksPerMillisecond);
+                Thread.Sleep(Math.Max(1, msPerFrame-timeSpent)); // Animation time per frame adjusted by the time it took to animate.
             }
 
         }
