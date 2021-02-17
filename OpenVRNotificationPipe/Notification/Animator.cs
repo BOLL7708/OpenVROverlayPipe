@@ -67,7 +67,6 @@ namespace OpenVRNotificationPipe.Notification
 
             while (true)
             {
-                // TODO: Calculate time it takes to perform the entire animation frame, then deduct that from the time we should sleep.
                 // TODO: See if we can keep the overlay horizontal, if that is even necessary?!
                 timeStarted = DateTime.Now.Ticks;
                 
@@ -132,7 +131,7 @@ namespace OpenVRNotificationPipe.Notification
                                 v1 = transition.vertical * ratioReversed, 
                                 v2 = -properties.distance - (transition.distance * ratioReversed)
                             })
-                            .RotateZ(transition.spin * ratio);
+                            .RotateZ(transition.spin * ratioReversed);
                         _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.headset ? 0 : uint.MaxValue);
                         _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));
                         _vr.SetOverlayWidth(_overlayHandle, width*(transition.scale+(ratio*(1f-transition.scale))));
