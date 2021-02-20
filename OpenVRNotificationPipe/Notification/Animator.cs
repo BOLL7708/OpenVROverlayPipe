@@ -13,7 +13,6 @@ namespace OpenVRNotificationPipe.Notification
         private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private Action _requestForNewPayload = null;
         private volatile Payload _payload;
-        private volatile int _hz = 60;
         private volatile bool _shouldShutdown = false;
 
         public Animator(ulong overlayHandle, Action requestForNewAnimation)
@@ -49,7 +48,7 @@ namespace OpenVRNotificationPipe.Notification
 
             // Animation
             var stage = AnimationStage.Idle;
-            var hz = _hz; // Default used if there is none in payload
+            var hz = 60; // This default should never really be used as it reads Hz from headset.
             var msPerFrame = 1000 / hz;
             long timeStarted;
 
@@ -77,10 +76,10 @@ namespace OpenVRNotificationPipe.Notification
                 else if (stage == AnimationStage.Idle)
                 {
                     // Initialize things that stay the same during the whole animation
-
-                    properties = _payload.properties;
                     stage = AnimationStage.EasingIn;
-                    hz = properties.hz > 0 ? properties.hz : _hz; // Update in case it has changed.
+                    properties = _payload.properties;
+                    var hmdHz = _vr.GetFloatTrackedDeviceProperty(0, ETrackedDeviceProperty.Prop_DisplayFrequency_Float);
+                    hz = properties.hz > 0 ? properties.hz : (int) Math.Round(hmdHz);
                     msPerFrame = 1000 / hz;
 
                     // Size of overlay
@@ -184,10 +183,6 @@ namespace OpenVRNotificationPipe.Notification
 
         public void ProvideNewPayload(Payload payload) {
             _payload = payload;
-        }
-
-        public void SetAnimationHz(int hz) {
-            _hz = hz;
         }
 
         public void Shutdown() {

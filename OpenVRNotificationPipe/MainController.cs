@@ -51,11 +51,11 @@ namespace OpenVRNotificationPipe
                         _vr.AddApplicationManifest("./app.vrmanifest", "boll7708.openvrnotificationpipe", true);
                         _openvrStatusAction.Invoke(true);
                         _overlay = new Overlay("Notification Pipe Texture Overlay"); // TODO: Act on this failing?
+                        RegisterEvents();
                     }
                     else
-                    { 
-                        var newEvents = new List<VREvent_t>(_vr.GetNewEvents());
-                        CheckEvents(newEvents.ToArray());
+                    {
+                        _vr.UpdateEvents(false);
                     }
                     Thread.Sleep(250);
                 }
@@ -80,19 +80,11 @@ namespace OpenVRNotificationPipe
             }            
         }
 
-        private bool CheckEvents(VREvent_t[] events)
-        {
-            foreach (var e in events)
-            {
-                switch ((EVREventType)e.eventType)
-                {
-                    case EVREventType.VREvent_Quit:
-                        _openVRConnected = false;
-                        _shouldShutDown = true;
-                        return true;
-                }
-            }
-            return false;
+        private void RegisterEvents() {
+            _vr.RegisterEvent(EVREventType.VREvent_Quit, (data) => {
+                _openVRConnected = false;
+                _shouldShutDown = true;
+            });
         }
 
         private void PostNotification(WebSocketSession session, Payload payload)

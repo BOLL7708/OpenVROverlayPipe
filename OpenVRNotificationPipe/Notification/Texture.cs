@@ -76,7 +76,7 @@ namespace OpenVRNotificationPipe.Notification
         // If we unload too quickly we get an exception and crash.
         public void Unload() {
             OpenVR.Overlay.ClearOverlayTexture(_overlayHandle);
-            GL.DeleteTexture((int) _oldTextureId);
+            if(_oldTextureId != IntPtr.Zero) GL.DeleteTexture((int) _oldTextureId);
         }
     }
 }
