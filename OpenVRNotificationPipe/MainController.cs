@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
+using OpenVRNotificationPipe.Notification;
 using SuperSocket.WebSocket;
 using System;
 using System.Collections.Concurrent;
@@ -24,7 +25,7 @@ namespace OpenVRNotificationPipe
         private ConcurrentDictionary<WebSocketSession, byte[]> _images = new ConcurrentDictionary<WebSocketSession, byte[]>();
         private Action<bool> _openvrStatusAction;
         private bool _shouldShutDown = false;
-
+        private Overlay _overlay;
 
         public MainController(Action<SuperServer.ServerStatus, int> serverStatus, Action<bool> openvrStatus)
         {
@@ -47,15 +48,14 @@ namespace OpenVRNotificationPipe
                     if (!initComplete)
                     {
                         initComplete = true;
-                        CreateTextureOverlay();
                         _vr.AddApplicationManifest("./app.vrmanifest", "boll7708.openvrnotificationpipe", true);
                         _openvrStatusAction.Invoke(true);
+                        _overlay = new Overlay("Notification Pipe Texture Overlay"); // TODO: Act on this failing?
                     }
                     else
                     { 
                         var newEvents = new List<VREvent_t>(_vr.GetNewEvents());
-                        CheckEventsAndShutdownIfWeShould(newEvents.ToArray());
-                        
+                        CheckEvents(newEvents.ToArray());
                     }
                     Thread.Sleep(250);
                 }
@@ -71,15 +71,16 @@ namespace OpenVRNotificationPipe
                 if (_shouldShutDown) {
                     _shouldShutDown = false;
                     initComplete = false;
+                    _overlay.Deinit();
                     _vr.AcknowledgeShutdown();
+                    Thread.Sleep(500); // Allow things to deinit properly
                     _vr.Shutdown();
                     _openvrStatusAction.Invoke(false);
-                    // TODO: Also empty queue of notifications?
                 }
             }            
         }
 
-        private bool CheckEventsAndShutdownIfWeShould(VREvent_t[] events)
+        private bool CheckEvents(VREvent_t[] events)
         {
             foreach (var e in events)
             {
@@ -131,89 +132,9 @@ namespace OpenVRNotificationPipe
         private void PostImageNotification(Payload payload)
         {
             Debug.WriteLine("Posting image texture notification!");
-            EnqueueImageNotification(payload);
+            if(_overlay != null && _overlay.IsInitialized()) _overlay.EnqueueNotification(payload);
         }
 
-        private ulong _overlayHandle = 0;
-        private void CreateTextureOverlay() {
-            if (_overlayHandle == 0L) {
-                var transform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
-                transform.m11 = -2;
-                _overlayHandle = _vr.CreateOverlay("boll7708.notficationpipe.test", "Test Overlay", transform, 1, 0);
-                _vr.SetOverlayVisibility(_overlayHandle, false);
-            }
-        }
-
-        private static GameWindow _glWindow; // So GL will work at all
-        private IntPtr _lastTextureId = IntPtr.Zero;
-
-        private void LoadTexture(ulong overlayHandle, Payload payload) {
-            if (_glWindow == null) _glWindow = new GameWindow(); // Init OpenGL
-
-            try
-            {
-                // Loading image from incoming base64 encoded string
-                var imageBytes = Convert.FromBase64String(payload.image);
-                var bmp = new Bitmap(new MemoryStream(imageBytes));
-                bmp.RotateFlip(RotateFlipType.RotateNoneFlipY); // Flip it for OpenGL
-
-                // Lock bits so we can supply them to the texture
-                var bmpBits = bmp.LockBits(
-                    new Rectangle(0, 0, bmp.Width, bmp.Height),
-                    System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                    System.Drawing.Imaging.PixelFormat.Format32bppArgb
-                );
-
-                // Remove any prior texture so we can supply a new one
-                if (_lastTextureId != IntPtr.Zero)
-                {
-                    OpenVR.Overlay.ClearOverlayTexture(overlayHandle);
-                    /* 
-                     * TODO: We get a crash here when spamming texture updates.
-                     * Might have to lock this so we don't initiate an update while SteamVR is still loading.
-                     * In theory it won't happen in the future if we enable the queue system and schedule things with animations,
-                     * but it's better to secure from crashes if possible, avoid deadlocks though.
-                     */
-                    GL.DeleteTexture((int)_lastTextureId);
-                }
-
-                // Create OpenGL texture
-                var textureId = GL.GenTexture();
-                _lastTextureId = (IntPtr)textureId;
-                GL.BindTexture(TextureTarget.Texture2D, textureId);
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, bmp.Width, bmp.Height, 0, PixelFormat.Bgra, PixelType.UnsignedByte, bmpBits.Scan0);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Clamp);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Clamp);
-                bmp.UnlockBits(bmpBits);
-
-                // Create SteamVR texture
-                Texture_t texture = new Texture_t();
-                texture.eType = ETextureType.OpenGL;
-                texture.eColorSpace = EColorSpace.Auto;
-                texture.handle = (IntPtr)textureId;
-
-                var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture); // Overlay handle exist and works when setting the overlay directly from file instead of with texture.
-                if(error != EVROverlayError.None) Debug.WriteLine($"SetOverlayTexture error: {Enum.GetName(error.GetType(), error)}");
-            }
-            catch (Exception e) {
-                Debug.WriteLine($"Exception when loading texture: {e.Message}");
-            }
-        }
-
-        private void EnqueueImageNotification(Payload payload) {
-            /* 
-             * TODO:
-             * This should add the payload into a queue that we go though progressively
-             * showing one notification after the other, with animations and stuff.
-             * 
-             * Need to figure out how to do animations and stuff, animating the transform
-             * and alpha of the notification, perhaps also size? Hmm.
-             */
-            LoadTexture(_overlayHandle, payload);
-            _vr.SetOverlayVisibility(_overlayHandle, true);
-        }
         #endregion
 
         private void InitServer(Action<SuperServer.ServerStatus, int> serverStatus)
@@ -223,7 +144,11 @@ namespace OpenVRNotificationPipe
             {
                 var payload = new Payload();
                 try { payload = JsonConvert.DeserializeObject<Payload>(payloadJson); }
-                catch (Exception e) { Debug.WriteLine($"JSON Parsing Exception: {e.Message}"); }
+                catch (Exception e) {
+                    var message = $"JSON Parsing Exception: {e.Message}";
+                    Debug.WriteLine(message);
+                    _server.SendMessage(session, message);
+                }
                 Debug.WriteLine($"Payload was received: {payloadJson}");
 
                 if (payload.custom) PostImageNotification(payload);
