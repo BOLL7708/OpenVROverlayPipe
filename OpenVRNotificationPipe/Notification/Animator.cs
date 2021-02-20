@@ -98,6 +98,11 @@ namespace OpenVRNotificationPipe.Notification
 
                     // Pose
                     hmdTransform = _vr.GetDeviceToAbsoluteTrackingPose()[0].mDeviceToAbsoluteTracking;
+
+                    HmdVector3_t hmdEuler = hmdTransform.EulerAngles();
+                    hmdEuler.v2 = 0;
+
+                    hmdTransform = hmdTransform.FromEuler(hmdEuler);
                 } 
                 
                 if(stage != AnimationStage.Idle) // Animate
@@ -131,6 +136,7 @@ namespace OpenVRNotificationPipe.Notification
                             v1 = transition.vertical * ratioReversed, 
                             v2 = -properties.distance - (transition.distance * ratioReversed)
                         });
+
                     _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.headset ? 0 : uint.MaxValue);
                     _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));
                     _vr.SetOverlayWidth(_overlayHandle, width*(transition.scale+(ratio*(1f-transition.scale))));
