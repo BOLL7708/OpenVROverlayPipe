@@ -99,6 +99,11 @@ namespace OpenVRNotificationPipe.Notification
 
                     // Pose
                     hmdTransform = _vr.GetDeviceToAbsoluteTrackingPose()[0].mDeviceToAbsoluteTracking;
+
+                    HmdVector3_t hmdEuler = hmdTransform.EulerAngles();
+                    hmdEuler.v2 = 0;
+
+                    hmdTransform = hmdTransform.FromEuler(hmdEuler);
                 } 
                 
                 if(stage != AnimationStage.Idle) // Animate
