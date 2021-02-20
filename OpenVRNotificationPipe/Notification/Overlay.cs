@@ -29,7 +29,6 @@ namespace OpenVRNotificationPipe.Notification
             
             // Default positioning and size of overlay, this will all be changed when animated.
             var transform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
-            transform.m11 = -2;
             var width = 1;
             _overlayHandle = _vr.CreateOverlay("boll7708.openvrnotficationpipe.texture", _title, transform, width);
             _initSuccess = _overlayHandle != 0;

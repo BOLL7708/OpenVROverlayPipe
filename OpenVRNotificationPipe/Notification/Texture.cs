@@ -43,10 +43,17 @@ namespace OpenVRNotificationPipe.Notification
 
                 // Create OpenGL texture
                 var textureId = GL.GenTexture();
-                _oldTextureId = (IntPtr)textureId;                
                 GL.BindTexture(TextureTarget.Texture2D, textureId);
                 GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, bmp.Width, bmp.Height);
                 GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, bmp.Width, bmp.Height, PixelFormat.Bgra, PixelType.UnsignedByte, bmpBits.Scan0);
+                if(_oldTextureId != IntPtr.Zero)
+                {
+                    // Ruu from LIV pointed out this bug, that we need to generate a new texture (above)
+                    // before deleting the old to get OpenVR to read new meta data, thus size.
+                    // Without doing it this way, if a larger size texture comes in later, it clips.
+                    GL.DeleteTexture((int) _oldTextureId);
+                }
+                _oldTextureId = (IntPtr)textureId;
                 bmp.UnlockBits(bmpBits);
 
                 // Create SteamVR texture
