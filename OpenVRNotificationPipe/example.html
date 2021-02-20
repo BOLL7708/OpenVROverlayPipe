@@ -1,34 +1,81 @@
 <html>
     <head>
         <title>OpenVRNotificationPipe Example Page</title>
+		<style>
+			body {
+				font-family: sans-serif;
+			}
+			#status {
+				padding: .5em;
+				background-color: gray;
+				color: white;
+				font-weight: bold;
+			}
+			input[type="number"] {
+				width: 4em;
+			}
+		</style>
 	</head>
 	<body onload="init();">
-		<p><input id="title" type="text" size="32" name="title" maxlength=127 value="Overlay title"/></p>
-		<p><textarea id="message" cols=32 rows=3 name="message">This is a test text.</textarea></p>
+		<p id="status">N/A</p>
+		<h2>General</h2>
+		<p>Canvas size: <input type="number" id="canvasWidth" value="128"> x <input type="number" id="canvasHeight" value="128"> <button onclick="updateCanvas();">Update</button></p>
 		<p><canvas id="mycanvas"></canvas></p>
 		<p><input type="file" id="fileUpload" accept="image/*"/></p>
-		<p>Custom notification: <input type="checkbox" id="custom"/></p>-->
-	<p><button onclick="submit();">Send notification</button></p>
+
+		<h2>Standard Notification</h2>
+		<p>Title: <input id="title" type="text" size="32" name="title" maxlength=127 value="Overlay title"/></p>
+		<p>Message: <textarea id="message" cols=32 rows=3 name="message">This is a test text.</textarea></p>
+		<p><button onclick="submit(false);">Send notification</button></p>
+		
+		<h2>Custom Notification</h2>
+
+		<h3>Properties</h3>
+		<p>Anchor to headset: <input type="checkbox" id="headset"/></p>
+		<p>Duration (ms): <input type="number" id="duration" value="2000"/></p>
+		<p>Width (m): <input type="number" id="width" value="1"/></p>
+		<p>Distance (m): <input type="number" id="distance" value="2"/></p>
+		<p>Pitch (deg): <input type="number" id="pitch" value="-30"/></p>
+		
+		<h3>Transition</h3>
+		<p>Interpolation: <input type="number" id="interpolation" value="3"/></p>
+		<p>Duration (ms): <input type="number" id="transitionDuration" value="500"/></p>
+		<p>Ease out duration (ms): <input type="number" id="easeOutDuration" value="500"/></p>
+		<p>Opacity (0-1): <input type="number" id="opacity" value="0"/></p>
+		<p>Vertical distance (m): <input type="number" id="vertical" value="-0.5"/></p>
+		<p><button onclick="submit(true);">Send notification</button></p>
+
 	<script>
-		var title = document.querySelector('#title');
-		var message = document.querySelector('#message');
-		var image = document.querySelector('#image');
-		var custom = document.querySelector('#custom');
+		// General
+		var _status = document.querySelector('#status');
+		var _canvasWidth = document.querySelector('#canvasWidth');
+		var _canvasHeight = document.querySelector('#canvasHeight');
+		var _canvas = document.querySelector('#mycanvas');
+		var _ctx = _canvas.getContext('2d');
+		_ctx.canvas.width = 128;
+		_ctx.canvas.height = 128;
+		var _upload = document.querySelector('#fileUpload');
+		_upload.addEventListener('change', readImage);
 
-		var upload = document.getElementById('fileUpload');
-		var canvas = document.getElementById('mycanvas');
-		var ctx = canvas.getContext('2d');
-		ctx.canvas.width = 128;
-		ctx.canvas.height = 128;
+		// Standard
+		var _title = document.querySelector('#title');
+		var _message = document.querySelector('#message');
 
-		upload.addEventListener('change', readImage);
+		// Custom
+		var _headset = document.querySelector('#headset');
+		var _duration = document.querySelector('#duration');
+		var _width = document.querySelector('#width');
+		var _distance = document.querySelector('#distance');
+		var _pitch = document.querySelector('#pitch');
 
-		var params = getParams(window.location.href);
-		var port  = (typeof params.port == "undefined") ? 8077 : params.port;
-		var wsUri = "ws://localhost:"+port;
-		var output, deviceId, input, inputAnalog, inputPose, requests, applicationInfo, playArea, properties;
-		var websocket;
-		var active = false, stop = false;
+		var _interpolation = document.querySelector('#interpolation');
+		var _transitionDuration = document.querySelector('#transitionDuration');
+		var _opacity = document.querySelector('#opacity');
+		var _vertical = document.querySelector('#vertical');
+
+		// Connection
+		var _websocket;
+		var _active = false, _stop = false;
 
 		function getParams(url) {
 			var params = {};
@@ -45,92 +92,89 @@
 		
 		function init()
 		{
-			/*
-			output = document.getElementById("output");
-			requests = document.getElementById("requests");
-			deviceIds = document.getElementById("deviceIds");
-			input = document.getElementById("input");
-			inputAnalog = document.getElementById("inputAnalog");
-			inputPose = document.getElementById("inputPose");
-			applicationInfo = document.getElementById("applicationInfo");
-			playArea = document.getElementById("playArea");
-			properties = document.getElementById("properties");
-			*/
 			connectLoop();
 		}
 
 		function connectLoop() 
 		{
-			if(!active) {
-				active = true;
-				if(typeof websocket !== 'undefined') websocket.close();
-				websocket = new WebSocket(wsUri);
-				websocket.onopen = function(evt) { onOpen(evt) };
-				websocket.onclose = function(evt) { onClose(evt) };
-				websocket.onmessage = function(evt) { onMessage(evt) };
-				websocket.onerror = function(evt) { onError(evt) };
+			if(!_active) {
+				var params = getParams(window.location.href);
+				var port  = (typeof params.port == "undefined") ? 8077 : params.port;
+				var wsUri = "ws://localhost:"+port;
+				_active = true;
+				if(typeof _websocket !== 'undefined') _websocket.close();
+				try {
+					_websocket = new WebSocket(wsUri);
+					_websocket.onopen = function(evt) { onOpen(evt) };
+					_websocket.onclose = function(evt) { onClose(evt) };
+					_websocket.onmessage = function(evt) { onMessage(evt) };
+					_websocket.onerror = function(evt) { onError(evt) };	
+				} catch (error) {
+					_status.innerHTML = `ERROR: ${error}`;
+				}
 			}
 			setTimeout(connectLoop, 5000);
 		}
 
 		function onOpen(evt)
 		{
-			active = true;
-			writeToScreen("CONNECTED: "+JSON.stringify(evt, null, 2));
+			_active = true;
+			_status.innerHTML = "CONNECTED";
 		}
 		function onClose(evt)
 		{
-			active = false;
-			writeToScreen("DISCONNECTED: "+JSON.stringify(evt, null, 2));
+			_active = false;
+			_status.innerHTML = "DISCONNECTED";
 		}
 		function onMessage(evt)
 		{
+			/*
 			var data = JSON.parse(evt.data);
 			var text = JSON.stringify(data, null, 2);
-			if(data == null) writeToScreen("Response: " + text);
-			else {
-				writeToScreen("Response: " + text);
-			}
+			if(data == null) console.log("Response: " + text);
+			else console.log("Response: " + text);
+			*/
+			console.log(evt.data);
 		}
 		function onError(evt) {
-			writeToScreen("ERROR: "+JSON.stringify(evt, null, 2));
+			_status.innerHTML = "ERROR: "+JSON.stringify(evt, null, 2);
 		}
 
 		function doSend(payload){
 			var text = JSON.stringify(payload);
-			writeToScreen("Sending: "+text);
-			websocket.send(text);
+			_websocket.send(text);
 		}
 		function doBytes(data) {
-			websocket.send(data);
+			_websocket.send(data);
 		}
 
-		function writeToScreen(message) {
-			console.log(message);
+		function updateCanvas() {
+			_ctx.canvas.width = _canvasWidth.value;
+			_ctx.canvas.height = _canvasHeight.value;
 		}
 
 		function readImage() {
 		    if ( this.files && this.files[0] ) {
-		        var FR= new FileReader();
+		        var FR = new FileReader();
 		        FR.onload = function(e) {
 		           	var img = new Image();
 		           	img.addEventListener("load", function() {
 		           		// Clear
-						ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+						_ctx.clearRect(0, 0, _ctx.canvas.width, _ctx.canvas.height);
 						// Scale and draw
 						var x, y, w, h;
 						if(img.width > img.height) {
 							y = 0;
-							h = ctx.canvas.height;
-							w = img.width * (ctx.canvas.height / img.height);
-							x = -(w-ctx.canvas.width)/2;
+							h = _ctx.canvas.height;
+							w = img.width * (_ctx.canvas.height / img.height);
+							x = -(w-_ctx.canvas.width)/2;
 						} else {
 							x = 0;
-							w = ctx.canvas.width;
-							h = img.height * (ctx.canvas.width / img.width);
-							y = -(h-ctx.canvas.height)/2;
+							w = _ctx.canvas.width;
+							h = img.height * (_ctx.canvas.width / img.width);
+							y = -(h-_ctx.canvas.height)/2;
 						}
-		             	ctx.drawImage(img, x, y, w, h);
+		             	_ctx.drawImage(img, x, y, w, h);
 		           	});
 		           	img.src = e.target.result;
 		        };       
@@ -138,15 +182,29 @@
 		    }
 		}
 
-		function submit() {	
-			// var imageData = ctx.getImageData(0, 0, 128, 128).data;
-			// console.log("Sending image: "+imageData.length);
-			// doBytes(imageData);
+		function submit(custom) {	
 			var data = {
-				custom: custom.checked,
-				title: title.value,
-				message: message.value,
-				image: canvas.toDataURL().split(',')[1] // .replace('+', '-').replace('/', '_').replace('=', '') // Remove image spec
+				custom: custom,
+				image: _canvas.toDataURL().split(',')[1],
+				
+				// Standard
+				title: _title.value,
+				message: _message.value,
+
+				// Custom
+				properties: {
+					headset: _headset.checked,
+					duration: _duration.value,
+					width: _width.value,
+					distance: _distance.value,
+					pitch: _pitch.value
+				},
+				transition: {
+					interpolation: _interpolation.value,
+					duration: _transitionDuration.value,
+					opacity: _opacity.value,
+					vertical: _vertical.value
+				}
 			};
 			
 			var urlEncodedData = "";

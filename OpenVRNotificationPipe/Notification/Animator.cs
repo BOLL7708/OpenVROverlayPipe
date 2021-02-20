@@ -31,78 +31,125 @@ namespace OpenVRNotificationPipe.Notification
             if (!thread.IsAlive) thread.Start();
         }
 
+        public enum AnimationStage {
+            Idle,
+            EasingIn,
+            Staying,
+            EasingOut,
+            Finished
+        }
+
         private void Worker() {
             Thread.CurrentThread.IsBackground = true;
             
-            var init = false;
-            
-            // TODO
-            var alpha = 0f;
-            var animationCount = 0;
-            var complete = false;
-            var hz = _hz;
+            // General
             var hmdTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
+            var notificationTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
+            var animationTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
+            var width = 1f;
+            var height = 1f;
+            Payload.Properties properties = null;
+
+            // Animation
+            var stage = AnimationStage.Idle;
+            var hz = _hz; // Default used if there is none in payload
+            var msPerFrame = 1000 / hz;
+
+            var animationCount = 0;
+            var easeInCount = 0;
+            var stayCount = 0;
+            var easeOutCount = 0;
+
+            var easeInLimit = 0;
+            var stayLimit = 0;
+            var easeOutLimit = 0;
 
             while (true)
             {
-                /**
-                 * Feels like an animation class could be something like...
-                 * - Type of transition(s)
-                 * - In transition duration
-                 * - Display duration
-                 * - Out transition duration
-                 * Everything is connected to how many frames per second we animate, so it can be matched to headset Hz.
-                 */
+                // TODO: Calculate time it takes to perform the entire animation frame, then deduct that from the time we should sleep.
+                // TODO: Only update the overlay the first frame of the Staying stage.
+                // TODO: See if we can keep the overlay horizontal, if that is even necessary?!
 
                 if (_payload == null) // Get new payload
                 {
                     _requestForNewPayload();
                     Thread.Sleep(100);
                 }
-                else if (!init) // Initialize
+                else if (stage == AnimationStage.Idle) // Initialize
                 {
-                    init = true;
-                    hz = _hz;
+                    properties = _payload.properties;
+                    stage = AnimationStage.EasingIn;
+                    hz = properties.hz > 0 ? properties.hz : _hz; // Update in case it has changed.
+                    msPerFrame = 1000 / hz;
 
-                    // TODO: Use the size to adjust the local anchor point for the overlay, it should adjust the position.
+                    // Size of overlay
                     var size = _texture.Load(_payload.image);
-                    Debug.WriteLine($"Size: {size.v0}x{size.v1}");
-                    _vr.SetOverlayWidth(_overlayHandle, _payload.width);
+                    width = properties.width;
+                    height = width / size.v0 * size.v1;
 
+                    // Animation limits
+                    easeInCount = _payload.transition.duration / msPerFrame;
+                    stayCount = properties.duration / msPerFrame;
+                    easeOutCount = (_payload.transition2?.duration ?? _payload.transition.duration) / msPerFrame;
+                    easeInLimit = easeInCount;
+                    stayLimit = easeInLimit + stayCount;
+                    easeOutLimit = stayLimit + easeOutCount;
+                    // Debug.WriteLine($"{easeInCount}, {stayCount}, {easeOutCount} - {easeInLimit}, {stayLimit}, {easeOutLimit}");
+
+                    // Pose
                     hmdTransform = _vr.GetDeviceToAbsoluteTrackingPose()[0].mDeviceToAbsoluteTracking;
-                    var notificationPosition = new HmdVector3_t();
-                    notificationPosition.v2 = -2;
-                    var notificationTransform = EasyOpenVRSingleton.Utils.AddVectorToMatrix(hmdTransform, notificationPosition);
-                    _vr.SetOverlayTransform(_overlayHandle, notificationTransform, _payload.headset ? 0 : uint.MaxValue);
-
-                    _vr.SetOverlayVisibility(_overlayHandle, true);
                 } 
                 
-                if(init) // Animate
+                if(stage != AnimationStage.Idle) // Animate
                 {
-                    // Here we should check the configuration of how to animate the texture in and out
+                    // Animation stage
+                    if (animationCount < easeInLimit) stage = AnimationStage.EasingIn;
+                    else if (animationCount >= stayLimit) stage = AnimationStage.EasingOut;
+                    else stage = AnimationStage.Staying;
 
-                    // 1. Animate in
+                    // Setup and ratio
+                    var transition = _payload.transition;
+                    var ratioReversed = 0f;
+                    if(stage == AnimationStage.EasingIn) {
+                        ratioReversed = 1f - ((float)animationCount / easeInCount);
+                    } else if(stage == AnimationStage.EasingOut) {
+                        if (_payload.transition2 != null) transition = _payload.transition2;
+                        ratioReversed = ((float)animationCount - stayLimit + 1) / easeOutCount; // +1 because we moved where we increment animationCount
+                    }
+                    // TODO: Add support for more types of interpolation here...
+                    if (transition.interpolation > 1) ratioReversed = (float)Math.Pow(ratioReversed, Math.Min(5, transition.interpolation));                  
+                    var ratio = 1 - ratioReversed;
+                    // Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
+
+                    // Transform
+                    // TODO: We should only really need to do this the first step of Staying... fix that.
+                    animationTransform = (properties.headset ? EasyOpenVRSingleton.Utils.GetEmptyTransform() : hmdTransform)
+                        .RotateY(-properties.yaw)
+                        .RotateX(properties.pitch)
+                        .Translate(new HmdVector3_t() {
+                            v0 = transition.horizontal * ratioReversed,
+                            v1 = transition.vertical * ratioReversed, 
+                            v2 = -properties.distance - (transition.distance * ratioReversed)
+                        });
+                    _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.headset ? 0 : uint.MaxValue);
+                    _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));
+                    _vr.SetOverlayWidth(_overlayHandle, width*(transition.scale+(ratio*(1f-transition.scale))));
+                    
+                    // Do not make overlay visible until we have applied all the movements etc, only needs to happen the first frame.
+                    if (animationCount == 0) _vr.SetOverlayVisibility(_overlayHandle, true);
                     animationCount++;
 
-                    // 2. Stay
+                    // We're done
+                    if (animationCount >= easeOutLimit) stage = AnimationStage.Finished;
 
-                    // 3. Animate out
-
-                    // 4. Complete
-                    if (animationCount > 120) complete = true;
-
-                    if (complete) {
+                    if (stage == AnimationStage.Finished) {
                         Debug.WriteLine("DONE!");
                         _vr.SetOverlayVisibility(_overlayHandle, false);
-                        _texture.Unload();
-                        _payload = null;
-                        init = false;
-                        
-                        // TODO
+                        stage = AnimationStage.Idle;                        
+                        properties = null;
                         animationCount = 0;
-                        alpha = 0f;
-                        complete = false;
+                        _payload = null;
+                        _texture.Unload();
                     }
                 }
 
@@ -112,7 +159,7 @@ namespace OpenVRNotificationPipe.Notification
                     Thread.CurrentThread.Abort();
                 }
 
-                Thread.Sleep(1000 / hz); // Animations frame-rate
+                Thread.Sleep(msPerFrame); // Animations frame-rate
             }
 
         }
