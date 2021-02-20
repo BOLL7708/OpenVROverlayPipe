@@ -122,6 +122,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Notification\Animator.cs" />
+    <Compile Include="Notification\Interpolator.cs" />
     <Compile Include="Notification\Overlay.cs" />
     <Compile Include="Notification\Texture.cs" />
     <Compile Include="Notification\Payload.cs" />

@@ -38,7 +38,7 @@ namespace OpenVRNotificationPipe
             public float distance = 0; // Translational offset
             public float horizontal = 0; // Translational offset
             public float spin = 0;
-            public float interpolation = 0; // Interpolation type
+            public int interpolation = 0; // Interpolation type
             public int duration = 100;
         }
     }

@@ -50,10 +50,12 @@ namespace OpenVRNotificationPipe.Notification
                 bmp.UnlockBits(bmpBits);
 
                 // Create SteamVR texture
-                Texture_t texture = new Texture_t();
-                texture.eType = ETextureType.OpenGL;
-                texture.eColorSpace = EColorSpace.Auto;
-                texture.handle = (IntPtr)textureId;
+                Texture_t texture = new Texture_t
+                {
+                    eType = ETextureType.OpenGL,
+                    eColorSpace = EColorSpace.Auto,
+                    handle = (IntPtr)textureId
+                };
 
                 // Assign texture
                 var error = OpenVR.Overlay.SetOverlayTexture(_overlayHandle, ref texture); // Overlay handle exist and works when setting the overlay directly from file instead of with texture.

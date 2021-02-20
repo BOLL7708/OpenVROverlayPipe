@@ -39,9 +39,9 @@
         <GroupBox Header="Settings" Background="AliceBlue">
             <StackPanel Orientation="Vertical">
                 <StackPanel Orientation="Horizontal" Margin="5">
-                    <CheckBox x:Name="checkBox_MinimizeOnLaunch" Content="Launch minimized " Checked="checkBox_MinimizeOnLaunch_Checked" Unchecked="checkBox_MinimizeOnLaunch_Checked"/>
-                    <CheckBox x:Name="checkBox_MinimizeToTray" Content="to tray, " Checked="checkBox_MinimizeToTray_Checked" Unchecked="checkBox_MinimizeToTray_Checked"/>
-                    <CheckBox x:Name="checkBox_ExitWithSteamVR" Content="exit with SteamVR" Checked="checkBox_ExitWithSteamVR_Checked" Unchecked="checkBox_ExitWithSteamVR_Checked"/>
+                    <CheckBox x:Name="checkBox_MinimizeOnLaunch" Content="Launch minimized " Checked="CheckBox_MinimizeOnLaunch_Checked" Unchecked="CheckBox_MinimizeOnLaunch_Checked"/>
+                    <CheckBox x:Name="checkBox_MinimizeToTray" Content="to tray, " Checked="CheckBox_MinimizeToTray_Checked" Unchecked="CheckBox_MinimizeToTray_Checked"/>
+                    <CheckBox x:Name="checkBox_ExitWithSteamVR" Content="exit with SteamVR" Checked="CheckBox_ExitWithSteamVR_Checked" Unchecked="CheckBox_ExitWithSteamVR_Checked"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="5 0 5 5">
                     <Label Content="Server port:"/>

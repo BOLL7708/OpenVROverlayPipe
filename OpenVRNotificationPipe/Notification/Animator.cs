@@ -1,23 +1,19 @@
 ﻿using BOLL7708;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Valve.VR;
 
 namespace OpenVRNotificationPipe.Notification
 {
     class Animator
     {
-        private Texture _texture;
-        private ulong _overlayHandle = 0;
+        private readonly Texture _texture;
+        private readonly ulong _overlayHandle = 0;
+        private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private Action _requestForNewPayload = null;
         private volatile Payload _payload;
         private volatile int _hz = 60;
-        private EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private volatile bool _shouldShutdown = false;
 
         public Animator(ulong overlayHandle, Action requestForNewAnimation)
@@ -49,12 +45,13 @@ namespace OpenVRNotificationPipe.Notification
             var width = 1f;
             var height = 1f;
             Payload.Properties properties = null;
+            Payload.Transition transition = null;
 
             // Animation
             var stage = AnimationStage.Idle;
             var hz = _hz; // Default used if there is none in payload
             var msPerFrame = 1000 / hz;
-            var timeStarted = 0l;
+            long timeStarted;
 
             var animationCount = 0;
             var easeInCount = 0;
@@ -64,6 +61,8 @@ namespace OpenVRNotificationPipe.Notification
             var easeInLimit = 0;
             var stayLimit = 0;
             var easeOutLimit = 0;
+
+            Func<float, float> interpolator = Interpolator.GetFunc(0);
 
             while (true)
             {
@@ -75,8 +74,10 @@ namespace OpenVRNotificationPipe.Notification
                     _requestForNewPayload();
                     Thread.Sleep(100);
                 }
-                else if (stage == AnimationStage.Idle) // Initialize
+                else if (stage == AnimationStage.Idle)
                 {
+                    // Initialize things that stay the same during the whole animation
+
                     properties = _payload.properties;
                     stage = AnimationStage.EasingIn;
                     hz = properties.hz > 0 ? properties.hz : _hz; // Update in case it has changed.
@@ -86,6 +87,7 @@ namespace OpenVRNotificationPipe.Notification
                     var size = _texture.Load(_payload.image);
                     width = properties.width;
                     height = width / size.v0 * size.v1;
+                    Debug.WriteLine($"Texture width: {size.v0}, height: {size.v1}");
 
                     // Animation limits
                     easeInCount = _payload.transition.duration / msPerFrame;
@@ -107,17 +109,31 @@ namespace OpenVRNotificationPipe.Notification
                     else if (animationCount >= stayLimit) stage = AnimationStage.EasingOut;
                     else stage = AnimationStage.Staying;
 
+                    // Secondary inits that happen at the start of specific stages
+
+                    if (animationCount == 0) 
+                    { // Init EaseIn
+                        transition = _payload.transition;
+                        interpolator = Interpolator.GetFunc(transition.interpolation);
+                    }
+
+                    if (animationCount == stayLimit)
+                    { // Init EaseOut
+                        if (_payload.transition2 != null)
+                        {
+                            transition = _payload.transition2;
+                            interpolator = Interpolator.GetFunc(transition.interpolation);
+                        }
+                    }
+
                     // Setup and normalized progression ratio
-                    var transition = _payload.transition;
                     var ratioReversed = 0f;
                     if(stage == AnimationStage.EasingIn) {
                         ratioReversed = 1f - ((float)animationCount / easeInCount);
                     } else if(stage == AnimationStage.EasingOut) {
-                        if (_payload.transition2 != null) transition = _payload.transition2;
                         ratioReversed = ((float)animationCount - stayLimit + 1) / easeOutCount; // +1 because we moved where we increment animationCount
                     }
-                    // TODO: Add support for more types of interpolation here...
-                    if (transition.interpolation > 1) ratioReversed = (float)Math.Pow(ratioReversed, Math.Min(5, transition.interpolation));                  
+                    ratioReversed = interpolator(ratioReversed);
                     var ratio = 1 - ratioReversed;
 
                     // Transform

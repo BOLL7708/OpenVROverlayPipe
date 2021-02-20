@@ -31,7 +31,7 @@ namespace OpenVRNotificationPipe.Notification
             var transform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
             transform.m11 = -2;
             var width = 1;
-            _overlayHandle = _vr.CreateOverlay("boll7708.notficationpipe.texture", _title, transform, width);
+            _overlayHandle = _vr.CreateOverlay("boll7708.openvrnotficationpipe.texture", _title, transform, width);
             _initSuccess = _overlayHandle != 0;
             
             if (_initSuccess)
