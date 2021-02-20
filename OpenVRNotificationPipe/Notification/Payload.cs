@@ -23,6 +23,7 @@ namespace OpenVRNotificationPipe
 
         public class Properties {
             public bool headset = false;
+            public bool horizontal = true;
             public int hz = -1;
             public int duration = 1000;
             public float width = 1;
