@@ -66,6 +66,9 @@ namespace OpenVRNotificationPipe.Notification
                 {
                     OpenVR.Overlay.ClearOverlayTexture(_overlayHandle);
                     GL.DeleteTexture((int) _oldTextureId);
+                    // The below fixes the texture problems but makes a bump on the CPU graph...
+                    // _glWindow.Dispose();
+                    // _glWindow = new GameWindow();
                 }
                 _oldTextureId = (IntPtr)textureId;
                 GL.BindTexture(TextureTarget.Texture2D, textureId);
