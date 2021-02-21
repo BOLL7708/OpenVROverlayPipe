@@ -21,7 +21,25 @@ namespace OpenVRNotificationPipe.Notification
         public Texture(ulong overlayHandle) {
             _overlayHandle = overlayHandle;
         }
-        
+
+        public static string CreateMD5(string input) // https://stackoverflow.com/a/24031467
+        {
+            // Use input string to calculate MD5 hash
+            using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
+            {
+                byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
+                byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+                // Convert the byte array to hexadecimal string
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < hashBytes.Length; i++)
+                {
+                    sb.Append(hashBytes[i].ToString("X2"));
+                }
+                return sb.ToString();
+            }
+        }
+
         public HmdVector2_t Load(string base64png)
         {
             if (_glWindow == null) _glWindow = new GameWindow(); // Init OpenGL
@@ -31,6 +49,7 @@ namespace OpenVRNotificationPipe.Notification
             {
                 // Loading image from incoming base64 encoded string
                 var imageBytes = Convert.FromBase64String(base64png);
+                Debug.WriteLine($"Image hash: {CreateMD5(base64png)}");
                 var bmp = new Bitmap(new MemoryStream(imageBytes));
                 bmp.RotateFlip(RotateFlipType.RotateNoneFlipY); // Flip it for OpenGL
                 
@@ -43,17 +62,15 @@ namespace OpenVRNotificationPipe.Notification
 
                 // Create OpenGL texture
                 var textureId = GL.GenTexture();
-                GL.BindTexture(TextureTarget.Texture2D, textureId);
-                GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, bmp.Width, bmp.Height);
-                GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, bmp.Width, bmp.Height, PixelFormat.Bgra, PixelType.UnsignedByte, bmpBits.Scan0);
-                if(_oldTextureId != IntPtr.Zero)
+                if (_oldTextureId != IntPtr.Zero)
                 {
-                    // Ruu from LIV pointed out this bug, that we need to generate a new texture (above)
-                    // before deleting the old to get OpenVR to read new meta data, thus size.
-                    // Without doing it this way, if a larger size texture comes in later, it clips.
+                    OpenVR.Overlay.ClearOverlayTexture(_overlayHandle);
                     GL.DeleteTexture((int) _oldTextureId);
                 }
                 _oldTextureId = (IntPtr)textureId;
+                GL.BindTexture(TextureTarget.Texture2D, textureId);
+                GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, bmp.Width, bmp.Height);
+                GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, bmp.Width, bmp.Height, PixelFormat.Bgra, PixelType.UnsignedByte, bmpBits.Scan0);
                 bmp.UnlockBits(bmpBits);
 
                 // Create SteamVR texture
