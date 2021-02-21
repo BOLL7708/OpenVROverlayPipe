@@ -1,15 +1,13 @@
 ﻿using BOLL7708;
 using Newtonsoft.Json;
-using OpenTK;
-using OpenTK.Graphics.OpenGL;
 using OpenVRNotificationPipe.Notification;
 using SuperSocket.WebSocket;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Text;
 using System.Threading;
 using Valve.VR;
 using static BOLL7708.EasyOpenVRSingleton;
@@ -100,7 +98,7 @@ namespace OpenVRNotificationPipe
 
             // Image
             Debug.WriteLine($"Overlay handle {overlayHandle} for '{payload.title}'");
-            Debug.WriteLine($"Image: {payload.image}");
+            Debug.WriteLine($"Image Hash: {CreateMD5(payload.image)}");
             NotificationBitmap_t bitmap = new NotificationBitmap_t();
             try
             {
@@ -108,6 +106,7 @@ namespace OpenVRNotificationPipe
                 var bmp = new Bitmap(new MemoryStream(imageBytes));
                 Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
                 bitmap = BitmapUtils.NotificationBitmapFromBitmap(bmp, true);
+                bmp.Dispose();
             }
             catch (Exception e)
             {
@@ -141,7 +140,7 @@ namespace OpenVRNotificationPipe
                     Debug.WriteLine(message);
                     _server.SendMessage(session, message);
                 }
-                Debug.WriteLine($"Payload was received: {payloadJson}");
+                // Debug.WriteLine($"Payload was received: {payloadJson}");
 
                 if (payload.custom) PostImageNotification(payload);
                 else PostNotification(session, payload);
@@ -163,6 +162,24 @@ namespace OpenVRNotificationPipe
             _server.ResetActions();
             _shouldShutDown = true;
             _server.Stop();
+        }
+
+        public static string CreateMD5(string input) // https://stackoverflow.com/a/24031467
+        {
+            // Use input string to calculate MD5 hash
+            using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
+            {
+                byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
+                byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+                // Convert the byte array to hexadecimal string
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < hashBytes.Length; i++)
+                {
+                    sb.Append(hashBytes[i].ToString("X2"));
+                }
+                return sb.ToString();
+            }
         }
     }
 }

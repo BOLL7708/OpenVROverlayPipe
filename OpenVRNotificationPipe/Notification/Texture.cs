@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Valve.VR;
 using OpenTK.Graphics.OpenGL;
 using System.Diagnostics;
@@ -22,24 +18,6 @@ namespace OpenVRNotificationPipe.Notification
             _overlayHandle = overlayHandle;
         }
 
-        public static string CreateMD5(string input) // https://stackoverflow.com/a/24031467
-        {
-            // Use input string to calculate MD5 hash
-            using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
-            {
-                byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
-                byte[] hashBytes = md5.ComputeHash(inputBytes);
-
-                // Convert the byte array to hexadecimal string
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < hashBytes.Length; i++)
-                {
-                    sb.Append(hashBytes[i].ToString("X2"));
-                }
-                return sb.ToString();
-            }
-        }
-
         public HmdVector2_t Load(string base64png)
         {
             if (_glWindow == null) _glWindow = new GameWindow(); // Init OpenGL
@@ -48,9 +26,12 @@ namespace OpenVRNotificationPipe.Notification
             try
             {
                 // Loading image from incoming base64 encoded string
+                Debug.WriteLine($"Image hash: {MainController.CreateMD5(base64png)}");
                 var imageBytes = Convert.FromBase64String(base64png);
-                Debug.WriteLine($"Image hash: {CreateMD5(base64png)}");
                 var bmp = new Bitmap(new MemoryStream(imageBytes));
+                Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
+                size.v0 = bmp.Width;
+                size.v1 = bmp.Height;
                 bmp.RotateFlip(RotateFlipType.RotateNoneFlipY); // Flip it for OpenGL
                 
                 // Lock bits so we can supply them to the texture
@@ -75,6 +56,7 @@ namespace OpenVRNotificationPipe.Notification
                 GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, bmp.Width, bmp.Height);
                 GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, bmp.Width, bmp.Height, PixelFormat.Bgra, PixelType.UnsignedByte, bmpBits.Scan0);
                 bmp.UnlockBits(bmpBits);
+                bmp.Dispose();
 
                 // Create SteamVR texture
                 Texture_t texture = new Texture_t
@@ -85,17 +67,16 @@ namespace OpenVRNotificationPipe.Notification
                 };
 
                 // Assign texture
-                var error = OpenVR.Overlay.SetOverlayTexture(_overlayHandle, ref texture); // Overlay handle exist and works when setting the overlay directly from file instead of with texture.
-                if (error != EVROverlayError.None) Debug.WriteLine($"SetOverlayTexture error: {Enum.GetName(error.GetType(), error)}");
-                else
+                var error = OpenVR.Overlay.SetOverlayTexture(_overlayHandle, ref texture);
+                if (error != EVROverlayError.None)
                 {
-                    size.v0 = bmp.Width;
-                    size.v1 = bmp.Height;
+                    size = new HmdVector2_t();
+                    Debug.WriteLine($"SetOverlayTexture error: {Enum.GetName(error.GetType(), error)}");
                 }
             }
             catch (Exception e)
             {
-                Debug.WriteLine($"Exception when loading texture: {e.Message}");
+                Debug.WriteLine($"Texture Exception: {e.ToString()}");
             }
             return size;
         }
