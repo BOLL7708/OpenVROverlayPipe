@@ -84,8 +84,6 @@ namespace OpenVRNotificationPipe.Notification
                     _textureId = (IntPtr) GL.GenTexture();
                     GL.BindTexture(TextureTarget.Texture2D, (int)_textureId);
                     GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, bmpMax.Width, bmpMax.Height);
-                    // OpenVR.Overlay.ClearOverlayTexture(_overlayHandle);
-                    // GL.DeleteTexture((int) _textureId); // Check if we really need to do this now.
                 }
                 GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, bmpMax.Width, bmpMax.Height, PixelFormat.Bgra, PixelType.UnsignedByte, bmpBits.Scan0);
                 bmpMax.UnlockBits(bmpBits);
@@ -108,11 +106,7 @@ namespace OpenVRNotificationPipe.Notification
                 if (side < _textureMaxSide) {
                     bounds.uMin = bounds.vMin = (1f - (side / _textureMaxSide)) / 2;
                     bounds.uMax = bounds.vMax = 1f - bounds.uMin;
-                } 
-                else
-                {
-                    bounds.uMax = bounds.vMax = 1;
-                }
+                } else bounds.uMax = bounds.vMax = 1;
                 Debug.WriteLine($"Bounds: ({bounds.uMin}, {bounds.vMin}) => ({bounds.uMax}, {bounds.vMax})");
                 OpenVR.Overlay.SetOverlayTextureBounds(_overlayHandle, ref bounds);
 
