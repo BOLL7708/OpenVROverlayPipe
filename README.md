@@ -24,7 +24,7 @@ To send things to this notification you need a WebSockets client, you can easily
         function submit() {
             let title = document.querySelector('#title').value;
             let message = document.querySelector('#message').value;
-			_socket.send(JSON.stringify({title: title, message:message}));
+	    _socket.send(JSON.stringify({title: title, message:message}));
         }
     </script>
 </html>
