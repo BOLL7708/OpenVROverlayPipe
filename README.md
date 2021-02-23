@@ -36,7 +36,7 @@ These are the JSON payloads you send to the server via the active WebSockets con
 **Note**: The values seen are the default values when not provided. Keep in mind that `custom` needs to be set to `true` for the custom notification to be used.
 ### Standard Notification
 The minimum to provide for this is `title` and `message`, those are mandatory to be able to show a notification at all.
-```json
+```js
 {
     "custom":false, // True to do a custom notification
     "title":"", // The title above the notification
@@ -46,7 +46,7 @@ The minimum to provide for this is `title` and `message`, those are mandatory to
 ```
 ### Custom Notification
 The way the transitions work, it will animate values that differs from when it is static, so setting `opacity` to `0` means it will transition from 0% to 100% when appearing, and from 100% to 0% when disappearing.
-```json
+```js
 {
     "custom":false, // Needs to be set to true
     "image": "", // The base64 string of a .png image
@@ -64,7 +64,7 @@ The way the transitions work, it will animate values that differs from when it i
         "scale": 1, // Scale where 1 = 100%
         "opacity": 0, // Opacity where 1 = 100%
         "vertical": 0, // Vertical translation in meters
-        "distance": 0, // Distanece from headset in meters
+        "distance": 0, // Distance from headset in meters
         "horizontal": 0, // Horizontal translation in meters
         "spin": 0, // Rotation in degrees
         "interpolation": 0, // Interpolation, see below
