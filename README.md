@@ -9,6 +9,10 @@ Through WebSockets you can display notifications inside SteamVR. Either with the
 ## How do I use it?
 Run SteamVR, then run this application, if both the OpenVR and Server status are green you are good to go. To see an example of what it does, and how to do those things, click the `example` link to open a self contained webpage that connects to this application and lets you try it out.
 
+## Compatible applications
+If you made something that is publicly available that use this pipe application, it can be listed here.
+* [Twitch Logger](https://github.com/jeppevinkel/twitch-logger): Logs Twitch chat to disk and can pipe them to Discord and VR.
+
 ## Minimal WebSockets Client
 To send things to this notification you need a WebSockets client, you can easily do this directly in a browser, below is example code you can use to quickly send a standard notification. If you have set a different code you need to update that in the server URI in this example.
 ```html
@@ -36,7 +40,7 @@ These are the JSON payloads you send to the server via the active WebSockets con
 **Note**: The values seen are the default values when not provided. Keep in mind that `custom` needs to be set to `true` for the custom notification to be used.
 ### Standard Notification
 The minimum to provide for this is `title` and `message`, those are mandatory to be able to show a notification at all.
-```js
+```jsonc
 {
     "custom":false, // True to do a custom notification
     "title":"", // The title above the notification
@@ -46,35 +50,43 @@ The minimum to provide for this is `title` and `message`, those are mandatory to
 ```
 ### Custom Notification
 The way the transitions work, it will animate values that differs from when it is static, so setting `opacity` to `0` means it will transition from 0% to 100% when appearing, and from 100% to 0% when disappearing.
-```js
+```jsonc
 {
-    "custom":false, // Needs to be set to true
-    "image": "", // The base64 string of a .png image
+    "custom":false, // Needs to be set to true, false is the default though
+    "image": "", // A base64 string with *.png image data, only the data if data URL
     "properties":{
-        "headset":false, // Stay aligned to the headset
-        "horizontal":true, // Align to the horizon
-        "hz":-1, // Animation Hz, -1 means use headset Hz
-        "duration": 1000, // Time to stay up in ms
-        "width": 1, // Width of overlay in meters
-        "distance": 1, // Distance from headset in meters
-        "pitch": 0, // Rotate down (-) or up (+) degrees
-        "yaw": 0, // Rotate left (-) or right (+) degrees
+        "headset":false, // Stay fixed to the headset
+        "horizontal":true, // Initial alignment to the horizon, else headset
+        "hz":-1, // Animation frame rate, -1 uses the headset refresh rate instead
+        "duration": 1000, // The time the notification stays up, in milliseconds
+        "width": 1, // The physical width of the overlay, in meters
+        "distance": 1, // Distance from the headset to the notification, in meters
+        "pitch": 0, // Vertical rotation, down (-) or up (+), in degrees
+        "yaw": 0 // Horizontal rotation, left (-) or right (+), in degrees
     },
     "transition":{
-        "scale": 1, // Scale where 1 = 100%
-        "opacity": 0, // Opacity where 1 = 100%
-        "vertical": 0, // Vertical translation in meters
-        "distance": 0, // Distance from headset in meters
-        "horizontal": 0, // Horizontal translation in meters
-        "spin": 0, // Rotation in degrees
-        "interpolation": 0, // Interpolation, see below
-        "duration": 100 // Length of transition in ms
+        "scale": 1, // Normalized scale, 1 = 100%
+        "opacity": 0, // Normalized opacity where 1 = 100%
+        "vertical": 0, // Vertical translation, in meters
+        "distance": 0, // Distance from headset, in meters
+        "horizontal": 0, // Horizontal translation, in meters
+        "spin": 0, // Roll rotation, left(-) or right (+) in degrees
+        "interpolation": 0, // Interpolation mode, see below
+        "duration": 100 // Length of animation, in milliseconds
     },
     "transition2":{
-        // This is optional and will be used if provided.
-        // It should contain the same fields as "transition"
-        // but will be used for the transition out which
-        // otherwise defaults to the same as in.
+        /* 
+	 * This is optional and will be used if provided.
+         * It should contain the same fields as "transition"
+         * but will be used for the transition out which
+         * otherwise defaults to the same as in but reversed.
+         */
     }
 }
 ```
+#### Interpolation modes
+0. Linear (default)
+1. Power of 2
+2. Power of 3
+3. Power of 4
+4. Power of 5
