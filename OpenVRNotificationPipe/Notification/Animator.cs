@@ -61,7 +61,7 @@ namespace OpenVRNotificationPipe.Notification
             var stayLimit = 0;
             var easeOutLimit = 0;
 
-            Func<float, float> interpolator = Interpolator.GetFunc(0);
+            Func<float, float> tween = Tween.GetFunc(0);
 
             while (true)
             {
@@ -121,7 +121,7 @@ namespace OpenVRNotificationPipe.Notification
                     if (animationCount == 0) 
                     { // Init EaseIn
                         transition = _payload.transition;
-                        interpolator = Interpolator.GetFunc(transition.interpolation);
+                        tween = Tween.GetFunc(transition.interpolation);
                     }
 
                     if (animationCount == stayLimit)
@@ -129,19 +129,23 @@ namespace OpenVRNotificationPipe.Notification
                         if (_payload.transition2 != null)
                         {
                             transition = _payload.transition2;
-                            interpolator = Interpolator.GetFunc(transition.interpolation);
+                            tween = Tween.GetFunc(transition.interpolation);
                         }
                     }
 
                     // Setup and normalized progression ratio
-                    var ratioReversed = 0f;
-                    if(stage == AnimationStage.EasingIn) {
-                        ratioReversed = 1f - ((float)animationCount / easeInCount);
-                    } else if(stage == AnimationStage.EasingOut) {
-                        ratioReversed = ((float)animationCount - stayLimit + 1) / easeOutCount; // +1 because we moved where we increment animationCount
+                    var ratio = 1f;
+                    if (stage == AnimationStage.EasingIn)
+                    {
+                        ratio = ((float)animationCount / easeInCount);
                     }
-                    ratioReversed = interpolator(ratioReversed);
-                    var ratio = 1 - ratioReversed;
+                    else if (stage == AnimationStage.EasingOut)
+                    {
+                        ratio = 1f - ((float)animationCount - stayLimit + 1) / easeOutCount; // +1 because we moved where we increment animationCount
+                    }
+                    ratio = tween(ratio);
+                    var ratioReversed = 1f - ratio;
+
 
                     // Transform
                     if (stage != AnimationStage.Staying || animationCount == easeInLimit) { // Only performs animation on first frame of Staying stage.

@@ -52,7 +52,7 @@
 			<div class="cell">
 				<p id="status">N/A</p>
 				<h2>Notification Image</h2>
-				<p>Canvas size: <input type="number" id="canvasWidth" value="128"> x <input type="number" id="canvasHeight" value="128"> <button onclick="updateCanvas();">Update</button></p>
+				<p>Canvas size: <input type="number" id="canvasWidth" value="256"> x <input type="number" id="canvasHeight" value="256"> <button onclick="updateCanvas();">Update</button></p>
 				<p><canvas id="mycanvas"></canvas></p>
 				<p><input type="file" id="fileUpload" accept="image/*"/></p>
 			</div>
@@ -131,8 +131,8 @@
 		var _canvasHeight = document.querySelector('#canvasHeight');
 		var _canvas = document.querySelector('#mycanvas');
 		var _ctx = _canvas.getContext('2d');
-		_ctx.canvas.width = 128;
-		_ctx.canvas.height = 128;
+		_ctx.canvas.width = 256;
+		_ctx.canvas.height = 256;
 		var _upload = document.querySelector('#fileUpload');
 		_upload.addEventListener('change', readImage);
 		var _shortcuts = document.querySelector('#shortcuts');
