@@ -93,6 +93,7 @@
 		let _propertyFields = {
 			headset: ['checkbox', null],
 			horizontal: ['checkbox', null],
+			channel: ['number', 0],
 			hz: ['number', -1],
 			duration: ['number', 1000],
 			width: ['number', 1],
@@ -107,7 +108,7 @@
 			distance: 0,
 			horizontal: 0,
 			spin: 0,
-			interpolation: 0,
+			tween: 0,
 			duration: 100
 		}
 
@@ -391,6 +392,7 @@
 				properties: {
 					headset: false,
 					horizontal: true,
+					channel: 0,
 					hz: -1,
 					duration: 2000,
 					width: 1,
@@ -405,7 +407,7 @@
 					distance: 0,
 					horizontal: 0,
 					spin: 0,
-					interpolation: 2,
+					tween: 0,
 					duration: 200
 				},
 				transition2: {
@@ -415,7 +417,7 @@
 					distance: 0,
 					horizontal: 0,
 					spin: 0,
-					interpolation: 2,
+					tween: 0,
 					duration: 200
 				}
 			},
@@ -425,10 +427,11 @@
 				properties: {
 					headset: true,
 					horizontal: false,
+					channel: 1,
 					hz: -1,
 					duration: 1000,
 					width: 0.5,
-					distance: 1,
+					distance: 1.2,
 					pitch: -15,
 					yaw: -15
 				},
@@ -439,8 +442,8 @@
 					distance: 0,
 					horizontal: -0.25,
 					spin: 0,
-					interpolation: 2,
-					duration: 100
+					tween: 1,
+					duration: 200
 				},
 				transition2: {
 					scale: 1,
@@ -449,8 +452,8 @@
 					distance: 0,
 					horizontal: 0,
 					spin: 0,
-					interpolation: 2,
-					duration: 100
+					tween: 1,
+					duration: 200
 				}
 			},
 			{ // In your face
@@ -459,6 +462,7 @@
 				properties: {
 					headset: true,
 					horizontal: false,
+					channel: 2,
 					hz: -1,
 					duration: 1000,
 					width: 2,
@@ -473,8 +477,8 @@
 					distance: 0,
 					horizontal: 0,
 					spin: 0,
-					interpolation: 1,
-					duration: 100
+					tween: 7,
+					duration: 250
 				},
 				transition2: {
 					scale: 1,
@@ -483,7 +487,7 @@
 					distance: 0,
 					horizontal: 0,
 					spin: -10,
-					interpolation: 3,
+					tween: 3,
 					duration: 500
 				}
 			},
@@ -493,10 +497,11 @@
 				properties: {
 					headset: true,
 					horizontal: false,
+					channel: 3,
 					hz: -1,
 					duration: 2000,
 					width: 1,
-					distance: 2,
+					distance: 1.5,
 					pitch: 0,
 					yaw: 0
 				},
@@ -507,8 +512,8 @@
 					distance: 0.5,
 					horizontal: 0,
 					spin: 180,
-					interpolation: 3,
-					duration: 200
+					tween: 9,
+					duration: 750
 				},
 				transition2: {
 					scale: 1,
@@ -517,7 +522,7 @@
 					distance: 3,
 					horizontal: 0,
 					spin: 0,
-					interpolation: 2,
+					tween: 6,
 					duration: 200
 				}
 			},
@@ -527,10 +532,11 @@
 				properties: {
 					headset: false,
 					horizontal: true,
+					channel: 4,
 					hz: -1,
 					duration: 2000,
 					width: 1,
-					distance: 1,
+					distance: 1.3,
 					pitch: -36,
 					yaw: 0
 				},
@@ -541,7 +547,7 @@
 					distance: 0,
 					horizontal: 0,
 					spin: 0,
-					interpolation: 1,
+					tween: 2,
 					duration: 100
 				},
 				transition2: {
@@ -551,7 +557,7 @@
 					distance: 0,
 					horizontal: 0,
 					spin: 0,
-					interpolation: 1,
+					tween: 2,
 					duration: 100
 				}
 			},
@@ -561,10 +567,11 @@
 				properties: {
 					headset: false,
 					horizontal: false,
+					channel: 5,
 					hz: -1,
 					duration: 2000,
 					width: 1,
-					distance: 2,
+					distance: 1.8,
 					pitch: 0,
 					yaw: 0
 				},
@@ -575,8 +582,8 @@
 					distance: 2,
 					horizontal: -1,
 					spin: -45,
-					interpolation: 4,
-					duration: 200
+					tween: 8,
+					duration: 750
 				},
 				transition2: {
 					scale: 0.5,
@@ -585,8 +592,8 @@
 					distance: 2,
 					horizontal: 1,
 					spin: 45,
-					interpolation: 4,
-					duration: 200
+					tween: 2,
+					duration: 300
 				}
 			},
 			{
@@ -595,10 +602,11 @@
 				properties: {
 					headset: false,
 					horizontal: true,
+					channel: 6,
 					hz: -1,
 					duration: 3000,
 					width: 2,
-					distance: 2,
+					distance: 1.9,
 					pitch: 30,
 					yaw: 0
 				},
@@ -609,7 +617,7 @@
 					distance: 1,
 					horizontal: 0,
 					spin: 0,
-					interpolation: 2,
+					tween: 7,
 					duration: 500
 				},
 				transition2: {
@@ -619,7 +627,7 @@
 					distance: 1,
 					horizontal: 0,
 					spin: 0,
-					interpolation: 2,
+					tween: 5,
 					duration: 500
 				}
 			}

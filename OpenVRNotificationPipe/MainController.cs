@@ -21,9 +21,9 @@ namespace OpenVRNotificationPipe
         private SuperServer _server = new SuperServer();
         private ConcurrentDictionary<WebSocketSession, ulong> _overlayHandles = new ConcurrentDictionary<WebSocketSession, ulong>();
         private ConcurrentDictionary<WebSocketSession, byte[]> _images = new ConcurrentDictionary<WebSocketSession, byte[]>();
+        private ConcurrentDictionary<int, Overlay> _overlays = new ConcurrentDictionary<int, Overlay>();
         private Action<bool> _openvrStatusAction;
         private bool _shouldShutDown = false;
-        private Overlay _overlay;
 
         public MainController(Action<SuperServer.ServerStatus, int> serverStatus, Action<bool> openvrStatus)
         {
@@ -48,7 +48,6 @@ namespace OpenVRNotificationPipe
                         initComplete = true;
                         _vr.AddApplicationManifest("./app.vrmanifest", "boll7708.openvrnotificationpipe", true);
                         _openvrStatusAction.Invoke(true);
-                        _overlay = new Overlay("Notification Pipe Texture Overlay"); // TODO: Act on this failing?
                         RegisterEvents();
                     }
                     else
@@ -69,7 +68,7 @@ namespace OpenVRNotificationPipe
                 if (_shouldShutDown) {
                     _shouldShutDown = false;
                     initComplete = false;
-                    _overlay.Deinit();
+                    foreach(var overlay in _overlays.Values) overlay.Deinit();
                     _vr.AcknowledgeShutdown();
                     Thread.Sleep(500); // Allow things to deinit properly
                     _vr.Shutdown();
@@ -122,8 +121,15 @@ namespace OpenVRNotificationPipe
 
         private void PostImageNotification(Payload payload)
         {
-            Debug.WriteLine("Posting image texture notification!");
-            if(_overlay != null && _overlay.IsInitialized()) _overlay.EnqueueNotification(payload);
+            var channel = payload.properties.channel;
+            Debug.WriteLine($"Posting image texture notification to channel {channel}!");
+            Overlay overlay;
+            if(!_overlays.ContainsKey(channel))
+            {
+                overlay = new Overlay($"OpenVRNotificationPipe[{channel}]", channel);
+                if (overlay != null && overlay.IsInitialized()) _overlays.TryAdd(channel, overlay);
+            } else overlay = _overlays[channel];
+            if (overlay != null && overlay.IsInitialized()) overlay.EnqueueNotification(payload);
         }
 
         #endregion

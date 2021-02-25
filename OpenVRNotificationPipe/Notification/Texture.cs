@@ -10,7 +10,7 @@ namespace OpenVRNotificationPipe.Notification
 {
     class Texture
     {
-        private static GameWindow _glWindow; // So GL will work at all
+        private GameWindow _glWindow; // So GL will work at all
         private IntPtr _textureId = IntPtr.Zero;
         private ulong _overlayHandle = 0;
         private readonly int _textureMaxSide = 1024; // What seems like a good idea right now.

@@ -121,7 +121,7 @@ namespace OpenVRNotificationPipe.Notification
                     if (animationCount == 0) 
                     { // Init EaseIn
                         transition = _payload.transition;
-                        tween = Tween.GetFunc(transition.interpolation);
+                        tween = Tween.GetFunc(transition.tween);
                     }
 
                     if (animationCount == stayLimit)
@@ -129,7 +129,7 @@ namespace OpenVRNotificationPipe.Notification
                         if (_payload.transition2 != null)
                         {
                             transition = _payload.transition2;
-                            tween = Tween.GetFunc(transition.interpolation);
+                            tween = Tween.GetFunc(transition.tween);
                         }
                     }
 
