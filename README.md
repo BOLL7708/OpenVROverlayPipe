@@ -52,29 +52,30 @@ The minimum to provide for this is `title` and `message`, those are mandatory to
 The way the transitions work, it will animate values that differs from when it is static, so setting `opacity` to `0` means it will transition from 0% to 100% when appearing, and from 100% to 0% when disappearing.
 ```jsonc
 {
-    "custom":false, // Needs to be set to true, false is the default though
+    "custom": false, // Needs to be set to true, false is the default though
     "image": "", // A base64 string with *.png image data, only the data if data URL
-    "properties":{
-        "headset":false, // Stay fixed to the headset
-        "horizontal":true, // Initial alignment to the horizon, else headset
-        "hz":-1, // Animation frame rate, -1 uses the headset refresh rate instead
+    "properties": {
+        "headset": false, // Stay fixed to the headset
+        "horizontal": true, // Initial alignment to the horizon, else headset
+	"channel": 0, // Use different channels to show notifications simultaneously
+        "hz": -1, // Animation frame rate, -1 uses the headset refresh rate instead
         "duration": 1000, // The time the notification stays up, in milliseconds
         "width": 1, // The physical width of the overlay, in meters
         "distance": 1, // Distance from the headset to the notification, in meters
         "pitch": 0, // Vertical rotation, down (-) or up (+), in degrees
         "yaw": 0 // Horizontal rotation, left (-) or right (+), in degrees
     },
-    "transition":{
+    "transition": {
         "scale": 1, // Normalized scale, 1 = 100%
         "opacity": 0, // Normalized opacity where 1 = 100%
         "vertical": 0, // Vertical translation, in meters
         "distance": 0, // Distance from headset, in meters
         "horizontal": 0, // Horizontal translation, in meters
         "spin": 0, // Roll rotation, left(-) or right (+) in degrees
-        "tween": 0, // Tween mode, see below
+        "tween": 0, // Tween mode, see next section for a full list
         "duration": 100 // Length of animation, in milliseconds
     },
-    "transition2":{
+    "transition2": {
         /* 
 	     * This is optional and will be used if provided.
          * It should contain the same fields as "transition"
@@ -96,4 +97,4 @@ Most of these modes have been acquired from [Easings.net](https://easings.net/),
 6. Circle
 7. Back
 8. Elastic
-9. Bounc
+9. Bounce
