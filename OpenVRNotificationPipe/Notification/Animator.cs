@@ -150,14 +150,16 @@ namespace OpenVRNotificationPipe.Notification
                     // Transform
                     if (stage != AnimationStage.Staying || animationCount == easeInLimit) { // Only performs animation on first frame of Staying stage.
                         // Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
+                        var translate = new HmdVector3_t()
+                        {
+                            v0 = transition.horizontal * ratioReversed,
+                            v1 = transition.vertical * ratioReversed,
+                            v2 = -properties.distance - (transition.distance * ratioReversed)
+                        };
                         animationTransform = (properties.headset ? EasyOpenVRSingleton.Utils.GetEmptyTransform() : hmdTransform)
                             .RotateY(-properties.yaw)
                             .RotateX(properties.pitch)
-                            .Translate(new HmdVector3_t() {
-                                v0 = transition.horizontal * ratioReversed,
-                                v1 = transition.vertical * ratioReversed, 
-                                v2 = -properties.distance - (transition.distance * ratioReversed)
-                            })
+                            .Translate(translate)
                             .RotateZ(transition.spin * ratioReversed);
                         _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.headset ? 0 : uint.MaxValue);
                         _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));

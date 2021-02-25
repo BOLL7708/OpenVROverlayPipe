@@ -71,12 +71,12 @@ The way the transitions work, it will animate values that differs from when it i
         "distance": 0, // Distance from headset, in meters
         "horizontal": 0, // Horizontal translation, in meters
         "spin": 0, // Roll rotation, left(-) or right (+) in degrees
-        "interpolation": 0, // Interpolation mode, see below
+        "tween": 0, // Tween mode, see below
         "duration": 100 // Length of animation, in milliseconds
     },
     "transition2":{
         /* 
-	 * This is optional and will be used if provided.
+	     * This is optional and will be used if provided.
          * It should contain the same fields as "transition"
          * but will be used for the transition out which
          * otherwise defaults to the same as in but reversed.
@@ -84,9 +84,16 @@ The way the transitions work, it will animate values that differs from when it i
     }
 }
 ```
-#### Interpolation modes
+#### Tween modes
+Most of these modes have been acquired from [Easings.net](https://easings.net/), check that page out for what they do or just try them out.
+
 0. Linear (default)
-1. Power of 2
-2. Power of 3
-3. Power of 4
-4. Power of 5
+1. Sine
+2. Quadratic
+3. Cubic
+4. Quartic
+5. Quintic
+6. Circle
+7. Back
+8. Elastic
+9. Bounc
