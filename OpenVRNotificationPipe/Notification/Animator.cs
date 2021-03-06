@@ -42,7 +42,6 @@ namespace OpenVRNotificationPipe.Notification
             var notificationTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
             var animationTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
             var width = 1f;
-            var height = 1f;
             Payload.Properties properties = null;
             Payload.Transition transition = null;
 
@@ -51,6 +50,7 @@ namespace OpenVRNotificationPipe.Notification
             var hz = 60; // This default should never really be used as it reads Hz from headset.
             var msPerFrame = 1000 / hz;
             long timeStarted;
+            var textureSwitchCount = -1;
 
             var animationCount = 0;
             var easeInCount = 0;
@@ -82,11 +82,17 @@ namespace OpenVRNotificationPipe.Notification
                     hz = properties.hz > 0 ? properties.hz : (int) Math.Round(hmdHz);
                     msPerFrame = 1000 / hz;
 
-                    // Size of overlay
-                    var size = _texture.Load(_payload.image);
-                    width = properties.width;
-                    height = width / size.v0 * size.v1;
-                    Debug.WriteLine($"Texture width: {size.v0}, height: {size.v1}");
+                    // Load texture of overlay
+                    if (properties.images.Length > 0)
+                    {
+                        _texture.Load(properties.images);
+                        textureSwitchCount = 120;
+                    }
+                    else
+                    {
+                        _texture.Load(_payload.image);
+                        textureSwitchCount = -1;
+                    }
 
                     // Animation limits
                     easeInCount = _payload.transition.duration / msPerFrame;
@@ -111,6 +117,9 @@ namespace OpenVRNotificationPipe.Notification
                 
                 if(stage != AnimationStage.Idle) // Animate
                 {
+                    // Frame animation
+                    if (textureSwitchCount > 0 && animationCount % textureSwitchCount == 0) _texture.SwitchToNext();
+
                     // Animation stage
                     if (animationCount < easeInLimit) stage = AnimationStage.EasingIn;
                     else if (animationCount >= stayLimit) stage = AnimationStage.EasingOut;

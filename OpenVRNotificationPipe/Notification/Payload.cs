@@ -22,6 +22,7 @@ namespace OpenVRNotificationPipe
         public Transition transition2 = null;
 
         public class Properties {
+            public string[] images = new string[0];
             public bool headset = false;
             public bool horizontal = true;
             public int channel = 0;
