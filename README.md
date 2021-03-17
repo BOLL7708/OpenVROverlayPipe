@@ -2,19 +2,19 @@
 WebSocket server that lets you submit a payload that results in a SteamVR or custom notification, download the latest release [here](https://github.com/BOLL7708/OpenVRNotificationPipe/releases).
 
 ## What does it do?
-Through WebSockets you can display notifications inside SteamVR. Either with the build in SteamVR notifications or custom notifications in the form of submitted images including many options for transitions.
+Through WebSockets you can display notifications inside SteamVR, either using the built in SteamVR notifications or custom image-based notifications with many options for transitions and placement.
 
 [![Short video demonstration](https://img.youtube.com/vi/gSqyOYsiymw/0.jpg)](https://www.youtube.com/watch?v=gSqyOYsiymw)
 
 ## How do I use it?
-Run SteamVR, then run this application, if both the OpenVR and Server status are green you are good to go. To see an example of what it does, and how to do those things, click the `example` link to open a self contained webpage that connects to this application and lets you try it out.
+Run SteamVR, then run this application, if both the OpenVR and Server status are green you are good to go. To see an example of what it does, and how to do those things, click the `example` link in the interface to open a self contained webpage that connects to this application and lets you try it out.
 
 ## Compatible applications
 If you made something that is publicly available that use this pipe application, it can be listed here.
 * [Twitch Logger](https://github.com/jeppevinkel/twitch-logger): Logs Twitch chat to disk and can pipe them to Discord and VR.
 
 ## Minimal WebSockets Client
-To send things to this notification you need a WebSockets client, you can easily do this directly in a browser, below is example code you can use to quickly send a standard notification. If you have set a different code you need to update that in the server URI in this example.
+To send things to this application you need a WebSockets client, you can easily do this directly in a browser by opening a static page, below is example code you can use to quickly send a standard notification. If you have set a different server port you need to update that in the server URI in this example.
 ```html
 <html>
     <body>
@@ -37,7 +37,7 @@ To send things to this notification you need a WebSockets client, you can easily
 ## Payload Specification
 These are the JSON payloads you send to the server via the active WebSockets connection.
 
-**Note**: The values seen are the default values when not provided. Keep in mind that `custom` needs to be set to `true` for the custom notification to be used.
+**Note**: The values seen are the default values when nothing is provided. Keep in mind that `custom` needs to be set to `true` for the custom notification to be used.
 ### Standard Notification
 The minimum to provide for this is `title` and `message`, those are mandatory to be able to show a notification at all.
 ```jsonc
@@ -77,7 +77,7 @@ The way the transitions work, it will animate values that differs from when it i
     },
     "transition2": {
         /* 
-	     * This is optional and will be used if provided.
+         * This is optional and will be used if provided.
          * It should contain the same fields as "transition"
          * but will be used for the transition out which
          * otherwise defaults to the same as in but reversed.
@@ -88,13 +88,13 @@ The way the transitions work, it will animate values that differs from when it i
 #### Tween modes
 Most of these modes have been acquired from [Easings.net](https://easings.net/), check that page out for what they do or just try them out.
 
-0. Linear (default)
-1. Sine
-2. Quadratic
-3. Cubic
-4. Quartic
-5. Quintic
-6. Circle
-7. Back
-8. Elastic
-9. Bounce
+0. Linear (Default unmodified, hard stop)
+1. Sine (Based on the sine curve, soft stop)
+2. Quadratic (^2, soft stop)
+3. Cubic (^3, soft stop)
+4. Quartic (^4, soft stop)
+5. Quintic (^5, soft stop)
+6. Circle (Based on a circle, soft stop)
+7. Back (Overshoots but comes back, soft stop)
+8. Elastic (Jiggling, soft stop)
+9. Bounce (Multiple bounces, hard stop)
