@@ -69,8 +69,8 @@ The way the transitions work, it will animate values that differs from when it i
         "scale": 1, // Normalized scale, 1 = 100%
         "opacity": 0, // Normalized opacity where 1 = 100%
         "vertical": 0, // Vertical translation, in meters
-        "distance": 0, // Distance from headset, in meters
         "horizontal": 0, // Horizontal translation, in meters
+        "distance": 0, // Distance from headset, in meters
         "spin": 0, // Roll rotation, left(-) or right (+) in degrees
         "tween": 0, // Tween mode, see next section for a full list
         "duration": 100 // Length of animation, in milliseconds
