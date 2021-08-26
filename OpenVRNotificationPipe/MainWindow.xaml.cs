@@ -123,8 +123,10 @@ namespace OpenVRNotificationPipe
         #region interface
         private void Button_Edit_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new InputDialog(_settings.Port, "Port:");
-            dlg.Owner = this;
+            var dlg = new InputDialog(_settings.Port, "Port:")
+            {
+                Owner = this
+            };
             dlg.ShowDialog();
             var result = dlg.DialogResult;
             if(result == true)
@@ -151,19 +153,19 @@ namespace OpenVRNotificationPipe
         #endregion
 
 
-        private void checkBox_MinimizeOnLaunch_Checked(object sender, RoutedEventArgs e)
+        private void CheckBox_MinimizeOnLaunch_Checked(object sender, RoutedEventArgs e)
         {
             _settings.LaunchMinimized = CheckboxValue(e);
             _settings.Save();
         }
 
-        private void checkBox_MinimizeToTray_Checked(object sender, RoutedEventArgs e)
+        private void CheckBox_MinimizeToTray_Checked(object sender, RoutedEventArgs e)
         {
             _settings.Tray = CheckboxValue(e);
             _settings.Save();
         }
 
-        private void checkBox_ExitWithSteamVR_Checked(object sender, RoutedEventArgs e)
+        private void CheckBox_ExitWithSteamVR_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ExitWithSteam = CheckboxValue(e);
             _settings.Save();

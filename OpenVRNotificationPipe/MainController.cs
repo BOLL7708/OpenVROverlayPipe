@@ -1,15 +1,13 @@
 ﻿using BOLL7708;
 using Newtonsoft.Json;
-using OpenTK;
-using OpenTK.Graphics.OpenGL;
 using OpenVRNotificationPipe.Notification;
 using SuperSocket.WebSocket;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Text;
 using System.Threading;
 using Valve.VR;
 using static BOLL7708.EasyOpenVRSingleton;
@@ -23,9 +21,9 @@ namespace OpenVRNotificationPipe
         private SuperServer _server = new SuperServer();
         private ConcurrentDictionary<WebSocketSession, ulong> _overlayHandles = new ConcurrentDictionary<WebSocketSession, ulong>();
         private ConcurrentDictionary<WebSocketSession, byte[]> _images = new ConcurrentDictionary<WebSocketSession, byte[]>();
+        private ConcurrentDictionary<int, Overlay> _overlays = new ConcurrentDictionary<int, Overlay>();
         private Action<bool> _openvrStatusAction;
         private bool _shouldShutDown = false;
-        private Overlay _overlay;
 
         public MainController(Action<SuperServer.ServerStatus, int> serverStatus, Action<bool> openvrStatus)
         {
@@ -50,12 +48,11 @@ namespace OpenVRNotificationPipe
                         initComplete = true;
                         _vr.AddApplicationManifest("./app.vrmanifest", "boll7708.openvrnotificationpipe", true);
                         _openvrStatusAction.Invoke(true);
-                        _overlay = new Overlay("Notification Pipe Texture Overlay"); // TODO: Act on this failing?
+                        RegisterEvents();
                     }
                     else
-                    { 
-                        var newEvents = new List<VREvent_t>(_vr.GetNewEvents());
-                        CheckEvents(newEvents.ToArray());
+                    {
+                        _vr.UpdateEvents(false);
                     }
                     Thread.Sleep(250);
                 }
@@ -71,7 +68,7 @@ namespace OpenVRNotificationPipe
                 if (_shouldShutDown) {
                     _shouldShutDown = false;
                     initComplete = false;
-                    _overlay.Deinit();
+                    foreach(var overlay in _overlays.Values) overlay.Deinit();
                     _vr.AcknowledgeShutdown();
                     Thread.Sleep(500); // Allow things to deinit properly
                     _vr.Shutdown();
@@ -80,19 +77,11 @@ namespace OpenVRNotificationPipe
             }            
         }
 
-        private bool CheckEvents(VREvent_t[] events)
-        {
-            foreach (var e in events)
-            {
-                switch ((EVREventType)e.eventType)
-                {
-                    case EVREventType.VREvent_Quit:
-                        _openVRConnected = false;
-                        _shouldShutDown = true;
-                        return true;
-                }
-            }
-            return false;
+        private void RegisterEvents() {
+            _vr.RegisterEvent(EVREventType.VREvent_Quit, (data) => {
+                _openVRConnected = false;
+                _shouldShutDown = true;
+            });
         }
 
         private void PostNotification(WebSocketSession session, Payload payload)
@@ -108,7 +97,7 @@ namespace OpenVRNotificationPipe
 
             // Image
             Debug.WriteLine($"Overlay handle {overlayHandle} for '{payload.title}'");
-            Debug.WriteLine($"Image: {payload.image}");
+            Debug.WriteLine($"Image Hash: {CreateMD5(payload.image)}");
             NotificationBitmap_t bitmap = new NotificationBitmap_t();
             try
             {
@@ -116,6 +105,7 @@ namespace OpenVRNotificationPipe
                 var bmp = new Bitmap(new MemoryStream(imageBytes));
                 Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
                 bitmap = BitmapUtils.NotificationBitmapFromBitmap(bmp, true);
+                bmp.Dispose();
             }
             catch (Exception e)
             {
@@ -131,8 +121,15 @@ namespace OpenVRNotificationPipe
 
         private void PostImageNotification(Payload payload)
         {
-            Debug.WriteLine("Posting image texture notification!");
-            if(_overlay != null && _overlay.IsInitialized()) _overlay.EnqueueNotification(payload);
+            var channel = payload.properties.channel;
+            Debug.WriteLine($"Posting image texture notification to channel {channel}!");
+            Overlay overlay;
+            if(!_overlays.ContainsKey(channel))
+            {
+                overlay = new Overlay($"OpenVRNotificationPipe[{channel}]", channel);
+                if (overlay != null && overlay.IsInitialized()) _overlays.TryAdd(channel, overlay);
+            } else overlay = _overlays[channel];
+            if (overlay != null && overlay.IsInitialized()) overlay.EnqueueNotification(payload);
         }
 
         #endregion
@@ -149,7 +146,7 @@ namespace OpenVRNotificationPipe
                     Debug.WriteLine(message);
                     _server.SendMessage(session, message);
                 }
-                Debug.WriteLine($"Payload was received: {payloadJson}");
+                // Debug.WriteLine($"Payload was received: {payloadJson}");
 
                 if (payload.custom) PostImageNotification(payload);
                 else PostNotification(session, payload);
@@ -171,6 +168,24 @@ namespace OpenVRNotificationPipe
             _server.ResetActions();
             _shouldShutDown = true;
             _server.Stop();
+        }
+
+        public static string CreateMD5(string input) // https://stackoverflow.com/a/24031467
+        {
+            // Use input string to calculate MD5 hash
+            using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
+            {
+                byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
+                byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+                // Convert the byte array to hexadecimal string
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < hashBytes.Length; i++)
+                {
+                    sb.Append(hashBytes[i].ToString("X2"));
+                }
+                return sb.ToString();
+            }
         }
     }
 }

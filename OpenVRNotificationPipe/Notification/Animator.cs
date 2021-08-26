@@ -1,23 +1,18 @@
 ﻿using BOLL7708;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Valve.VR;
 
 namespace OpenVRNotificationPipe.Notification
 {
     class Animator
     {
-        private Texture _texture;
-        private ulong _overlayHandle = 0;
+        private readonly Texture _texture;
+        private readonly ulong _overlayHandle = 0;
+        private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private Action _requestForNewPayload = null;
         private volatile Payload _payload;
-        private volatile int _hz = 60;
-        private EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private volatile bool _shouldShutdown = false;
 
         public Animator(ulong overlayHandle, Action requestForNewAnimation)
@@ -49,12 +44,13 @@ namespace OpenVRNotificationPipe.Notification
             var width = 1f;
             var height = 1f;
             Payload.Properties properties = null;
+            Payload.Transition transition = null;
 
             // Animation
             var stage = AnimationStage.Idle;
-            var hz = _hz; // Default used if there is none in payload
+            var hz = 60; // This default should never really be used as it reads Hz from headset.
             var msPerFrame = 1000 / hz;
-            var timeStarted = 0l;
+            long timeStarted;
 
             var animationCount = 0;
             var easeInCount = 0;
@@ -64,6 +60,8 @@ namespace OpenVRNotificationPipe.Notification
             var easeInLimit = 0;
             var stayLimit = 0;
             var easeOutLimit = 0;
+
+            Func<float, float> tween = Tween.GetFunc(0);
 
             while (true)
             {
@@ -75,17 +73,20 @@ namespace OpenVRNotificationPipe.Notification
                     _requestForNewPayload();
                     Thread.Sleep(100);
                 }
-                else if (stage == AnimationStage.Idle) // Initialize
+                else if (stage == AnimationStage.Idle)
                 {
-                    properties = _payload.properties;
+                    // Initialize things that stay the same during the whole animation
                     stage = AnimationStage.EasingIn;
-                    hz = properties.hz > 0 ? properties.hz : _hz; // Update in case it has changed.
+                    properties = _payload.properties;
+                    var hmdHz = _vr.GetFloatTrackedDeviceProperty(0, ETrackedDeviceProperty.Prop_DisplayFrequency_Float);
+                    hz = properties.hz > 0 ? properties.hz : (int) Math.Round(hmdHz);
                     msPerFrame = 1000 / hz;
 
                     // Size of overlay
                     var size = _texture.Load(_payload.image);
                     width = properties.width;
                     height = width / size.v0 * size.v1;
+                    Debug.WriteLine($"Texture width: {size.v0}, height: {size.v1}");
 
                     // Animation limits
                     easeInCount = _payload.transition.duration / msPerFrame;
@@ -98,6 +99,14 @@ namespace OpenVRNotificationPipe.Notification
 
                     // Pose
                     hmdTransform = _vr.GetDeviceToAbsoluteTrackingPose()[0].mDeviceToAbsoluteTracking;
+
+                    if(properties.horizontal && !properties.headset)
+                    {
+                        // Remove roll so it stays horizontal
+                        HmdVector3_t hmdEuler = hmdTransform.EulerAngles();
+                        hmdEuler.v2 = 0;
+                        hmdTransform = hmdTransform.FromEuler(hmdEuler);
+                    }
                 } 
                 
                 if(stage != AnimationStage.Idle) // Animate
@@ -107,30 +116,50 @@ namespace OpenVRNotificationPipe.Notification
                     else if (animationCount >= stayLimit) stage = AnimationStage.EasingOut;
                     else stage = AnimationStage.Staying;
 
-                    // Setup and normalized progression ratio
-                    var transition = _payload.transition;
-                    var ratioReversed = 0f;
-                    if(stage == AnimationStage.EasingIn) {
-                        ratioReversed = 1f - ((float)animationCount / easeInCount);
-                    } else if(stage == AnimationStage.EasingOut) {
-                        if (_payload.transition2 != null) transition = _payload.transition2;
-                        ratioReversed = ((float)animationCount - stayLimit + 1) / easeOutCount; // +1 because we moved where we increment animationCount
+                    // Secondary inits that happen at the start of specific stages
+
+                    if (animationCount == 0) 
+                    { // Init EaseIn
+                        transition = _payload.transition;
+                        tween = Tween.GetFunc(transition.tween);
                     }
-                    // TODO: Add support for more types of interpolation here...
-                    if (transition.interpolation > 1) ratioReversed = (float)Math.Pow(ratioReversed, Math.Min(5, transition.interpolation));                  
-                    var ratio = 1 - ratioReversed;
+
+                    if (animationCount == stayLimit)
+                    { // Init EaseOut
+                        if (_payload.transition2 != null)
+                        {
+                            transition = _payload.transition2;
+                            tween = Tween.GetFunc(transition.tween);
+                        }
+                    }
+
+                    // Setup and normalized progression ratio
+                    var ratio = 1f;
+                    if (stage == AnimationStage.EasingIn)
+                    {
+                        ratio = ((float)animationCount / easeInCount);
+                    }
+                    else if (stage == AnimationStage.EasingOut)
+                    {
+                        ratio = 1f - ((float)animationCount - stayLimit + 1) / easeOutCount; // +1 because we moved where we increment animationCount
+                    }
+                    ratio = tween(ratio);
+                    var ratioReversed = 1f - ratio;
+
 
                     // Transform
                     if (stage != AnimationStage.Staying || animationCount == easeInLimit) { // Only performs animation on first frame of Staying stage.
                         // Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
+                        var translate = new HmdVector3_t()
+                        {
+                            v0 = transition.horizontal * ratioReversed,
+                            v1 = transition.vertical * ratioReversed,
+                            v2 = -properties.distance - (transition.distance * ratioReversed)
+                        };
                         animationTransform = (properties.headset ? EasyOpenVRSingleton.Utils.GetEmptyTransform() : hmdTransform)
                             .RotateY(-properties.yaw)
                             .RotateX(properties.pitch)
-                            .Translate(new HmdVector3_t() {
-                                v0 = transition.horizontal * ratioReversed,
-                                v1 = transition.vertical * ratioReversed, 
-                                v2 = -properties.distance - (transition.distance * ratioReversed)
-                            })
+                            .Translate(translate)
                             .RotateZ(transition.spin * ratioReversed);
                         _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.headset ? 0 : uint.MaxValue);
                         _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));
@@ -168,10 +197,6 @@ namespace OpenVRNotificationPipe.Notification
 
         public void ProvideNewPayload(Payload payload) {
             _payload = payload;
-        }
-
-        public void SetAnimationHz(int hz) {
-            _hz = hz;
         }
 
         public void Shutdown() {

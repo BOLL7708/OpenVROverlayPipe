@@ -23,6 +23,8 @@ namespace OpenVRNotificationPipe
 
         public class Properties {
             public bool headset = false;
+            public bool horizontal = true;
+            public int channel = 0;
             public int hz = -1;
             public int duration = 1000;
             public float width = 1;
@@ -38,7 +40,7 @@ namespace OpenVRNotificationPipe
             public float distance = 0; // Translational offset
             public float horizontal = 0; // Translational offset
             public float spin = 0;
-            public float interpolation = 0; // Interpolation type
+            public int tween = 0; // Tween type
             public int duration = 100;
         }
     }

@@ -50,10 +50,12 @@ namespace OpenVRNotificationPipe
             Stop();
 
             // Start
-            var config = new ServerConfig();
-            config.MaxRequestLength = 1024 * 1024;
-            config.ReceiveBufferSize = 1024 * 1024;
-            config.Port = port;
+            var config = new ServerConfig
+            {
+                MaxRequestLength = 1024 * 1024,
+                ReceiveBufferSize = 1024 * 1024,
+                Port = port
+            };
             _server = new WebSocketServer();
             _server.Setup(config);
             // _server.Setup(port);
@@ -118,8 +120,7 @@ namespace OpenVRNotificationPipe
 
         private void Server_SessionClosed(WebSocketSession session, SuperSocket.SocketBase.CloseReason value)
         {
-            WebSocketSession oldSession;
-            _sessions.TryRemove(session.SessionID, out oldSession);
+            _sessions.TryRemove(session.SessionID, out WebSocketSession oldSession);
             StatusMessageAction.Invoke(null, false, $"Session closed: {session.SessionID}");
             StatusAction(ServerStatus.SessionCount, _sessions.Count);
         }

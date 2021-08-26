@@ -15,11 +15,13 @@ namespace OpenVRNotificationPipe.Notification
         private Animator _animator;
         private ulong _overlayHandle;
         private string _title;
+        private int _channel;
         private bool _initSuccess = false;
         private ConcurrentQueue<Payload> _notifications = new ConcurrentQueue<Payload>();
 
-        public Overlay(string title) {
+        public Overlay(string title, int channel) {
             _title = title;
+            _channel = channel;
             Reinit();
         }
 
@@ -29,9 +31,8 @@ namespace OpenVRNotificationPipe.Notification
             
             // Default positioning and size of overlay, this will all be changed when animated.
             var transform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
-            transform.m11 = -2;
             var width = 1;
-            _overlayHandle = _vr.CreateOverlay("boll7708.notficationpipe.texture", _title, transform, width);
+            _overlayHandle = _vr.CreateOverlay($"boll7708.openvrnotficationpipe.texture.{_channel}", _title, transform, width);
             _initSuccess = _overlayHandle != 0;
             
             if (_initSuccess)
