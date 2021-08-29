@@ -11,13 +11,13 @@ namespace OpenVRNotificationPipe.Notification
 {
     class Overlay
     {
-        private EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
+        private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private Animator _animator;
         private ulong _overlayHandle;
-        private string _title;
-        private int _channel;
+        private readonly string _title;
+        private readonly int _channel;
         private bool _initSuccess = false;
-        private ConcurrentQueue<Payload> _notifications = new ConcurrentQueue<Payload>();
+        private readonly ConcurrentQueue<Payload> _notifications = new ConcurrentQueue<Payload>();
 
         public Overlay(string title, int channel) {
             _title = title;

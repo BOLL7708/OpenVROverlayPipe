@@ -22,10 +22,10 @@ namespace OpenVRNotificationPipe
     /// </summary>
     public partial class MainWindow : Window
     {
-        private MainController _controller;
-        private Properties.Settings _settings = Properties.Settings.Default;
-        private System.Windows.Forms.NotifyIcon _notifyIcon;
-        private static Mutex _mutex = null;
+        private readonly MainController _controller;
+        private readonly Properties.Settings _settings = Properties.Settings.Default;
+        private readonly System.Windows.Forms.NotifyIcon _notifyIcon;
+        private static Mutex _mutex = null; // Used to detect other instances of the same application
 
         public MainWindow()
         {

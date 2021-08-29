@@ -57,6 +57,7 @@ The way the transitions work, it will animate values that differs from when it i
     "properties": {
         "headset": false, // Stay fixed to the headset
         "horizontal": true, // Initial alignment to the horizon, else headset
+        "level": false, // Will ignore pitch of the headset and keep origin level
 	"channel": 0, // Use different channels to show notifications simultaneously
         "hz": -1, // Animation frame rate, -1 uses the headset refresh rate instead
         "duration": 1000, // The time the notification stays up, in milliseconds
@@ -68,8 +69,8 @@ The way the transitions work, it will animate values that differs from when it i
     "transition": {
         "scale": 1, // Normalized scale, 1 = 100%
         "opacity": 0, // Normalized opacity where 1 = 100%
-        "vertical": 0, // Vertical translation, in meters
         "horizontal": 0, // Horizontal translation, in meters
+        "vertical": 0, // Vertical translation, in meters
         "distance": 0, // Distance from headset, in meters
         "spin": 0, // Roll rotation, left(-) or right (+) in degrees
         "tween": 0, // Tween mode, see next section for a full list

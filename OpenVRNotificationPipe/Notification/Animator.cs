@@ -65,7 +65,6 @@ namespace OpenVRNotificationPipe.Notification
 
             while (true)
             {
-                // TODO: See if we can keep the overlay horizontal, if that is even necessary?!
                 timeStarted = DateTime.Now.Ticks;
                 
                 if (_payload == null) // Get new payload
@@ -100,11 +99,12 @@ namespace OpenVRNotificationPipe.Notification
                     // Pose
                     hmdTransform = _vr.GetDeviceToAbsoluteTrackingPose()[0].mDeviceToAbsoluteTracking;
 
-                    if(properties.horizontal && !properties.headset)
+                    if(!properties.headset)
                     {
                         // Remove roll so it stays horizontal
                         HmdVector3_t hmdEuler = hmdTransform.EulerAngles();
-                        hmdEuler.v2 = 0;
+                        if(properties.horizontal) hmdEuler.v2 = 0;
+                        if(properties.level) hmdEuler.v0 = 0;
                         hmdTransform = hmdTransform.FromEuler(hmdEuler);
                     }
                 } 
@@ -146,7 +146,6 @@ namespace OpenVRNotificationPipe.Notification
                     ratio = tween(ratio);
                     var ratioReversed = 1f - ratio;
 
-
                     // Transform
                     if (stage != AnimationStage.Staying || animationCount == easeInLimit) { // Only performs animation on first frame of Staying stage.
                         // Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
@@ -165,6 +164,7 @@ namespace OpenVRNotificationPipe.Notification
                         _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));
                         _vr.SetOverlayWidth(_overlayHandle, width*(transition.scale+(ratio*(1f-transition.scale))));
                     }
+
                     // Do not make overlay visible until we have applied all the movements etc, only needs to happen the first frame.
                     if (animationCount == 0) _vr.SetOverlayVisibility(_overlayHandle, true);
                     animationCount++;

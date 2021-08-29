@@ -26,7 +26,7 @@ namespace OpenVRNotificationPipe
         }
 
         private WebSocketServer _server;
-        private ConcurrentDictionary<string, WebSocketSession> _sessions = new ConcurrentDictionary<string, WebSocketSession>(); // Was getting crashes when loading all sessions from _server directly
+        private readonly ConcurrentDictionary<string, WebSocketSession> _sessions = new ConcurrentDictionary<string, WebSocketSession>(); // Was getting crashes when loading all sessions from _server directly
         private volatile int _deliveredCount = 0;
         private volatile int _receivedCount = 0;
 

@@ -22,8 +22,9 @@ namespace OpenVRNotificationPipe
         public Transition transition2 = null;
 
         public class Properties {
-            public bool headset = false;
+            public bool headset = false; // Overrides: horizontal, level
             public bool horizontal = true;
+            public bool level = false;
             public int channel = 0;
             public int hz = -1;
             public int duration = 1000;

@@ -93,6 +93,7 @@
 		let _propertyFields = {
 			headset: ['checkbox', null],
 			horizontal: ['checkbox', null],
+			level: ['checkbox', null],
 			channel: ['number', 0],
 			hz: ['number', -1],
 			duration: ['number', 1000],
@@ -104,9 +105,9 @@
 		let _transitionFields = {
 			scale: 1,
 			opacity: 1,
+			horizontal: 0,
 			vertical: 0,
 			distance: 0,
-			horizontal: 0,
 			spin: 0,
 			tween: 0,
 			duration: 100
@@ -392,6 +393,7 @@
 				properties: {
 					headset: false,
 					horizontal: true,
+					level: false,
 					channel: 0,
 					hz: -1,
 					duration: 2000,
@@ -427,6 +429,7 @@
 				properties: {
 					headset: true,
 					horizontal: false,
+					level: false,
 					channel: 1,
 					hz: -1,
 					duration: 1000,
@@ -462,6 +465,7 @@
 				properties: {
 					headset: true,
 					horizontal: false,
+					level: false,
 					channel: 2,
 					hz: -1,
 					duration: 1000,
@@ -497,6 +501,7 @@
 				properties: {
 					headset: true,
 					horizontal: false,
+					level: false,
 					channel: 3,
 					hz: -1,
 					duration: 2000,
@@ -532,6 +537,7 @@
 				properties: {
 					headset: false,
 					horizontal: true,
+					level: false,
 					channel: 4,
 					hz: -1,
 					duration: 2000,
@@ -567,6 +573,7 @@
 				properties: {
 					headset: false,
 					horizontal: false,
+					level: false,
 					channel: 5,
 					hz: -1,
 					duration: 2000,
@@ -596,12 +603,13 @@
 					duration: 300
 				}
 			},
-			{
+			{ // From above
 				canvas: [256, 256],
 				image: _images[6],
 				properties: {
 					headset: false,
 					horizontal: true,
+					level: true,
 					channel: 6,
 					hz: -1,
 					duration: 3000,
