@@ -37,9 +37,9 @@ namespace OpenVRNotificationPipe
         public class Transition {
             public float scale = 1;
             public float opacity = 0;
+            public float horizontal = 0; // Translational offset
             public float vertical = 0; // Translational offset
             public float distance = 0; // Translational offset
-            public float horizontal = 0; // Translational offset
             public float spin = 0;
             public int tween = 0; // Tween type
             public int duration = 100;
