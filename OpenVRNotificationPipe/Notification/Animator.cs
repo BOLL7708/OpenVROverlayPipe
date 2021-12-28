@@ -43,8 +43,8 @@ namespace OpenVRNotificationPipe.Notification
             var animationTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
             var width = 1f;
             var height = 1f;
-            Payload.Properties properties = null;
-            Payload.Transition transition = null;
+            var properties = new Payload.Properties();
+            var transition = new Payload.Transition();
 
             // Animation
             var stage = AnimationStage.Idle;
@@ -84,15 +84,15 @@ namespace OpenVRNotificationPipe.Notification
                     msPerFrame = 1000 / hz;
 
                     // Size of overlay
-                    var size = _texture.Load(_payload.image, _payload.textAreas.ToArray());
+                    var size = _texture.Load(_payload.image, _payload.textAreas);
                     width = properties.width;
                     height = width / size.v0 * size.v1;
                     Debug.WriteLine($"Texture width: {size.v0}, height: {size.v1}");
 
                     // Animation limits
-                    easeInCount = _payload.transition.duration / msPerFrame;
+                    easeInCount = (_payload.transitions[0]?.duration ?? 100) / msPerFrame;
                     stayCount = properties.duration / msPerFrame;
-                    easeOutCount = (_payload.transition2?.duration ?? _payload.transition.duration) / msPerFrame;
+                    easeOutCount = (_payload.transitions[1]?.duration ?? _payload.transitions[0]?.duration ?? 100) / msPerFrame;
                     easeInLimit = easeInCount;
                     stayLimit = easeInLimit + stayCount;
                     easeOutLimit = stayLimit + easeOutCount;
@@ -122,15 +122,15 @@ namespace OpenVRNotificationPipe.Notification
 
                     if (animationCount == 0) 
                     { // Init EaseIn
-                        transition = _payload.transition;
+                        transition = _payload.transitions[0] ?? new Payload.Transition();
                         tween = Tween.GetFunc(transition.tween);
                     }
 
                     if (animationCount == stayLimit)
                     { // Init EaseOut
-                        if (_payload.transition2 != null)
+                        if (_payload.transitions.Length >= 2)
                         {
-                            transition = _payload.transition2;
+                            transition = _payload.transitions[1] ?? new Payload.Transition();
                             tween = Tween.GetFunc(transition.tween);
                         }
                     }

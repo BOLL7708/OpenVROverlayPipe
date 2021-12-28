@@ -304,7 +304,7 @@
 				// Custom
 				properties: {},
 				follow: {},
-				transition: {},
+				transitions: [],
 				textAreas: []
 			};
 
@@ -323,15 +323,20 @@
 				}
 				
 			}
+			let transition1 = {}
+			let transition2 = null
 			for(field in _transitionFields) {
 				let value = document.querySelector(`#transition_${field}`).value;
 				let value2 = document.querySelector(`#transition2_${field}`).value;
-				if(!isEmpty(value)) data.transition[field] = value;
+				if(!isEmpty(value)) transition1[field] = value;
 				if(!isEmpty(value2)) {
-					if(!data.hasOwnProperty('transition2')) data.transition2 = {};
-					data.transition2[field] = value2;
+					if(transition2 == null) transition2 = {};
+					transition2[field] = value2;
 				}
 			}
+			data.transitions[0] = transition1;
+			if(transition2 != null) data.transitions[1] = transition2;
+
 			let thisTextArea = {};
 			for(field in _textAreaFields) {
 				let textArea = _textAreaFields[field];

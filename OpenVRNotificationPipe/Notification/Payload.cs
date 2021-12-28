@@ -19,9 +19,8 @@ namespace OpenVRNotificationPipe
 
         // Custom notification
         public Properties properties = new Properties();
-        public Transition transition = new Transition();
-        public Transition transition2 = null;
-        public List<TextArea> textAreas = new List<TextArea>();
+        public Transition[] transitions = new Transition[0];
+        public TextArea[] textAreas = new TextArea[0];
 
         public class Properties {
             public bool headset = false; // Overrides: horizontal, level
@@ -55,7 +54,7 @@ namespace OpenVRNotificationPipe
             public int size = 10;
             public string text = "";
             public string font = "";
-            public string color = ""; // Maybe use a number for this? Not matched now.
+            public string color = "";
             public int gravity = 0; // Left
             public int alignment = 0; // Left
         }
