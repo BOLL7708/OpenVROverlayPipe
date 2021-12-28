@@ -71,6 +71,7 @@ namespace OpenVRNotificationPipe.Notification
                     var color = Color.White;
                     try { color = ColorTranslator.FromHtml(ta.color); } 
                     catch (Exception e) { Debug.WriteLine($"Invalid HTML color: {e.Message}"); }
+                    if (color.A == 0) color = Color.White; // Empty string parses out to transparent black (0,0,0,0)
                     var brush = new SolidBrush(color);
                     g.DrawString(
                         ta.text, 

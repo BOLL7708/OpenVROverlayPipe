@@ -90,9 +90,19 @@ namespace OpenVRNotificationPipe.Notification
                     Debug.WriteLine($"Texture width: {size.v0}, height: {size.v1}");
 
                     // Animation limits
-                    easeInCount = (_payload.transitions[0]?.duration ?? 100) / msPerFrame;
+                    easeInCount = (
+                        _payload.transitions.Length > 0 
+                            ? _payload.transitions[0].duration 
+                            : 100
+                        ) / msPerFrame;
                     stayCount = properties.duration / msPerFrame;
-                    easeOutCount = (_payload.transitions[1]?.duration ?? _payload.transitions[0]?.duration ?? 100) / msPerFrame;
+                    easeOutCount = (
+                        _payload.transitions.Length >= 2 
+                            ? _payload.transitions[1].duration 
+                            : _payload.transitions.Length > 0 
+                                ? _payload.transitions[0].duration 
+                                : 100
+                        ) / msPerFrame;
                     easeInLimit = easeInCount;
                     stayLimit = easeInLimit + stayCount;
                     easeOutLimit = stayLimit + easeOutCount;
@@ -122,7 +132,9 @@ namespace OpenVRNotificationPipe.Notification
 
                     if (animationCount == 0) 
                     { // Init EaseIn
-                        transition = _payload.transitions[0] ?? new Payload.Transition();
+                        transition = _payload.transitions.Length > 0 
+                                ? _payload.transitions[0] 
+                                : new Payload.Transition();
                         tween = Tween.GetFunc(transition.tween);
                     }
 
@@ -130,7 +142,7 @@ namespace OpenVRNotificationPipe.Notification
                     { // Init EaseOut
                         if (_payload.transitions.Length >= 2)
                         {
-                            transition = _payload.transitions[1] ?? new Payload.Transition();
+                            transition = _payload.transitions[1];
                             tween = Tween.GetFunc(transition.tween);
                         }
                     }
