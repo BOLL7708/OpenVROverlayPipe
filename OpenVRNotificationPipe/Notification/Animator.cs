@@ -66,10 +66,12 @@ namespace OpenVRNotificationPipe.Notification
             while (true)
             {
                 timeStarted = DateTime.Now.Ticks;
+                bool skip = false;
                 
                 if (_payload == null) // Get new payload
                 {
                     _requestForNewPayload();
+                    skip = true;
                     Thread.Sleep(100);
                 }
                 else if (stage == AnimationStage.Idle)
@@ -82,7 +84,7 @@ namespace OpenVRNotificationPipe.Notification
                     msPerFrame = 1000 / hz;
 
                     // Size of overlay
-                    var size = _texture.Load(_payload.image);
+                    var size = _texture.Load(_payload.image, _payload.textAreas.ToArray());
                     width = properties.width;
                     height = width / size.v0 * size.v1;
                     Debug.WriteLine($"Texture width: {size.v0}, height: {size.v1}");
@@ -109,7 +111,7 @@ namespace OpenVRNotificationPipe.Notification
                     }
                 } 
                 
-                if(stage != AnimationStage.Idle) // Animate
+                if(!skip && stage != AnimationStage.Idle) // Animate
                 {
                     // Animation stage
                     if (animationCount < easeInLimit) stage = AnimationStage.EasingIn;

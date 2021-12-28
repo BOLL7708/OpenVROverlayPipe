@@ -5,6 +5,9 @@ using System.Diagnostics;
 using OpenTK;
 using System.Drawing;
 using System.IO;
+using static OpenVRNotificationPipe.Payload;
+using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 
 namespace OpenVRNotificationPipe.Notification
 {
@@ -24,7 +27,14 @@ namespace OpenVRNotificationPipe.Notification
          * which is why we create an empty image at the maximum size allowed, and then we draw the
          * incoming bitmap onto it, then tighten the UV to the original image dimensions. Phew.
          */
-        public HmdVector2_t Load(string base64png)
+
+            /**
+             * Jeppe is locking up the pipe with his water spam. 
+             * Not sure if a system limitation or this application.
+             * I guess try to do a stress test.
+             */
+
+        public HmdVector2_t Load(string base64png, TextArea[] textAreas)
         {
             if (_glWindow == null) _glWindow = new GameWindow(); // Init OpenGL
             
@@ -35,6 +45,43 @@ namespace OpenVRNotificationPipe.Notification
                 Debug.WriteLine($"Image hash: {MainController.CreateMD5(base64png)}");
                 var imageBytes = Convert.FromBase64String(base64png);
                 var bmp = new Bitmap(new MemoryStream(imageBytes));
+
+                foreach (TextArea ta in textAreas)
+                {
+                    // https://stackoverflow.com/a/32012246/2076423
+                    var g = Graphics.FromImage(bmp);
+                    RectangleF rectf = new RectangleF(
+                        Math.Min(Math.Max(0, ta.posx), bmp.Width),
+                        Math.Min(Math.Max(0, ta.posy), bmp.Height),
+                        Math.Min(ta.width, bmp.Width), 
+                        Math.Min(ta.height, bmp.Height)
+                    );
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+                    StringFormat format = new StringFormat()
+                    {
+                        Alignment = (StringAlignment) Math.Min((int) StringAlignment.Far, Math.Max(ta.gravity, (int) StringAlignment.Near)),
+                        LineAlignment = (StringAlignment) Math.Min((int) StringAlignment.Far, Math.Max(ta.alignment, (int) StringAlignment.Near)),
+                        Trimming = StringTrimming.EllipsisWord
+                        // FormatFlags = StringFormatFlags.DirectionVertical
+                    };
+                    Debug.WriteLine($"Gravity: {ta.gravity}:{format.Alignment}, Alignment: {ta.alignment}:{format.LineAlignment}");
+                    var color = Color.White;
+                    try { color = ColorTranslator.FromHtml(ta.color); } 
+                    catch (Exception e) { Debug.WriteLine($"Invalid HTML color: {e.Message}"); }
+                    var brush = new SolidBrush(color);
+                    g.DrawString(
+                        ta.text, 
+                        new Font(ta.font, ta.size), 
+                        brush,
+                        rectf,
+                        format
+                    );
+                    g.Flush();
+                }
+
                 Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
                 bmp.RotateFlip(RotateFlipType.RotateNoneFlipY); // Flip it for OpenGL
                 if(bmp.Width > _textureMaxSide || bmp.Height > _textureMaxSide)

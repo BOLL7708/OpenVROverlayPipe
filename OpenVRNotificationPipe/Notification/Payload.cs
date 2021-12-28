@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenVRNotificationPipe.Notification;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,7 @@ namespace OpenVRNotificationPipe
         public Properties properties = new Properties();
         public Transition transition = new Transition();
         public Transition transition2 = null;
+        public List<TextArea> textAreas = new List<TextArea>();
 
         public class Properties {
             public bool headset = false; // Overrides: horizontal, level
@@ -43,6 +45,19 @@ namespace OpenVRNotificationPipe
             public float spin = 0;
             public int tween = 0; // Tween type
             public int duration = 100;
+        }
+
+        public class TextArea {
+            public int posx = 0;
+            public int posy = 0;
+            public int width = 100;
+            public int height = 100;
+            public int size = 10;
+            public string text = "";
+            public string font = "";
+            public string color = ""; // Maybe use a number for this? Not matched now.
+            public int gravity = 0; // Left
+            public int alignment = 0; // Left
         }
     }
 }

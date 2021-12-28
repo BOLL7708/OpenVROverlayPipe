@@ -1,4 +1,4 @@
-<html>
+﻿<html>
     <head>
         <title>OpenVRNotificationPipe Example Page</title>
 		<style>
@@ -71,6 +71,8 @@
 				<h3>Transition</h3>
 				<div class="row"><div class="field">&nbsp;</div><div class="spacer">In</div>&nbsp;<div class="spacer">Out</div></div>
 				<div id="transition"></div>
+				<h3>Text Area</h3>
+				<div id="textarea"></div>
 				<p><button onclick="submit(true);">Send notification</button></p>
 			</div>
 			<div class="cell">
@@ -87,10 +89,11 @@
 			</div>
 		</div>
 	<script>
-		let _propertiesDiv = document.querySelector('#properties');
-		let _transitionDiv = document.querySelector('#transition');
+		const _propertiesDiv = document.querySelector('#properties');
+		const _transitionDiv = document.querySelector('#transition');
+		const _textAreaDiv = document.querySelector('#textarea');
 
-		let _propertyFields = {
+		const _propertyFields = {
 			headset: ['checkbox', null],
 			horizontal: ['checkbox', null],
 			level: ['checkbox', null],
@@ -112,6 +115,18 @@
 			tween: 0,
 			duration: 100
 		}
+		let _textAreaFields = {
+			posx: ['number', 0],
+			posy: ['number', 0],
+			width: ['number', 100],
+			height: ['number', 100],
+			size: ['number', 10],
+			text: ['text', ''],
+			font: ['text', ''],
+			color: ['text', ''],
+			gravity: ['number', 0],
+			alignment: ['number', 0]
+		}
 
 		let _propertyHtml ="";
 		for(field in _propertyFields) {
@@ -126,6 +141,13 @@
 			_transitionHtml += `<div class="row"><div class="field">${field}:</div><input id="transition_${field}" type="number" value="${prop}"/>&nbsp;<input id="transition2_${field}" type="number" value=""/></div>`;
 		}
 		_transitionDiv.innerHTML = _transitionHtml;
+
+		let _textAreaHtml = "";
+		for(field in _textAreaFields) {
+			let prop = _textAreaFields[field];
+			_textAreaHtml += `<div class="row"><div class="field">${field}:</div><input id="textarea_${field}" type="${prop[0]}" value="${prop[1]}"/></div>`;
+		}
+		_textAreaDiv.innerHTML = _textAreaHtml;
 
 		// General
 		var _status = document.querySelector('#status');
@@ -279,8 +301,11 @@
 				title: _title.value,
 				message: _message.value,
 
+				// Custom
 				properties: {},
-				transition: {}
+				follow: {},
+				transition: {},
+				textAreas: []
 			};
 
 			for(field in _propertyFields) {
@@ -307,6 +332,13 @@
 					data.transition2[field] = value2;
 				}
 			}
+			let thisTextArea = {};
+			for(field in _textAreaFields) {
+				let textArea = _textAreaFields[field];
+				let value = document.querySelector(`#textarea_${field}`).value;
+				if(!isEmpty(value)) thisTextArea[field] = value;
+			}
+			data.textAreas[0] = thisTextArea;
 			
 			var urlEncodedData = "";
 			var urlEncodedDataPairs = [];
