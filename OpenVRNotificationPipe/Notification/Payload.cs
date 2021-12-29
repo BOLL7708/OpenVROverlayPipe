@@ -33,6 +33,8 @@ namespace OpenVRNotificationPipe
             public float distance = 1;
             public float pitch = 0;
             public float yaw = 0;
+            public float offsetx = 0;
+            public float offsety = 0;
         }
 
         public class Transition {

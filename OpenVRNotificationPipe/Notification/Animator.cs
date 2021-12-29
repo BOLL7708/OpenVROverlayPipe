@@ -113,6 +113,14 @@ namespace OpenVRNotificationPipe.Notification
 
                     if(!properties.headset)
                     {
+                        // Apply offset before rotation
+                        hmdTransform = hmdTransform.Add(new HmdVector3_t()
+                        {
+                            v0 = 0,
+                            v1 = _payload.properties.offsety,
+                            v2 = -_payload.properties.offsetx
+                        });
+
                         // Remove roll so it stays horizontal
                         HmdVector3_t hmdEuler = hmdTransform.EulerAngles();
                         if(properties.horizontal) hmdEuler.v2 = 0;
