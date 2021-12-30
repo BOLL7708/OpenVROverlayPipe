@@ -113,13 +113,7 @@ namespace OpenVRNotificationPipe.Notification
 
                     if(!properties.headset)
                     {
-                        // Apply offset before rotation
-                        hmdTransform = hmdTransform.Add(new HmdVector3_t()
-                        {
-                            v0 = 0,
-                            v1 = _payload.properties.offsety,
-                            v2 = -_payload.properties.offsetx
-                        });
+                        
 
                         // Remove roll so it stays horizontal
                         HmdVector3_t hmdEuler = hmdTransform.EulerAngles();
@@ -173,8 +167,8 @@ namespace OpenVRNotificationPipe.Notification
                         // Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
                         var translate = new HmdVector3_t()
                         {
-                            v0 = transition.horizontal * ratioReversed,
-                            v1 = transition.vertical * ratioReversed,
+                            v0 = _payload.properties.offsetx + (transition.horizontal * ratioReversed),
+                            v1 = _payload.properties.offsety + (transition.vertical * ratioReversed),
                             v2 = -properties.distance - (transition.distance * ratioReversed)
                         };
                         animationTransform = (properties.headset ? EasyOpenVRSingleton.Utils.GetEmptyTransform() : hmdTransform)
