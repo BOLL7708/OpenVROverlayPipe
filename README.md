@@ -11,6 +11,7 @@ Run SteamVR, then run this application, if both the OpenVR and Server status are
 
 ## Compatible applications
 If you made something that is publicly available that use this pipe application, it can be listed here.
+* [Streaming Widget](https://github.com/BOLL7708/streaming_widget): Streaming browser source made specifically for OBS, Twitch, SteamVR and a range of other solutions.
 * [Twitch Logger](https://github.com/jeppevinkel/twitch-logger): Logs Twitch chat to disk and can pipe them to Discord and VR.
 
 ## Minimal WebSockets Client
@@ -23,12 +24,12 @@ To send things to this application you need a WebSockets client, you can easily 
         <p><button onclick="submit();">Send</button></p>
     </body>
     <script>
-        var _socket = new WebSocket("ws://localhost:8077");
+        const _socket = new WebSocket("ws://localhost:8077");
         _socket.onopen = (e) => {console.log("Connected!");};
         function submit() {
-            let title = document.querySelector('#title').value;
-            let message = document.querySelector('#message').value;
-	    _socket.send(JSON.stringify({title: title, message:message}));
+            const title = document.querySelector('#title').value;
+            const message = document.querySelector('#message').value;
+	    _socket.send(JSON.stringify({title: title, message: message}));
         }
     </script>
 </html>
@@ -64,26 +65,42 @@ The way the transitions work, it will animate values that differs from when it i
         "width": 1, // The physical width of the overlay, in meters
         "distance": 1, // Distance from the headset to the notification, in meters
         "pitch": 0, // Vertical rotation, down (-) or up (+), in degrees
-        "yaw": 0 // Horizontal rotation, left (-) or right (+), in degrees
+        "yaw": 0, // Horizontal rotation, left (-) or right (+), in degrees
+	"offsetx": 0, // Horizontal image offset, left (-) or right (+), in meters
+	"offsety": 0 // Vertical image offset, down (-) or up (+), in meters
     },
-    "transition": {
-        "scale": 1, // Normalized scale, 1 = 100%
-        "opacity": 0, // Normalized opacity where 1 = 100%
-        "horizontal": 0, // Horizontal translation, in meters
-        "vertical": 0, // Vertical translation, in meters
-        "distance": 0, // Distance from headset, in meters
-        "spin": 0, // Roll rotation, left(-) or right (+) in degrees
-        "tween": 0, // Tween mode, see next section for a full list
-        "duration": 100 // Length of animation, in milliseconds
-    },
-    "transition2": {
+    "transitiona": [
+	{
+	    "scale": 1, // Normalized scale, 1 = 100%
+	    "opacity": 0, // Normalized opacity where 1 = 100%
+	    "horizontal": 0, // Horizontal translation, in meters
+	    "vertical": 0, // Vertical translation, in meters
+	    "distance": 0, // Distance from headset, in meters
+	    "spin": 0, // Roll rotation, left(-) or right (+) in degrees
+	    "tween": 0, // Tween mode, see next section for a full list
+	    "duration": 100 // Length of animation, in milliseconds
+	}
         /* 
-         * This is optional and will be used if provided.
-         * It should contain the same fields as "transition"
-         * but will be used for the transition out which
-         * otherwise defaults to the same as in but reversed.
+	 * You can add a second object here to change the outgoing transition.
+         * This is optional and will be used if provided, otherwise the out
+	 * transition defaults to the same as in but reversed.
          */
+    ],
+    "textAreas": {
+	"posx": 0, // Horizontal position of the text area on the image, in pixels
+	"posy": 0, // Vertical position of the text area on the image, in pixels
+	"width": 100, // Width of the text area, in pixels
+	"height": 100, // Height of the text area, in pixels
+	"size": 10, // Font size of the text
+	"text": "", // The text to render on the image
+	"font": "", // The name of the font to be used
+	"color": "", // The text color, HTML based, so hex code or name
+	"gravity": 0, // Alignment in the text area, 0 = left, 1 = center, 2 = right
+	"alignment": 0, // Alignment on the line, 0 = left, 1 = center, 2 = right
     }
+    /*
+     * You can add more text areas by filling up this array with more objects.
+     */
 }
 ```
 #### Tween modes
