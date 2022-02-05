@@ -1,0 +1,403 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Pipe Editor</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            font-size: 14px;
+            color: #333;
+            background-color: #ccc;
+        }
+        canvas {
+            border: 1px solid #d3d3d3;
+            background-color: #f1f1f1;
+            width: 48px;
+            height: 48px;
+            margin: 4px;
+        }
+        h3 {
+            margin: 0.5em;
+        }
+
+        form {
+            border-radius: 16px;
+            float: left;
+            background-color: #eee;
+            padding: 4px;
+            margin: 4px;
+            box-shadow: 4px 4px 6px #888;
+        }
+        #formProperties {
+            clear: both;
+        }
+        form p label {
+            display: inline-block;
+            width: 5em;
+            text-align: right;
+            padding-right: 4px;
+            user-select: none;
+        }
+        form p {
+            margin: 0;
+            padding: 2px;
+            vertical-align: text-top;
+        }
+        form p label:hover {
+            background-color: #888;
+            color: white;
+            border-radius: 2px;
+        }
+
+        input, textarea, select {
+            border-radius: 4px;
+            border-width: 1px;
+            border-color: #ddd;
+        }
+        button {
+            background-image: linear-gradient( #fff, #FFACFF, #FF69FF);
+            font-weight: bold;
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: #bbb;
+            color: white;
+            text-shadow:
+                -1px -1px 0 #333,
+                1px -1px 0 #333,
+                -1px 1px 0 #333,
+                1px 1px 0 #333;
+            box-shadow: 2px 2px 3px #888;
+        }
+        button:hover {
+            background-image: linear-gradient( #FFDCFF, #FF89FF, #FF34FF);
+        }
+        label {
+            cursor: text;
+            text-transform: capitalize;
+            padding: 2px;
+        }
+        input[type=number] {
+            width: 4em;
+        }
+        canvas {
+            margin: 0;
+        }
+        button {
+            width: 100%;
+            height: 2em;
+        }
+        textarea {
+            width: 20em;
+            height: 30em;
+        }
+    </style>
+    </head> 
+    <body onload="init()">
+        <form id="formSubmit">
+            <h3>Submit Notification</h3>
+            <p>Supply an image for this to do anything at all.</p>
+            <p><button id="submit">Submit Custom Notification</button></p>
+        </form>
+
+        <form id="formImage">   
+            <h3>Image</h3>
+            <canvas id="canvas"></canvas>
+            <input type="file" name="file" accept="image/*"/>
+        </form>
+
+        <form id="formProperties">
+            <h3>Properties</h3>
+            <select name="anchor">
+                <option value="0">World</option>
+                <option value="1">Head</option>
+                <option value="2">Left hand</option>
+                <option value="3">Right hand</option>
+            </select></p>
+            <input name="horizontal" type="checkbox" value="true"/>
+            <input name="level" type="checkbox" value="true"/>
+            <input name="channel" type="number" value="0" step="1"/>
+            <input name="hz" type="number" value="-1" step="1"/>
+            <input name="duration" type="number" value="1000" step="100"/>
+            <input name="width" type="number" value="1" step="0.01"/>
+            <input name="distance" type="number" value="1" step="0.01"/>           
+            <input name="pitch" type="number" value="0" step="1"/>
+            <input name="yaw" type="number" value="0" step="1"/>
+            <input name="roll" type="number" value="0" step="1"/>
+            <input name="offsetx" type="number" value="0" step="0.01"/>
+            <input name="offsety" type="number" value="0" step="0.01"/>
+        </form>
+
+        <template id="templateTransition">
+            <input name="scale" type="number" step=".01" value="1.0"/>
+            <input name="opacity" type="number" step=".01" value="1.0"/>
+            <input name="horizontal" type="number" step=".01" value="0.0"/>
+            <input name="vertical" type="number" step=".01" value="0.0"/>
+            <input name="distance" type="number" step=".01" value="0.0"/>
+            <input name="spin" type="number" step="1" value="0"/>
+            <select name="tween">
+                <option value="0">Linear</option>
+                <option value="1">Sine</option>
+                <option value="2">Quadratic</option>
+                <option value="3">Cubic</option>
+                <option value="4">Quartic</option>
+                <option value="5">Quintic</option>
+                <option value="6">Circle</option>
+                <option value="7">Back</option>
+                <option value="8">Elastic</option>
+                <option value="9">Bounce</option>
+            </select>
+            <input name="duration" type="number" step="50" value="100"/>
+        </template>
+
+        <form id="formTransitionIn">
+            <h3>Transition In</h3>
+        </form>
+
+        <form id="formTransitionOut">
+            <h3>Transition Out</h3>
+        </form>
+
+        <form id="formTextarea">
+            <h3>Textarea</h3>
+            <input name="posx" type="number" step="1" value="0"/>
+            <input name="posy" type="number" step="1" value="0"/>
+            <input name="width" type="number" step="1" value="0"/>
+            <input name="height" type="number" step="1" value="0"/>
+            <input name="size" type="number" step="1" value="10"/>
+            <input name="text" value=""/>
+            <input name="font" type="text" value="Arial"/>
+            <input name="color" type="color" value="#FFFFFF"/>
+            <select name="gravity">
+                <option value="0">Near</option>
+                <option value="1">Center</option>
+                <option value="2">Far</option>
+            </select>
+            <select name="alignment">
+                <option value="0">Near</option>
+                <option value="1">Center</option>
+                <option value="2">Far</option>
+            </select>
+        </form>
+
+        <form id="formConfig">
+            <h3>Config</h3>
+            <input name="indentation" type="number" step="1" value="4"/>
+            <p><button id="copy">Copy Config</button></p>
+            <p><textarea id="config"></textarea></p>
+            <p><button id="load">Load Config</button></p>
+        </form>
+    </body>
+    <script>
+        // Websocket 
+        let _ws = null
+        let _wsActive = false
+        const _localStorageKey = 'OpenVRNotificationPipe.BOLL7708.Config'
+
+        // Construct forms
+        const _formProperties = document.querySelector('#formProperties')
+        const _formTransitionIn = document.querySelector('#formTransitionIn')
+        const _formTransitionOut = document.querySelector('#formTransitionOut')
+        const _formTextarea = document.querySelector('#formTextarea')
+        const _templateTransition = document.querySelector('#templateTransition')
+        const _formConfig = document.querySelector('#formConfig')
+        _formTransitionIn.appendChild(_templateTransition.content.cloneNode(true))
+        _formTransitionOut.appendChild(_templateTransition.content.cloneNode(true))
+
+        // Input wrapping & IDing
+        const _elements = document.querySelectorAll('input, select, canvas')
+        _elements.forEach(el => {
+            // ID
+            const form = el.parentElement
+            const name = el.name ?? el.id
+            const id = `${form.id}-${name}`
+            el.id = id
+            
+            // Wrapping + label
+            const wrapper = document.createElement('p')
+            el.parentNode.insertBefore(wrapper, el)
+            const label = document.createElement('label')
+            label.setAttribute('for', id)
+            label.innerText = `${name}:`
+            wrapper.appendChild(label)
+            wrapper.appendChild(el)
+        })
+
+        // Elements
+        const _canvas = document.querySelector('#formImage-canvas')
+		const _ctx = _canvas.getContext('2d')
+        const _file = document.querySelector('#formImage-file')
+		_file.addEventListener('change', readImage)
+        const _submit = document.querySelector('#submit')
+        _submit.addEventListener('click', sendNotification)
+        const _config = document.querySelector('#config')
+        const _copy = document.querySelector('#copy')
+        _copy.addEventListener('click', copyConfig)
+        const _load = document.querySelector('#load')
+        _load.addEventListener('click', loadConfig)
+
+        // Key listener
+        document.onkeypress = function (e) {
+            e = e || window.event
+            switch(e.keyCode) {
+                case 13: sendNotification(e)
+                    break
+                default: console.log(e.keyCode)
+                    break
+            }
+		}
+
+        // Program loop
+        function init()
+		{
+			connectLoop()
+            _config.innerHTML = localStorage.getItem(_localStorageKey) ?? ''
+            if(_config.innerHTML.length > 0) {
+                loadConfig()
+            }
+		}
+		function connectLoop() 
+		{
+			if(!_wsActive) {
+                const url = new URL(window.location.href)
+                const params = new URLSearchParams(url.search)
+                const port = params.get('port') ?? 8077
+				var wsUri = `ws://localhost:${port}`
+				_wsActive = true
+				if(_ws != null) _ws.close()
+				try {
+					_ws = new WebSocket(wsUri)
+					_ws.onopen = function(evt) { 
+                        _wsActive = true
+                        document.title = 'Pipe Editor - CONNECTED'
+                    }
+					_ws.onclose = function(evt) { 
+                        _wsActive = false
+                        document.title = 'Pipe Editor - DISCONNECTED'
+                     }
+					_ws.onmessage = function(evt) {
+                        console.log(JSON.stringify(evt))
+                     }
+					_ws.onerror = function(evt) { 
+                        _wsActive = false
+                        console.error(`WebSocket Connection Error`)
+                        document.title = `Pipe Editor - ERROR`
+                    }
+				} catch (error) {
+                    console.error(`WebSocket Init Error: ${error}`)
+                    _wsActive = false
+					document.title = `Pipe Editor - ERROR`
+				}
+			}
+			setTimeout(connectLoop, 5000);
+		}
+
+        // Image functions
+        function readImage() {
+		    if(this.files && this.files[0]) {
+		        var FR = new FileReader()
+		        FR.onload = function(e) {
+		           	var img = new Image()
+		           	img.addEventListener("load", function() {
+		           		_canvas.width = img.width
+                        _canvas.height = img.height
+                        _ctx.clearRect(0, 0, _canvas.width, _canvas.height)
+                        _ctx.drawImage(img, 0, 0, img.width, img.height)
+		           	});
+		           	img.src = e.target.result
+		        };       
+		        FR.readAsDataURL( this.files[0] )
+		    }
+		}
+        function getImageData() {
+            return _canvas.toDataURL().split(',')[1]
+        }
+
+        // Data
+        function sendNotification(e) {
+            e?.preventDefault()
+            var data = {
+				custom: true,
+				image: getImageData(),
+				
+				// Standard
+				title: "",
+				message: "",
+
+				// Custom
+				properties: {},
+				follow: {},
+				transitions: [],
+				textAreas: []
+			};
+
+            // Get all other data
+            const propertiesData = new FormData(_formProperties)
+            const propertiesJSON = Object.fromEntries(propertiesData.entries())
+
+            const transitionsInData = new FormData(_formTransitionIn)
+            const transitionsInJSON = Object.fromEntries(transitionsInData.entries())
+
+            const transitionsOutData = new FormData(_formTransitionOut)
+            const transitionsOutJSON = Object.fromEntries(transitionsOutData.entries())
+
+            const textareaData = new FormData(_formTextarea)
+            const textareaJSON = Object.fromEntries(textareaData.entries())
+
+            // Handle multi-selects
+            propertiesJSON.anchor = propertiesData.getAll('anchor').pop()
+            transitionsInJSON.tween = transitionsInData.getAll('tween').pop()
+            transitionsOutJSON.tween = transitionsOutData.getAll('tween').pop()
+            textareaJSON.gravity = textareaData.getAll('gravity').pop()
+            textareaJSON.alignment = textareaData.getAll('alignment').pop()
+
+            // Fill data
+            data.properties = propertiesJSON
+            data.transitions.push(transitionsInJSON)
+            data.transitions.push(transitionsOutJSON)
+            data.textAreas.push(textareaJSON)
+
+            // Send data
+            _ws.send(JSON.stringify(data))
+
+            // Update config text
+            data.image = '(removed)'
+            const indent = _formConfig.querySelector('#formConfig-indentation').value
+            const configStr = JSON.stringify(data, null, new Array(parseInt(indent) + 1).join(' '))
+            _config.innerHTML = configStr
+            window.localStorage.setItem(_localStorageKey, configStr)
+        }
+
+        function copyConfig(e) {
+            e?.preventDefault()
+            _config.select()
+            document.execCommand('copy')
+        }
+
+        function loadConfig(e) {
+            e?.preventDefault()
+            const data = JSON.parse(_config.value)
+            if(_config.value.length > 0) window.localStorage.setItem(_localStorageKey, _config.value)
+            const properties = data.properties ?? {}
+            const transitionIn = data.transitions[0] ?? {}
+            const transitionOut = data.transitions[1] ?? {}
+            const textarea = data.textAreas[0] ?? {}
+
+            applyDataToForm(_formProperties, properties)
+            applyDataToForm(_formTransitionIn, transitionIn)
+            applyDataToForm(_formTransitionOut, transitionOut)
+            applyDataToForm(_formTextarea, textarea)
+
+            function applyDataToForm(form, data) {
+                for(const key in data) {
+                    const id = `${form.id}-${key}`
+                    const el = document.querySelector(`#${id}`)
+                    if(el.type == 'checkbox') {
+                        el.checked = data[key] ?? ''
+                    } else {
+                        el.value = data[key]
+                    }
+                }
+            }
+        }
+    </script>
+</html>

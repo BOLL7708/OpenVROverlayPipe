@@ -21,7 +21,7 @@
 
                 <StackPanel Orientation="Horizontal" Margin="5 0 5 5">
                     <TextBlock x:Name="textBlock_Example" HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Top" Margin="5 0 0 0">
-                            <Hyperlink NavigateUri="example.html" Click="ClickedURL">Example</Hyperlink>
+                            <Hyperlink NavigateUri="editor.html" Click="ClickedURL">Editor</Hyperlink>
                     </TextBlock>
                     <TextBlock x:Name="textBlock_Help" HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Top" Margin="10 0 10 0">
                             <Hyperlink NavigateUri="https://github.com/BOLL7708/OpenVRNotificationPipe" Click="ClickedURL">Help</Hyperlink>

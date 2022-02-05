@@ -187,7 +187,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="example.html">
+    <Content Include="editor.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <EmbeddedResource Include="costura64\openvr_api.dll" />
