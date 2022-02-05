@@ -23,7 +23,7 @@ namespace OpenVRNotificationPipe
         public TextArea[] textAreas = new TextArea[0];
 
         public class Properties {
-            public bool headset = false; // Overrides: horizontal, level
+            public int anchor = 0; // Overrides: horizontal, level
             public bool horizontal = true;
             public bool level = false;
             public int channel = 0;

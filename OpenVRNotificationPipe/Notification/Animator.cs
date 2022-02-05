@@ -111,11 +111,9 @@ namespace OpenVRNotificationPipe.Notification
                     // Pose
                     hmdTransform = _vr.GetDeviceToAbsoluteTrackingPose()[0].mDeviceToAbsoluteTracking;
 
-                    if(!properties.headset)
+                    if(properties.anchor == 0)
                     {
-                        
-
-                        // Remove roll so it stays horizontal
+                        // Restrict rotation if necessary
                         HmdVector3_t hmdEuler = hmdTransform.EulerAngles();
                         if(properties.horizontal) hmdEuler.v2 = 0;
                         if(properties.level) hmdEuler.v0 = 0;
@@ -171,12 +169,29 @@ namespace OpenVRNotificationPipe.Notification
                             v1 = _payload.properties.offsety + (transition.vertical * ratioReversed),
                             v2 = -properties.distance - (transition.distance * ratioReversed)
                         };
-                        animationTransform = (properties.headset ? EasyOpenVRSingleton.Utils.GetEmptyTransform() : hmdTransform)
+
+                        animationTransform = (properties.anchor != 0
+                            ? EasyOpenVRSingleton.Utils.GetEmptyTransform() 
+                            : hmdTransform)
                             .RotateY(-properties.yaw)
                             .RotateX(properties.pitch)
                             .Translate(translate)
                             .RotateZ(transition.spin * ratioReversed);
-                        _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.headset ? 0 : uint.MaxValue);
+
+                        uint anchorIndex = uint.MaxValue;
+                        switch (properties.anchor) {
+                            case 1:
+                                var anchorIndexArr = _vr.GetIndexesForTrackedDeviceClass(ETrackedDeviceClass.HMD);
+                                if (anchorIndexArr.Length > 0) anchorIndex = anchorIndexArr[0];
+                                break;
+                            case 2:
+                                anchorIndex = _vr.GetIndexForControllerRole(ETrackedControllerRole.LeftHand);
+                                break;
+                            case 3:
+                                anchorIndex = _vr.GetIndexForControllerRole(ETrackedControllerRole.RightHand);
+                                break;
+                        }
+                        _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.anchor == 0 ? uint.MaxValue : anchorIndex);
                         _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));
                         _vr.SetOverlayWidth(_overlayHandle, width*(transition.scale+(ratio*(1f-transition.scale))));
                     }
