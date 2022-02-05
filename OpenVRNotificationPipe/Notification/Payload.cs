@@ -24,15 +24,20 @@ namespace OpenVRNotificationPipe
 
         public class Properties {
             public int anchor = 0; // Overrides: horizontal, level
+
             public bool horizontal = true;
             public bool level = false;
+
             public int channel = 0;
             public int hz = -1;
             public int duration = 1000;
             public float width = 1;
             public float distance = 1;
-            public float pitch = 0;
+
             public float yaw = 0;
+            public float pitch = 0;
+            public float roll = 0;
+
             public float offsetx = 0;
             public float offsety = 0;
         }

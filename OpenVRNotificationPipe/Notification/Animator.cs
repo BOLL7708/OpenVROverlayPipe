@@ -175,6 +175,7 @@ namespace OpenVRNotificationPipe.Notification
                             : hmdTransform)
                             .RotateY(-properties.yaw)
                             .RotateX(properties.pitch)
+                            .RotateZ(properties.roll)
                             .Translate(translate)
                             .RotateZ(transition.spin * ratioReversed);
 
