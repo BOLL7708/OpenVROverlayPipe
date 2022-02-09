@@ -25,6 +25,7 @@ namespace OpenVRNotificationPipe
 
         public class Properties {
             public int anchor = 0; // Overrides: horizontal, level
+            public bool attached = false;
 
             public bool horizontal = false;
             public bool level = false;

@@ -139,7 +139,9 @@ namespace OpenVRNotificationPipe.Notification
                     // Debug.WriteLine($"{easeInCount}, {stayCount}, {easeOutCount} - {easeInLimit}, {stayLimit}, {easeOutLimit}");
 
                     // Pose
-                    deviceTransform = _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
+                    deviceTransform = properties.anchor == 0 
+                        ? EasyOpenVRSingleton.Utils.GetEmptyTransform()
+                        : _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
                     originTransform = deviceTransform;
                     targetTransform = deviceTransform;
 
@@ -205,9 +207,11 @@ namespace OpenVRNotificationPipe.Notification
 
                         #region Follow
                         // Follow
-                        if(follow.enabled && follow.duration > 0)
+                        if(follow.enabled && follow.duration > 0 && properties.anchor != 0 && !properties.attached)
                         {
-                            var currentPose = _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
+                            var currentPose = properties.anchor == 0 
+                                ? EasyOpenVRSingleton.Utils.GetEmptyTransform() 
+                                : _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
                             var angleBetween = EasyOpenVRSingleton.Utils.AngleBetween(deviceTransform, currentPose);
                             if (angleBetween > follow.cone && !followIsLerping)
                             {
@@ -232,7 +236,7 @@ namespace OpenVRNotificationPipe.Notification
                         }
                         #endregion
 
-                        animationTransform = (properties.anchor != 0
+                        animationTransform = ((properties.attached || properties.anchor == 0)
                             ? EasyOpenVRSingleton.Utils.GetEmptyTransform() 
                             : deviceTransform)
                             .RotateY(-properties.yaw)
@@ -241,7 +245,7 @@ namespace OpenVRNotificationPipe.Notification
                             .Translate(translate)
                             .RotateZ(transition.spin * ratioReversed);
 
-                        _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.anchor == 0 ? uint.MaxValue : anchorIndex);
+                        _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.attached ? anchorIndex : uint.MaxValue);
                         _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));
                         _vr.SetOverlayWidth(_overlayHandle, width*(transition.scale+(ratio*(1f-transition.scale))));
                     }
