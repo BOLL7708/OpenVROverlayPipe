@@ -127,6 +127,13 @@
             <input name="offsety" type="number" value="0" step="0.01"/>
         </form>
 
+        <form id="formFollow">
+            <h3>Follow</h3>
+            <input name="enabled" type="checkbox" value="true"/>
+            <input name="cone" type="number" value="0" step="5"/>
+            <input name="duration" type="number" value="100" step="50"/>
+        </form>
+
         <template id="templateTransition">
             <input name="scale" type="number" step=".01" value="1.0"/>
             <input name="opacity" type="number" step=".01" value="1.0"/>
@@ -134,6 +141,10 @@
             <input name="vertical" type="number" step=".01" value="0.0"/>
             <input name="distance" type="number" step=".01" value="0.0"/>
             <input name="spin" type="number" step="1" value="0"/>
+            <input name="duration" type="number" step="50" value="100"/>
+        </template>
+
+        <template id="templateTween">
             <select name="tween">
                 <option value="0">Linear</option>
                 <option value="1">Sine</option>
@@ -146,7 +157,6 @@
                 <option value="8">Elastic</option>
                 <option value="9">Bounce</option>
             </select>
-            <input name="duration" type="number" step="50" value="100"/>
         </template>
 
         <form id="formTransitionIn">
@@ -195,13 +205,18 @@
 
         // Construct forms
         const _formProperties = document.querySelector('#formProperties')
+        const _formFollow = document.querySelector('#formFollow')
         const _formTransitionIn = document.querySelector('#formTransitionIn')
         const _formTransitionOut = document.querySelector('#formTransitionOut')
         const _formTextarea = document.querySelector('#formTextarea')
         const _templateTransition = document.querySelector('#templateTransition')
+        const _templateTween = document.querySelector('#templateTween')
         const _formConfig = document.querySelector('#formConfig')
+        _formFollow.appendChild(_templateTween.content.cloneNode(true))
         _formTransitionIn.appendChild(_templateTransition.content.cloneNode(true))
+        _formTransitionIn.appendChild(_templateTween.content.cloneNode(true))
         _formTransitionOut.appendChild(_templateTransition.content.cloneNode(true))
+        _formTransitionOut.appendChild(_templateTween.content.cloneNode(true))
 
         // Input wrapping & IDing
         const _elements = document.querySelectorAll('input, select, canvas')
@@ -334,6 +349,9 @@
             const propertiesData = new FormData(_formProperties)
             const propertiesJSON = Object.fromEntries(propertiesData.entries())
 
+            const followData = new FormData(_formFollow)
+            const followJSON = Object.fromEntries(followData.entries())
+
             const transitionsInData = new FormData(_formTransitionIn)
             const transitionsInJSON = Object.fromEntries(transitionsInData.entries())
 
@@ -345,6 +363,7 @@
 
             // Handle multi-selects
             propertiesJSON.anchor = propertiesData.getAll('anchor').pop()
+            followJSON.tween = followData.getAll('tween').pop()
             transitionsInJSON.tween = transitionsInData.getAll('tween').pop()
             transitionsOutJSON.tween = transitionsOutData.getAll('tween').pop()
             textareaJSON.gravity = textareaData.getAll('gravity').pop()
@@ -352,6 +371,7 @@
 
             // Fill data
             data.properties = propertiesJSON
+            data.follow = followJSON
             data.transitions.push(transitionsInJSON)
             data.transitions.push(transitionsOutJSON)
             data.textAreas.push(textareaJSON)
@@ -378,11 +398,13 @@
             const data = JSON.parse(_config.value)
             if(_config.value.length > 0) window.localStorage.setItem(_localStorageKey, _config.value)
             const properties = data.properties ?? {}
+            const follow = data.follow ?? {}
             const transitionIn = data.transitions[0] ?? {}
             const transitionOut = data.transitions[1] ?? {}
             const textarea = data.textAreas[0] ?? {}
 
             applyDataToForm(_formProperties, properties)
+            applyDataToForm(_formFollow, follow)
             applyDataToForm(_formTransitionIn, transitionIn)
             applyDataToForm(_formTransitionOut, transitionOut)
             applyDataToForm(_formTextarea, textarea)

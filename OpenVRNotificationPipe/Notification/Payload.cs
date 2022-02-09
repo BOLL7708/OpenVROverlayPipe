@@ -19,6 +19,7 @@ namespace OpenVRNotificationPipe
 
         // Custom notification
         public Properties properties = new Properties();
+        public Follow follow = new Follow();
         public Transition[] transitions = new Transition[0];
         public TextArea[] textAreas = new TextArea[0];
 
@@ -64,6 +65,14 @@ namespace OpenVRNotificationPipe
             public string color = "";
             public int gravity = 0; // Left
             public int alignment = 0; // Left
+        }
+
+        public class Follow
+        {
+            public bool enabled = false;
+            public int tween = 0; // Tween type
+            public float cone = 0; // Triggering cone angle
+            public float duration = 100; // Transition duration
         }
     }
 }

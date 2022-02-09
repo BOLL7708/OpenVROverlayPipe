@@ -30,6 +30,7 @@ namespace OpenVRNotificationPipe.Notification
             Idle,
             EasingIn,
             Staying,
+            Following,
             EasingOut,
             Finished
         }
@@ -38,13 +39,23 @@ namespace OpenVRNotificationPipe.Notification
             Thread.CurrentThread.IsBackground = true;
             
             // General
-            var hmdTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
+            var deviceTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
+            
+            // Follow
+            var originTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
+            var targetTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
+            var followLerp = 0.0;
+            var followTween = Tween.GetFunc(0);
+            var followIsLerping = false;
+
             var notificationTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
             var animationTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
             var width = 1f;
             var height = 1f;
             var properties = new Payload.Properties();
+            var follow = new Payload.Follow();
             var transition = new Payload.Transition();
+            var anchorIndex = uint.MaxValue;
 
             // Animation
             var stage = AnimationStage.Idle;
@@ -61,7 +72,7 @@ namespace OpenVRNotificationPipe.Notification
             var stayLimit = 0;
             var easeOutLimit = 0;
 
-            Func<float, float> tween = Tween.GetFunc(0);
+            var tween = Tween.GetFunc(0);
 
             while (true)
             {
@@ -76,12 +87,31 @@ namespace OpenVRNotificationPipe.Notification
                 }
                 else if (stage == AnimationStage.Idle)
                 {
+                    #region init 
                     // Initialize things that stay the same during the whole animation
+                    
                     stage = AnimationStage.EasingIn;
                     properties = _payload.properties;
+                    follow = _payload.follow;
+                    followTween = Tween.GetFunc(follow.tween);
                     var hmdHz = _vr.GetFloatTrackedDeviceProperty(0, ETrackedDeviceProperty.Prop_DisplayFrequency_Float);
                     hz = properties.hz > 0 ? properties.hz : (int) Math.Round(hmdHz);
                     msPerFrame = 1000 / hz;
+
+                    // Set anchor
+                    switch (properties.anchor)
+                    {
+                        case 1:
+                            var anchorIndexArr = _vr.GetIndexesForTrackedDeviceClass(ETrackedDeviceClass.HMD);
+                            if (anchorIndexArr.Length > 0) anchorIndex = anchorIndexArr[0];
+                            break;
+                        case 2:
+                            anchorIndex = _vr.GetIndexForControllerRole(ETrackedControllerRole.LeftHand);
+                            break;
+                        case 3:
+                            anchorIndex = _vr.GetIndexForControllerRole(ETrackedControllerRole.RightHand);
+                            break;
+                    }
 
                     // Size of overlay
                     var size = _texture.Load(_payload.image, _payload.textAreas);
@@ -109,27 +139,29 @@ namespace OpenVRNotificationPipe.Notification
                     // Debug.WriteLine($"{easeInCount}, {stayCount}, {easeOutCount} - {easeInLimit}, {stayLimit}, {easeOutLimit}");
 
                     // Pose
-                    hmdTransform = _vr.GetDeviceToAbsoluteTrackingPose()[0].mDeviceToAbsoluteTracking;
+                    deviceTransform = _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
+                    originTransform = deviceTransform;
+                    targetTransform = deviceTransform;
 
                     if(properties.anchor == 0)
                     {
                         // Restrict rotation if necessary
-                        HmdVector3_t hmdEuler = hmdTransform.EulerAngles();
+                        HmdVector3_t hmdEuler = deviceTransform.EulerAngles();
                         if(properties.horizontal) hmdEuler.v2 = 0;
                         if(properties.level) hmdEuler.v0 = 0;
-                        hmdTransform = hmdTransform.FromEuler(hmdEuler);
+                        deviceTransform = deviceTransform.FromEuler(hmdEuler);
                     }
-                } 
-                
-                if(!skip && stage != AnimationStage.Idle) // Animate
+                    #endregion
+                }
+
+                if (!skip && stage != AnimationStage.Idle) // Animate
                 {
                     // Animation stage
                     if (animationCount < easeInLimit) stage = AnimationStage.EasingIn;
                     else if (animationCount >= stayLimit) stage = AnimationStage.EasingOut;
-                    else stage = AnimationStage.Staying;
+                    else stage = follow.enabled ? AnimationStage.Following : AnimationStage.Staying;
 
-                    // Secondary inits that happen at the start of specific stages
-
+                    #region stage inits
                     if (animationCount == 0) 
                     { // Init EaseIn
                         transition = _payload.transitions.Length > 0 
@@ -146,6 +178,7 @@ namespace OpenVRNotificationPipe.Notification
                             tween = Tween.GetFunc(transition.tween);
                         }
                     }
+                    #endregion
 
                     // Setup and normalized progression ratio
                     var ratio = 1f;
@@ -161,7 +194,7 @@ namespace OpenVRNotificationPipe.Notification
                     var ratioReversed = 1f - ratio;
 
                     // Transform
-                    if (stage != AnimationStage.Staying || animationCount == easeInLimit) { // Only performs animation on first frame of Staying stage.
+                    if (stage != AnimationStage.Staying || stage == AnimationStage.Following || animationCount == easeInLimit) { // Only performs animation on first frame of Staying stage.
                         // Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
                         var translate = new HmdVector3_t()
                         {
@@ -170,28 +203,44 @@ namespace OpenVRNotificationPipe.Notification
                             v2 = -properties.distance - (transition.distance * ratioReversed)
                         };
 
+                        #region Follow
+                        // Follow
+                        if(follow.enabled && follow.duration > 0)
+                        {
+                            var currentPose = _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
+                            var angleBetween = EasyOpenVRSingleton.Utils.AngleBetween(deviceTransform, currentPose);
+                            if (angleBetween > follow.cone && !followIsLerping)
+                            {
+                                followIsLerping = true;
+                                targetTransform = currentPose;
+                            }
+                            if(followIsLerping)
+                            {
+                                followLerp += msPerFrame / follow.duration;
+                                if (followLerp > 1.0)
+                                {
+                                    deviceTransform = targetTransform;
+                                    originTransform = targetTransform;
+                                    followLerp = 0.0;
+                                    followIsLerping = false;
+                                }
+                                else
+                                {
+                                    deviceTransform = originTransform.Lerp(targetTransform, followTween((float)followLerp));
+                                }
+                            }
+                        }
+                        #endregion
+
                         animationTransform = (properties.anchor != 0
                             ? EasyOpenVRSingleton.Utils.GetEmptyTransform() 
-                            : hmdTransform)
+                            : deviceTransform)
                             .RotateY(-properties.yaw)
                             .RotateX(properties.pitch)
                             .RotateZ(properties.roll)
                             .Translate(translate)
                             .RotateZ(transition.spin * ratioReversed);
 
-                        uint anchorIndex = uint.MaxValue;
-                        switch (properties.anchor) {
-                            case 1:
-                                var anchorIndexArr = _vr.GetIndexesForTrackedDeviceClass(ETrackedDeviceClass.HMD);
-                                if (anchorIndexArr.Length > 0) anchorIndex = anchorIndexArr[0];
-                                break;
-                            case 2:
-                                anchorIndex = _vr.GetIndexForControllerRole(ETrackedControllerRole.LeftHand);
-                                break;
-                            case 3:
-                                anchorIndex = _vr.GetIndexForControllerRole(ETrackedControllerRole.RightHand);
-                                break;
-                        }
                         _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.anchor == 0 ? uint.MaxValue : anchorIndex);
                         _vr.SetOverlayAlpha(_overlayHandle, transition.opacity+(ratio*(1f-transition.opacity)));
                         _vr.SetOverlayWidth(_overlayHandle, width*(transition.scale+(ratio*(1f-transition.scale))));
