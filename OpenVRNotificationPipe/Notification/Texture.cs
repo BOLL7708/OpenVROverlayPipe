@@ -51,10 +51,10 @@ namespace OpenVRNotificationPipe.Notification
                     // https://stackoverflow.com/a/32012246/2076423
                     var g = Graphics.FromImage(bmp);
                     RectangleF rectf = new RectangleF(
-                        Math.Min(Math.Max(0, ta.posx), bmp.Width),
-                        Math.Min(Math.Max(0, ta.posy), bmp.Height),
-                        Math.Min(ta.width, bmp.Width), 
-                        Math.Min(ta.height, bmp.Height)
+                        Math.Min(Math.Max(0, ta.xPositionPx), bmp.Width),
+                        Math.Min(Math.Max(0, ta.yPositionPx), bmp.Height),
+                        Math.Min(ta.widthPx, bmp.Width), 
+                        Math.Min(ta.heightPx, bmp.Height)
                     );
                     g.SmoothingMode = SmoothingMode.AntiAlias;
                     g.InterpolationMode = InterpolationMode.HighQualityBicubic;
@@ -62,20 +62,20 @@ namespace OpenVRNotificationPipe.Notification
                     g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                     StringFormat format = new StringFormat()
                     {
-                        Alignment = (StringAlignment) Math.Min((int) StringAlignment.Far, Math.Max(ta.gravity, (int) StringAlignment.Near)),
-                        LineAlignment = (StringAlignment) Math.Min((int) StringAlignment.Far, Math.Max(ta.alignment, (int) StringAlignment.Near)),
+                        Alignment = (StringAlignment) Math.Min((int) StringAlignment.Far, Math.Max(ta.horizontalAlignment, (int) StringAlignment.Near)),
+                        LineAlignment = (StringAlignment) Math.Min((int) StringAlignment.Far, Math.Max(ta.verticalAlignment, (int) StringAlignment.Near)),
                         Trimming = StringTrimming.EllipsisWord
                         // FormatFlags = StringFormatFlags.DirectionVertical
                     };
-                    Debug.WriteLine($"Gravity: {ta.gravity}:{format.Alignment}, Alignment: {ta.alignment}:{format.LineAlignment}");
+                    Debug.WriteLine($"Gravity: {ta.horizontalAlignment}:{format.Alignment}, Alignment: {ta.verticalAlignment}:{format.LineAlignment}");
                     var color = Color.White;
-                    try { color = ColorTranslator.FromHtml(ta.color); } 
+                    try { color = ColorTranslator.FromHtml(ta.fontColor); } 
                     catch (Exception e) { Debug.WriteLine($"Invalid HTML color: {e.Message}"); }
                     if (color.A == 0) color = Color.White; // Empty string parses out to transparent black (0,0,0,0)
                     var brush = new SolidBrush(color);
                     g.DrawString(
                         ta.text, 
-                        new Font(ta.font, ta.size), 
+                        new Font(ta.fontFamily, ta.fontSizePt), 
                         brush,
                         rectf,
                         format

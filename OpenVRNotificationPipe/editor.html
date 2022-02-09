@@ -33,7 +33,7 @@
         }
         form p label {
             display: inline-block;
-            width: 5em;
+            width: 9em;
             text-align: right;
             padding-right: 4px;
             user-select: none;
@@ -77,7 +77,7 @@
             padding: 2px;
         }
         input[type=number] {
-            width: 4em;
+            width: 5em;
         }
         canvas {
             margin: 0;
@@ -87,7 +87,7 @@
             height: 2em;
         }
         textarea {
-            width: 20em;
+            width: 25em;
             height: 30em;
         }
     </style>
@@ -107,52 +107,53 @@
 
         <form id="formProperties">
             <h3>Properties</h3>
-            <select name="anchor">
+            <input name="enabled" type="checkbox" value="true" checked/>
+            <select name="anchorType">
                 <option value="0">World</option>
-                <option value="1">Head</option>
+                <option value="1" selected>Head</option>
                 <option value="2">Left hand</option>
                 <option value="3">Right hand</option>
             </select></p>
-            <input name="attached" type="checkbox" value="true"/>
-            <input name="horizontal" type="checkbox" value="true"/>
-            <input name="level" type="checkbox" value="true"/>
-            <input name="channel" type="number" value="0" step="1"/>
-            <input name="hz" type="number" value="-1" step="1"/>
-            <input name="duration" type="number" value="1000" step="100"/>
-            <input name="width" type="number" value="1" step="0.01"/>
-            <input name="distance" type="number" value="1" step="0.01"/>           
-            <input name="pitch" type="number" value="0" step="1"/>
-            <input name="yaw" type="number" value="0" step="1"/>
-            <input name="roll" type="number" value="0" step="1"/>
-            <input name="offsetx" type="number" value="0" step="0.01"/>
-            <input name="offsety" type="number" value="0" step="0.01"/>
+            <input name="attachToAnchor" type="checkbox" value="true"/>
+            <input name="forceHorizontal" type="checkbox" value="true"/>
+            <input name="forceVertical" type="checkbox" value="true"/>
+            <input name="overlayChannel" type="number" value="0" step="1"/>
+            <input name="animationHz" type="number" value="-1" step="1"/>
+            <input name="durationMs" type="number" value="5000" step="500"/>
+            <input name="widthM" type="number" value="1" step="0.01"/>
+            <input name="zDistanceM" type="number" value="1" step="0.01"/>           
+            <input name="yDistanceM" type="number" value="0" step="0.01"/>
+            <input name="xDistanceM" type="number" value="0" step="0.01"/>
+            <input name="yawDeg" type="number" value="0" step="1"/>
+            <input name="pitchDeg" type="number" value="0" step="1"/>
+            <input name="rollDeg" type="number" value="0" step="1"/>
         </form>
 
         <form id="formFollow">
             <h3>Follow</h3>
             <input name="enabled" type="checkbox" value="true"/>
-            <input name="cone" type="number" value="0" step="5"/>
-            <input name="duration" type="number" value="100" step="50"/>
+            <input name="triggerAngle" type="number" value="65" step="5"/>
+            <input name="durationMs" type="number" value="250" step="50"/>
         </form>
 
         <template id="templateTransition">
-            <input name="scale" type="number" step=".01" value="1.0"/>
-            <input name="opacity" type="number" step=".01" value="1.0"/>
-            <input name="horizontal" type="number" step=".01" value="0.0"/>
-            <input name="vertical" type="number" step=".01" value="0.0"/>
-            <input name="distance" type="number" step=".01" value="0.0"/>
-            <input name="spin" type="number" step="1" value="0"/>
-            <input name="duration" type="number" step="50" value="100"/>
+            <input name="scalePer" type="number" step=".01" value="1.0"/>
+            <input name="opacityPer" type="number" step="0.01" value="0.0"/>
+            <input name="zDistanceM" type="number" step="0.01" value="0.0"/>
+            <input name="yDistanceM" type="number" step="0.01" value="0.0"/>
+            <input name="xDistanceM" type="number" step="0.01" value="0.0"/>
+            <input name="rollDeg" type="number" step="1" value="0"/>
+            <input name="durationMs" type="number" step="50" value="250"/>
         </template>
 
         <template id="templateTween">
-            <select name="tween">
+            <select name="tweenType">
                 <option value="0">Linear</option>
                 <option value="1">Sine</option>
                 <option value="2">Quadratic</option>
                 <option value="3">Cubic</option>
                 <option value="4">Quartic</option>
-                <option value="5">Quintic</option>
+                <option value="5" selected>Quintic</option>
                 <option value="6">Circle</option>
                 <option value="7">Back</option>
                 <option value="8">Elastic</option>
@@ -170,20 +171,20 @@
 
         <form id="formTextarea">
             <h3>Textarea</h3>
-            <input name="posx" type="number" step="1" value="0"/>
-            <input name="posy" type="number" step="1" value="0"/>
-            <input name="width" type="number" step="1" value="0"/>
-            <input name="height" type="number" step="1" value="0"/>
-            <input name="size" type="number" step="1" value="10"/>
             <input name="text" value=""/>
-            <input name="font" type="text" value="Arial"/>
-            <input name="color" type="color" value="#FFFFFF"/>
-            <select name="gravity">
+            <input name="xPositionPx" type="number" step="1" value="0"/>
+            <input name="yPositionPx" type="number" step="1" value="0"/>
+            <input name="widthPx" type="number" step="1" value="0"/>
+            <input name="heightPx" type="number" step="1" value="0"/>
+            <input name="fontSizePt" type="number" step="1" value="10"/>
+            <input name="fontFamily" type="text" value="Arial"/>
+            <input name="fontColor" type="color" value="#FFFFFF"/>
+            <select name="horizontalAlignment">
                 <option value="0">Near</option>
                 <option value="1">Center</option>
                 <option value="2">Far</option>
             </select>
-            <select name="alignment">
+            <select name="verticalAlignment">
                 <option value="0">Near</option>
                 <option value="1">Center</option>
                 <option value="2">Far</option>
@@ -233,7 +234,9 @@
             el.parentNode.insertBefore(wrapper, el)
             const label = document.createElement('label')
             label.setAttribute('for', id)
-            label.innerText = `${name}:`
+            label.innerHTML = name.toLowerCase() == 'tweentype' 
+                ? `<a href="https://easings.net/" target="_blank">${name}</a>`
+                : `${name}:`
             wrapper.appendChild(label)
             wrapper.appendChild(el)
         })
@@ -332,18 +335,19 @@
         function sendNotification(e) {
             e?.preventDefault()
             var data = {
-				custom: true,
-				image: getImageData(),
+                // General
+				imageData: getImageData(),
 				
 				// Standard
-				title: "",
-				message: "",
+				basicTitle: "",
+				basicMessage: "",
 
 				// Custom
-				properties: {},
-				follow: {},
-				transitions: [],
-				textAreas: []
+				customProperties: {
+                    follow: {},
+                    transitions: [],
+                    textAreas: []
+                }
 			};
 
             // Get all other data
@@ -363,25 +367,28 @@
             const textareaJSON = Object.fromEntries(textareaData.entries())
 
             // Handle multi-selects
-            propertiesJSON.anchor = propertiesData.getAll('anchor').pop()
-            followJSON.tween = followData.getAll('tween').pop()
-            transitionsInJSON.tween = transitionsInData.getAll('tween').pop()
-            transitionsOutJSON.tween = transitionsOutData.getAll('tween').pop()
-            textareaJSON.gravity = textareaData.getAll('gravity').pop()
-            textareaJSON.alignment = textareaData.getAll('alignment').pop()
+            propertiesJSON.anchorType = propertiesData.getAll('anchorType').pop()
+            followJSON.tweenType = followData.getAll('tweenType').pop()
+            transitionsInJSON.tweenType = transitionsInData.getAll('tweenType').pop()
+            transitionsOutJSON.tweenType = transitionsOutData.getAll('tweenType').pop()
+            textareaJSON.horizontalAlignment = textareaData.getAll('horizontalAlignment').pop()
+            textareaJSON.verticalAlignment = textareaData.getAll('verticalAlignment').pop()
 
             // Fill data
-            data.properties = propertiesJSON
-            data.follow = followJSON
-            data.transitions.push(transitionsInJSON)
-            data.transitions.push(transitionsOutJSON)
-            data.textAreas.push(textareaJSON)
+            data.customProperties = propertiesJSON
+            data.customProperties.follow = {}
+            data.customProperties.transitions = []
+            data.customProperties.textAreas = []
+            data.customProperties.follow = followJSON
+            data.customProperties.transitions.push(transitionsInJSON)
+            data.customProperties.transitions.push(transitionsOutJSON)
+            data.customProperties.textAreas.push(textareaJSON)
 
             // Send data
             _ws.send(JSON.stringify(data))
 
             // Update config text
-            data.image = '(removed)'
+            data.imageData = '(removed)'
             const indent = _formConfig.querySelector('#formConfig-indentation').value
             const configStr = JSON.stringify(data, null, new Array(parseInt(indent) + 1).join(' '))
             _config.innerHTML = configStr
@@ -398,11 +405,11 @@
             e?.preventDefault()
             const data = JSON.parse(_config.value)
             if(_config.value.length > 0) window.localStorage.setItem(_localStorageKey, _config.value)
-            const properties = data.properties ?? {}
-            const follow = data.follow ?? {}
-            const transitionIn = data.transitions[0] ?? {}
-            const transitionOut = data.transitions[1] ?? {}
-            const textarea = data.textAreas[0] ?? {}
+            const properties = data.customProperties ?? {}
+            const follow = data.customProperties.follow ?? {}
+            const transitionIn = data.customProperties.transitions[0] ?? {}
+            const transitionOut = data.customProperties.transitions[1] ?? {}
+            const textarea = data.customProperties.textAreas[0] ?? {}
 
             applyDataToForm(_formProperties, properties)
             applyDataToForm(_formFollow, follow)
@@ -414,10 +421,12 @@
                 for(const key in data) {
                     const id = `${form.id}-${key}`
                     const el = document.querySelector(`#${id}`)
-                    if(el.type == 'checkbox') {
-                        el.checked = data[key] ?? ''
-                    } else {
-                        el.value = data[key]
+                    if(typeof data[key] != 'object') {
+                        if(el.type == 'checkbox') {
+                            el.checked = data[key] ?? ''
+                        } else {
+                            el.value = data[key]
+                        }
                     }
                 }
             }

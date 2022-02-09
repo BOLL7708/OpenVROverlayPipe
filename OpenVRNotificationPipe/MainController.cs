@@ -90,18 +90,18 @@ namespace OpenVRNotificationPipe
             _overlayHandles.TryGetValue(session, out ulong overlayHandle);
             if (overlayHandle == 0L) {
                 if (_overlayHandles.Count >= 32) _overlayHandles.Clear(); // Max 32, restart!
-                overlayHandle = _vr.InitNotificationOverlay(payload.title);
+                overlayHandle = _vr.InitNotificationOverlay(payload.basicTitle);
                 _overlayHandles.TryAdd(session, overlayHandle);
             }
             // images.TryGetValue(session, out byte[] imageBytes);
 
             // Image
-            Debug.WriteLine($"Overlay handle {overlayHandle} for '{payload.title}'");
-            Debug.WriteLine($"Image Hash: {CreateMD5(payload.image)}");
+            Debug.WriteLine($"Overlay handle {overlayHandle} for '{payload.basicTitle}'");
+            Debug.WriteLine($"Image Hash: {CreateMD5(payload.imageData)}");
             NotificationBitmap_t bitmap = new NotificationBitmap_t();
             try
             {
-                var imageBytes = Convert.FromBase64String(payload.image);
+                var imageBytes = Convert.FromBase64String(payload.imageData);
                 var bmp = new Bitmap(new MemoryStream(imageBytes));
                 Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
                 bitmap = BitmapUtils.NotificationBitmapFromBitmap(bmp, true);
@@ -115,13 +115,13 @@ namespace OpenVRNotificationPipe
             if(overlayHandle != 0)
             {
                 GC.KeepAlive(bitmap);
-                _vr.EnqueueNotification(overlayHandle, payload.message, bitmap);
+                _vr.EnqueueNotification(overlayHandle, payload.basicMessage, bitmap);
             }
         }
 
         private void PostImageNotification(Payload payload)
         {
-            var channel = payload.properties.channel;
+            var channel = payload.customProperties.overlayChannel;
             Debug.WriteLine($"Posting image texture notification to channel {channel}!");
             Overlay overlay;
             if(!_overlays.ContainsKey(channel))
@@ -148,7 +148,7 @@ namespace OpenVRNotificationPipe
                 }
                 // Debug.WriteLine($"Payload was received: {payloadJson}");
 
-                if (payload.custom) PostImageNotification(payload);
+                if (payload.customProperties.enabled) PostImageNotification(payload);
                 else PostNotification(session, payload);
             };
             _server.DataReceievedAction = (session, bytes) => {
