@@ -43,22 +43,22 @@ These are the JSON payloads you send to the server via the active WebSockets con
 The minimum to provide for this is `title` and `message`, those are mandatory to be able to show a basic SteamVR notification.
 ```jsonc
 {
+    "imageData": "", // Optional: A base64 string with *.png image data, only the data part of a data URL
     "basicTitle": "", // The title above the notification
-    "basicMessage": "", // The main message of the notification
-    "image": "" // The base64 string of a .png image
+    "basicMessage": "" // The main message of the notification
 }
 ```
 ### Custom Notification
 The way the transitions work, it will animate values that differs from when it is static, so setting `opacityPer` to `0` means it will transition from 0% to 100% when appearing, and from 100% to 0% when disappearing.
 ```jsonc
 {
-    "image": "", // A base64 string with *.png image data, only the data if data URL
+    "imageData": "", // A base64 string with *.png image data, only the data part of a data URL
     "customPproperties": {
         "enabled": false, // True to do a custom notification
         "anchorType": 1, // What to anchor the notification to, 0: world, 1: head, 2: left hand, 3: right hand
-        "attachToAnchor": false, // Will fix the overlay to the anchor, overrides forceHorizontal and forceVertical.
-        "forceHorizontal": true, // Initial roll alignment to the horizon, else relative to anchor
-        "forceVertical": false, // Will ignore pitch of the headset and keep the origin leveled with the horizon
+        "attachToAnchor": false, // Will fix the overlay to the anchor, overrides attachToHorizon and alignToHorizon
+        "attachToHorizon": false, // Will ignore pitch of the headset and keep the origin leveled with the horizon
+        "alignToHorizon": true, // Initial roll alignment to the horizon, else relative to anchor
 	    "overlayChannel": 0, // Use different channels to show notifications simultaneously
         "animationHz": -1, // Animation frame rate, -1 uses the headset refresh rate instead
         "durationMs": 1000, // The time the notification stays up, in milliseconds

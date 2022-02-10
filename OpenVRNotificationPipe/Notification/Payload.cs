@@ -17,19 +17,20 @@ namespace OpenVRNotificationPipe
         public string basicMessage = "";
 
         // Custom notification
-        public Properties customProperties = new Properties();
+        public CustomProperties customProperties = new CustomProperties();
 
-        public class Properties {
+        public class CustomProperties {
             public bool enabled = false;
             public int anchorType = 1; // 0: World, 1: Head, 2: Left Hand, 3: Right Hand
             public bool attachToAnchor = false; // Fixes the overlay to the anchor
-            public bool forceHorizontal = false;
-            public bool forceVertical = false;
+            public bool attachToHorizon = false;
+            public bool alignToHorizon = false;
 
             public int overlayChannel = 0;
             public int animationHz = -1;
             public int durationMs = 5000;
-            
+            public float opacityPer = 1;
+
             public float widthM = 1;
             public float zDistanceM = 1;
             public float yDistanceM = 0;

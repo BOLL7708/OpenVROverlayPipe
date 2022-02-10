@@ -52,7 +52,7 @@ namespace OpenVRNotificationPipe.Notification
             var animationTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
             var width = 1f;
             var height = 1f;
-            var properties = new Payload.Properties();
+            var properties = new Payload.CustomProperties();
             var follow = new Payload.Follow();
             var transition = new Payload.Transition();
             var anchorIndex = uint.MaxValue;
@@ -145,12 +145,12 @@ namespace OpenVRNotificationPipe.Notification
                     originTransform = deviceTransform;
                     targetTransform = deviceTransform;
 
-                    if(properties.anchorType == 0)
+                    if(!properties.attachToAnchor)
                     {
                         // Restrict rotation if necessary
                         HmdVector3_t hmdEuler = deviceTransform.EulerAngles();
-                        if(properties.forceHorizontal) hmdEuler.v2 = 0;
-                        if(properties.forceVertical) hmdEuler.v0 = 0;
+                        if(properties.alignToHorizon) hmdEuler.v2 = 0;
+                        if(properties.attachToHorizon) hmdEuler.v0 = 0;
                         deviceTransform = deviceTransform.FromEuler(hmdEuler);
                     }
                     #endregion
@@ -246,7 +246,7 @@ namespace OpenVRNotificationPipe.Notification
                             .RotateZ(transition.rollDeg * ratioReversed);
 
                         _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.attachToAnchor ? anchorIndex : uint.MaxValue);
-                        _vr.SetOverlayAlpha(_overlayHandle, transition.opacityPer+(ratio*(1f-transition.opacityPer)));
+                        _vr.SetOverlayAlpha(_overlayHandle, (transition.opacityPer+(ratio*(1f-transition.opacityPer)))*properties.opacityPer);
                         _vr.SetOverlayWidth(_overlayHandle, width*(transition.scalePer+(ratio*(1f-transition.scalePer))));
                     }
 
