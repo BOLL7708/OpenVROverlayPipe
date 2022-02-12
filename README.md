@@ -58,10 +58,11 @@ The way the transitions work, it will animate values that differs from when it i
         "anchorType": 1, // What to anchor the notification to, 0: world, 1: head, 2: left hand, 3: right hand
         "attachToAnchor": false, // Will fix the overlay to the anchor, overrides attachToHorizon and alignToHorizon
         "attachToHorizon": false, // Will ignore pitch of the headset and keep the origin leveled with the horizon
-        "alignToHorizon": true, // Initial roll alignment to the horizon, else relative to anchor
+        "alignToHorizon": false, // Initial roll alignment to the horizon, else relative to anchor
 	    "overlayChannel": 0, // Use different channels to show notifications simultaneously
         "animationHz": -1, // Animation frame rate, -1 uses the headset refresh rate instead
-        "durationMs": 1000, // The time the notification stays up, in milliseconds
+        "durationMs": 5000, // The time the notification stays up, in milliseconds
+        "opacityPer": 1, // The opacity of the notificaiton when it is idle
         "widthM": 1, // The physical width of the overlay, in meters
         "zDistanceM": 1, // Distance, nearer (-) or further (+), in meters
         "yDistanceM": 0, // Vertical distance, down (-) or up (+), in meters
@@ -69,7 +70,7 @@ The way the transitions work, it will animate values that differs from when it i
         "yawDeg": 0, // Yaw, left (-) or right (+), in degrees
         "pitchDeg": 0, // Pitch, down (-) or up (+), in degrees
         "rollDeg": 0, // Roll, right (-) or left (+), in degrees
-        "transitiona": [
+        "transitions": [
             {
                 "scalePer": 1, // Normalized scale, 1 = 100%
                 "opacityPer": 0, // Normalized opacity where 1 = 100%

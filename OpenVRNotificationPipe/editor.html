@@ -48,6 +48,10 @@
             color: white;
             border-radius: 2px;
         }
+        a {
+            color: inherit;
+            text-decoration: underline;
+        }
 
         input, textarea, select {
             border-radius: 4px;
@@ -195,7 +199,8 @@
         <form id="formConfig">
             <h3>Config</h3>
             <input name="indentation" type="number" step="1" value="4"/>
-            <p><button id="copy">Copy Config</button></p>
+            <p><button id="copyJSON">Copy Config JSON</button></p>
+            <p><button id="copyJS">Copy Config JS</button></p>
             <p><textarea id="config"></textarea></p>
             <p><button id="load">Load Config</button></p>
         </form>
@@ -205,6 +210,7 @@
         let _ws = null
         let _wsActive = false
         const _localStorageKey = 'OpenVRNotificationPipe.BOLL7708.Config'
+        let _lastData = null
 
         // Construct forms
         const _formProperties = document.querySelector('#formProperties')
@@ -242,16 +248,20 @@
             wrapper.appendChild(el)
         })
 
-        // Elements
+        // Canvas slements
         const _canvas = document.querySelector('#formImage-canvas')
 		const _ctx = _canvas.getContext('2d')
         const _file = document.querySelector('#formImage-file')
 		_file.addEventListener('change', readImage)
         const _submit = document.querySelector('#submit')
         _submit.addEventListener('click', sendNotification)
+        
+        // Config elements
         const _config = document.querySelector('#config')
-        const _copy = document.querySelector('#copy')
-        _copy.addEventListener('click', copyConfig)
+        const _copyJSON = document.querySelector('#copyJSON')
+        _copyJSON.addEventListener('click', copyConfigJSON)
+        const _copyJS = document.querySelector('#copyJS')
+        _copyJS.addEventListener('click', copyConfigJS)
         const _load = document.querySelector('#load')
         _load.addEventListener('click', loadConfig)
 
@@ -390,14 +400,23 @@
 
             // Update config text
             data.imageData = '(removed)'
-            const indent = _formConfig.querySelector('#formConfig-indentation').value
-            const configStr = JSON.stringify(data, null, new Array(parseInt(indent) + 1).join(' '))
-            _config.innerHTML = configStr
-            window.localStorage.setItem(_localStorageKey, configStr)
+            _lastData = data
+
+            // TODO: Change be a config load/save management system
+            window.localStorage.setItem(_localStorageKey, JSON.stringify(data))
         }
 
-        function copyConfig(e) {
+        function copyConfigJSON(e) {
             e?.preventDefault()
+            const indent = _formConfig.querySelector('#formConfig-indentation').value
+            _config.innerHTML = JSON.stringify(_lastData, null, parseInt(indent))
+            _config.select()
+            document.execCommand('copy')
+        }
+
+        function copyConfigJS(e) {
+            e?.preventDefault()
+            _config.innerHTML = renderJS(_lastData, null, 0)
             _config.select()
             document.execCommand('copy')
         }
@@ -432,5 +451,71 @@
                 }
             }
         }
+
+        function getIndentationString(count, size) {
+            return count == 0 
+                ? ''
+                : new Array(count+1).join(
+                    size == 0 
+                        ? ''
+                        : new Array(size+1).join(' ') 
+                )
+        }
+
+        function renderJS(value, key, indentCount) {
+            const indentSize = parseInt(_formConfig.querySelector('#formConfig-indentation').value)
+            console.log(`indent count: ${indentCount} size: ${indentSize}`)
+			const indentStr = getIndentationString(indentCount, indentSize)
+			const keyStr = key == null 
+				? ''
+				: key.includes('-') 
+					? `'${key}': `
+					: `${key}: `
+			let result = ""
+            if(value === null || typeof value == 'undefined') {
+                result += `${indentStr}${keyStr}null`
+            } else if(Array.isArray(value)) {
+				result += `${indentStr}${keyStr}[`
+				const resultArr = []
+				for(v of value) {
+					resultArr.push(renderJS(v, null, indentCount+1))
+				}
+				result += resultArr.length == 0 
+					? ']' 
+					: `\n${resultArr.join(',\n')}${indentStr}\n${indentStr}]`
+			} else {
+                const floatValue = parseFloat(value)
+                const boolValue = value == 'true' 
+                    ? true
+                    : value == 'false'
+                        ? false
+                        : null
+                
+                console.log(`float: ${floatValue} bool: ${boolValue}`)
+                
+                if(!isNaN(floatValue)) { 
+                    console.log(`IS FLOAT: ${floatValue}`)
+                    result += `${indentStr}${keyStr}${parseFloat(value)}`
+                } else if (boolValue !== null) {
+                    console.log('IS BOOL')
+                    result += `${indentStr}${keyStr}${value ? 'true' : 'false'}`
+                } else if(typeof value == 'string') {
+                    result += `${indentStr}${keyStr}'${value}'`
+                } else if(typeof value == 'object') {
+                    result += `${indentStr}${keyStr}{`
+						const resultArr = []
+						for (const [p, val] of Object.entries(value)) {
+							resultArr.push(renderJS(val, p, indentCount+1))
+						}
+						result += resultArr.length == 0 
+							? '}' 
+							: `\n${resultArr.join(',\n')}${indentStr}\n${indentStr}}`
+                } else {
+                    result += `${indentStr}${keyStr}undefined`
+                }
+			}
+            console.log(`Value: ${value}: Result: ${result}`)
+			return result
+		}
     </script>
 </html>
