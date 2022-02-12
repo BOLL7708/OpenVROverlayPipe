@@ -199,7 +199,7 @@ namespace OpenVRNotificationPipe.Notification
                     if (stage != AnimationStage.Staying || stage == AnimationStage.Following || animationCount == easeInLimit) { // Only performs animation on first frame of Staying stage.
                         // Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
                         var translate = new HmdVector3_t()
-                        {
+                        { 
                             v0 = properties.xDistanceM + (transition.xDistanceM * ratioReversed),
                             v1 = properties.yDistanceM + (transition.yDistanceM * ratioReversed),
                             v2 = -properties.zDistanceM - (transition.zDistanceM * ratioReversed)
@@ -236,14 +236,24 @@ namespace OpenVRNotificationPipe.Notification
                         }
                         #endregion
 
-                        animationTransform = ((properties.attachToAnchor || properties.anchorType == 0)
-                            ? EasyOpenVRSingleton.Utils.GetEmptyTransform() 
-                            : deviceTransform)
-                            .RotateY(-properties.yawDeg)
-                            .RotateX(properties.pitchDeg)
-                            .RotateZ(properties.rollDeg)
-                            .Translate(translate)
-                            .RotateZ(transition.rollDeg * ratioReversed);
+                        animationTransform = (properties.attachToAnchor || properties.anchorType == 0)
+                            ? EasyOpenVRSingleton.Utils.GetEmptyTransform()
+                            : deviceTransform;
+                        if (properties.anchorType == 0) { // World related, so all rotations are local to the overlay
+                            animationTransform = animationTransform
+                                .Translate(translate)
+                                .RotateY(-properties.yawDeg)
+                                .RotateX(properties.pitchDeg)
+                                .RotateZ(properties.rollDeg)
+                                .RotateZ(transition.rollDeg * ratioReversed);
+                        } else { // Device related, so all rotations are at the origin of the device
+                            animationTransform = animationTransform
+                                .RotateY(-properties.yawDeg)
+                                .RotateX(properties.pitchDeg)
+                                .RotateZ(properties.rollDeg)
+                                .Translate(translate)
+                                .RotateZ(transition.rollDeg * ratioReversed);
+                        }
 
                         _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.attachToAnchor ? anchorIndex : uint.MaxValue);
                         _vr.SetOverlayAlpha(_overlayHandle, (transition.opacityPer+(ratio*(1f-transition.opacityPer)))*properties.opacityPer);
