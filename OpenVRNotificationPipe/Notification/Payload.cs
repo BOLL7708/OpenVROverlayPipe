@@ -41,6 +41,7 @@ namespace OpenVRNotificationPipe
             public float rollDeg = 0;
 
             public Follow follow = new Follow();
+            public Animation[] animations = new Animation[0];
             public Transition[] transitions = new Transition[0];
             public TextArea[] textAreas = new TextArea[0];
         }
@@ -53,12 +54,23 @@ namespace OpenVRNotificationPipe
             public int tweenType = 5; // Tween type
         }
 
+        public class Animation
+        {
+            public int property = 0; // 0: None, 1: Yaw, 2: Pitch, 3: Roll, 4: Z, 5: Y, 6: X, 7: Scale, 8: Opacity
+            public float frequency = 0;
+            public float amplitude = 0;
+            public int phaseType = 0; // 0: Sine, 1: Cosine, 2: Negative Sine, 3: Negative Cosine
+            public int waveType = 0; // 0: None (disabled), 1: PhaseBased
+        }
+
         public class Transition {
             public float scalePer = 1;
             public float opacityPer = 0;
             public float zDistanceM = 0; // Translational offset
             public float yDistanceM = 0; // Translational offset
             public float xDistanceM = 0; // Translational offset
+            public float yawDeg = 0;
+            public float pitchDeg = 0;
             public float rollDeg = 0;
             public int durationMs = 250;
             public int tweenType = 5; // Tween type

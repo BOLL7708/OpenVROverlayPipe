@@ -122,16 +122,16 @@
             <input name="attachToHorizon" type="checkbox" value="true"/>
             <input name="alignToHorizon" type="checkbox" value="true"/>
             <input name="overlayChannel" type="number" value="0" step="1"/>
-            <input name="opacityPer" type="number" value="1" step="0.01"/>
-            <input name="animationHz" type="number" value="-1" step="1"/>
+            <input name="opacityPer" type="number" value="1" step="0.1"/>
+            <input name="animationHz" type="number" value="0" step="10"/>
             <input name="durationMs" type="number" value="5000" step="500"/>
-            <input name="widthM" type="number" value="1" step="0.01"/>
-            <input name="zDistanceM" type="number" value="1" step="0.01"/>           
-            <input name="yDistanceM" type="number" value="0" step="0.01"/>
-            <input name="xDistanceM" type="number" value="0" step="0.01"/>
-            <input name="yawDeg" type="number" value="0" step="1"/>
-            <input name="pitchDeg" type="number" value="0" step="1"/>
-            <input name="rollDeg" type="number" value="0" step="1"/>
+            <input name="widthM" type="number" value="1" step="0.1"/>
+            <input name="zDistanceM" type="number" value="1" step="0.1"/>           
+            <input name="yDistanceM" type="number" value="0" step="0.1"/>
+            <input name="xDistanceM" type="number" value="0" step="0.1"/>
+            <input name="yawDeg" type="number" value="0" step="10"/>
+            <input name="pitchDeg" type="number" value="0" step="10"/>
+            <input name="rollDeg" type="number" value="0" step="10"/>
         </form>
 
         <form id="formFollow">
@@ -141,13 +141,58 @@
             <input name="durationMs" type="number" value="250" step="50"/>
         </form>
 
+        <template id="templateAnimation">
+            <select name="property">
+                <option value="0">None</option>
+                <option value="1">Rotate Yaw</option>
+                <option value="2">Rotate Pitch</option>
+                <option value="3">Rotate Roll</option>
+                <option value="4">Translate Z</option>
+                <option value="5">Translate Y</option>
+                <option value="6">Translate X</option>
+                <option value="7">Scale</option>
+                <option value="8">Opacity</option>
+            </select>
+            <input name="frequency" type="number" value="0" step="1"/>
+            <input name="amplitude" type="number" value="0" step="0.1"/>
+            <select name="phaseType">
+                <option value="0">Linear</option>
+                <option value="1">Sine</option>
+                <option value="2">Cosine</option>
+                <option value="3">Negative Sine</option>
+                <option value="4">Negative Cosine</option>
+            </select>
+            <select name="waveType">
+                <option value="0">None</option>
+                <option value="1">PhaseBased</option>
+                <!--
+                <option value="2">Square</option>
+                <option value="3">Triangular</option>
+                <option value="4">Sawtooth</option>
+                <option value="5">SawtoothReversed</option>
+                -->
+            </select>
+        </template>
+
+        <form id="formAnimation1">
+            <h3>Animation 1</h3>
+        </form>
+        <form id="formAnimation2">
+            <h3>Animation 2</h3>
+        </form>
+        <form id="formAnimation3">
+            <h3>Animation 3</h3>
+        </form>
+
         <template id="templateTransition">
             <input name="scalePer" type="number" step=".01" value="1.0"/>
             <input name="opacityPer" type="number" step="0.01" value="0.0"/>
             <input name="zDistanceM" type="number" step="0.01" value="0.0"/>
             <input name="yDistanceM" type="number" step="0.01" value="0.0"/>
             <input name="xDistanceM" type="number" step="0.01" value="0.0"/>
-            <input name="rollDeg" type="number" step="1" value="0"/>
+            <input name="yawDeg" type="number" step="10" value="0"/>
+            <input name="pitchDeg" type="number" step="10" value="0"/>
+            <input name="rollDeg" type="number" step="10" value="0"/>
             <input name="durationMs" type="number" step="50" value="250"/>
         </template>
 
@@ -199,10 +244,9 @@
         <form id="formConfig">
             <h3>Config</h3>
             <input name="indentation" type="number" step="1" value="4"/>
-            <p><button id="copyJSON">Copy Config JSON</button></p>
-            <p><button id="copyJS">Copy Config JS</button></p>
+            <p><button id="copyJSON">Copy as JSON</button></p>
+            <p><button id="copyJS">Copy as JS</button></p>
             <p><textarea id="config"></textarea></p>
-            <p><button id="load">Load Config</button></p>
         </form>
     </body>
     <script>
@@ -215,6 +259,10 @@
         // Construct forms
         const _formProperties = document.querySelector('#formProperties')
         const _formFollow = document.querySelector('#formFollow')
+        const _formAnimation1 = document.querySelector('#formAnimation1')
+        const _formAnimation2 = document.querySelector('#formAnimation2')
+        const _formAnimation3 = document.querySelector('#formAnimation3')
+        const _templateAnimation = document.querySelector('#templateAnimation')
         const _formTransitionIn = document.querySelector('#formTransitionIn')
         const _formTransitionOut = document.querySelector('#formTransitionOut')
         const _formTextarea = document.querySelector('#formTextarea')
@@ -222,6 +270,9 @@
         const _templateTween = document.querySelector('#templateTween')
         const _formConfig = document.querySelector('#formConfig')
         _formFollow.appendChild(_templateTween.content.cloneNode(true))
+        _formAnimation1.appendChild(_templateAnimation.content.cloneNode(true))
+        _formAnimation2.appendChild(_templateAnimation.content.cloneNode(true))
+        _formAnimation3.appendChild(_templateAnimation.content.cloneNode(true))
         _formTransitionIn.appendChild(_templateTransition.content.cloneNode(true))
         _formTransitionIn.appendChild(_templateTween.content.cloneNode(true))
         _formTransitionOut.appendChild(_templateTransition.content.cloneNode(true))
@@ -282,7 +333,8 @@
 			connectLoop()
             _config.innerHTML = localStorage.getItem(_localStorageKey) ?? ''
             if(_config.innerHTML.length > 0) {
-                loadConfig()
+                // TODO: Make this an option.
+                // loadConfig()
             }
 		}
 		function connectLoop() 
@@ -356,44 +408,65 @@
 				// Custom
 				customProperties: {
                     follow: {},
+                    animations: [],
                     transitions: [],
                     textAreas: []
                 }
 			};
 
-            // Get all other data
+            // Get all form data
             const propertiesData = new FormData(_formProperties)
             const propertiesJSON = Object.fromEntries(propertiesData.entries())
+            propertiesJSON.anchorType = propertiesData.getAll('anchorType').pop()
 
             const followData = new FormData(_formFollow)
             const followJSON = Object.fromEntries(followData.entries())
+            followJSON.tweenType = followData.getAll('tweenType').pop()
+
+            const animationData1 = new FormData(_formAnimation1)
+            const animationJSON1 = Object.fromEntries(animationData1.entries())
+            animationJSON1.property = animationData1.getAll('property').pop()
+            animationJSON1.phaseType = animationData1.getAll('phaseType').pop()
+            animationJSON1.waveType = animationData1.getAll('waveType').pop()
+
+            const animationData2 = new FormData(_formAnimation2)
+            const animationJSON2 = Object.fromEntries(animationData2.entries())
+            animationJSON2.property = animationData2.getAll('property').pop()
+            animationJSON2.phaseType = animationData2.getAll('phaseType').pop()
+            animationJSON2.waveType = animationData2.getAll('waveType').pop()
+
+            const animationData3 = new FormData(_formAnimation3)
+            const animationJSON3 = Object.fromEntries(animationData3.entries())
+            animationJSON3.property = animationData3.getAll('property').pop()
+            animationJSON3.phaseType = animationData3.getAll('phaseType').pop()
+            animationJSON3.waveType = animationData3.getAll('waveType').pop()
 
             const transitionsInData = new FormData(_formTransitionIn)
             const transitionsInJSON = Object.fromEntries(transitionsInData.entries())
+            transitionsInJSON.tweenType = transitionsInData.getAll('tweenType').pop()
 
             const transitionsOutData = new FormData(_formTransitionOut)
             const transitionsOutJSON = Object.fromEntries(transitionsOutData.entries())
+            transitionsOutJSON.tweenType = transitionsOutData.getAll('tweenType').pop()
 
             const textareaData = new FormData(_formTextarea)
             const textareaJSON = Object.fromEntries(textareaData.entries())
-
-            // Handle multi-selects
-            propertiesJSON.anchorType = propertiesData.getAll('anchorType').pop()
-            followJSON.tweenType = followData.getAll('tweenType').pop()
-            transitionsInJSON.tweenType = transitionsInData.getAll('tweenType').pop()
-            transitionsOutJSON.tweenType = transitionsOutData.getAll('tweenType').pop()
             textareaJSON.horizontalAlignment = textareaData.getAll('horizontalAlignment').pop()
             textareaJSON.verticalAlignment = textareaData.getAll('verticalAlignment').pop()
 
             // Fill data
             data.customProperties = propertiesJSON
             data.customProperties.follow = {}
+            if(followJSON.enabled) data.customProperties.follow = followJSON
+            data.customProperties.animations = []
+            if(animationJSON1.property != 0 && animationJSON1.waveType != 0) data.customProperties.animations.push(animationJSON1)
+            if(animationJSON2.property != 0 && animationJSON2.waveType != 0) data.customProperties.animations.push(animationJSON2)
+            if(animationJSON3.property != 0 && animationJSON3.waveType != 0) data.customProperties.animations.push(animationJSON3)
             data.customProperties.transitions = []
-            data.customProperties.textAreas = []
-            data.customProperties.follow = followJSON
             data.customProperties.transitions.push(transitionsInJSON)
             data.customProperties.transitions.push(transitionsOutJSON)
-            data.customProperties.textAreas.push(textareaJSON)
+            data.customProperties.textAreas = []
+            if(textareaJSON.text.length > 0) data.customProperties.textAreas.push(textareaJSON)
 
             // Send data
             _ws.send(JSON.stringify(data))
@@ -427,12 +500,18 @@
             if(_config.value.length > 0) window.localStorage.setItem(_localStorageKey, _config.value)
             const properties = data.customProperties ?? {}
             const follow = data.customProperties.follow ?? {}
+            const animation1 = data.customProperties.animations[0] ?? {}
+            const animation2 = data.customProperties.animations[1] ?? {}
+            const animation3 = data.customProperties.animations[2] ?? {}
             const transitionIn = data.customProperties.transitions[0] ?? {}
             const transitionOut = data.customProperties.transitions[1] ?? {}
             const textarea = data.customProperties.textAreas[0] ?? {}
 
             applyDataToForm(_formProperties, properties)
             applyDataToForm(_formFollow, follow)
+            applyDataToForm(_formAnimation1, animation1)
+            applyDataToForm(_formAnimation2, animation2)
+            applyDataToForm(_formAnimation3, animation3)
             applyDataToForm(_formTransitionIn, transitionIn)
             applyDataToForm(_formTransitionOut, transitionOut)
             applyDataToForm(_formTextarea, textarea)
@@ -464,7 +543,6 @@
 
         function renderJS(value, key, indentCount) {
             const indentSize = parseInt(_formConfig.querySelector('#formConfig-indentation').value)
-            console.log(`indent count: ${indentCount} size: ${indentSize}`)
 			const indentStr = getIndentationString(indentCount, indentSize)
 			const keyStr = key == null 
 				? ''
@@ -489,15 +567,10 @@
                     ? true
                     : value == 'false'
                         ? false
-                        : null
-                
-                console.log(`float: ${floatValue} bool: ${boolValue}`)
-                
+                        : null                
                 if(!isNaN(floatValue)) { 
-                    console.log(`IS FLOAT: ${floatValue}`)
                     result += `${indentStr}${keyStr}${parseFloat(value)}`
                 } else if (boolValue !== null) {
-                    console.log('IS BOOL')
                     result += `${indentStr}${keyStr}${value ? 'true' : 'false'}`
                 } else if(typeof value == 'string') {
                     result += `${indentStr}${keyStr}'${value}'`
@@ -514,7 +587,6 @@
                     result += `${indentStr}${keyStr}undefined`
                 }
 			}
-            console.log(`Value: ${value}: Result: ${result}`)
 			return result
 		}
     </script>

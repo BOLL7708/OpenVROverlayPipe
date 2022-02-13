@@ -70,6 +70,25 @@ The way the transitions work, it will animate values that differs from when it i
         "yawDeg": 0, // Yaw, left (-) or right (+), in degrees
         "pitchDeg": 0, // Pitch, down (-) or up (+), in degrees
         "rollDeg": 0, // Roll, right (-) or left (+), in degrees
+        "follow": {
+            "enabled": false, // Set this to true to enable the follow mode, repositions overlay when facing away
+            "triggerAngle": 65, // Threshold angle to trigger respoitioning, in degrees
+            "durationMs": 250, // Duration of the transition to new location, in milliseconds
+            "tweenType": 5 // Tween mode, see next section for a full list
+        },
+        "animations": [
+            {
+                "property": 0, // 0: None (disabled), 1: Yaw, 2: Pitch, 3: Roll, 4: Pos Z, 5: Pos Y, 6: Pos X, 7: Scale, 8: Opacity
+                "frequency": 0, // Times per second for the loop to happen, or speed for a linear animation
+                "amplitude": 0, // Strength of the effect, degrees for angles, meters for positions, percent for scale & opacity
+                "phaseType": 0, // 0: Sine, 1: Cosine, 2: Negative Sine, 3: Negative Cosine
+                "waveType": 0 // 0: None (disabled), 1: PhaseBased
+            }
+            /*
+             * You can add as many different animations as you want here, with one limitation:
+             * A property can only have one animation applied, this as multiples will override each other.
+             */
+        ],
         "transitions": [
             {
                 "scalePer": 1, // Normalized scale, 1 = 100%
@@ -83,9 +102,9 @@ The way the transitions work, it will animate values that differs from when it i
             }
             /* 
             * You can add a second object here to change the outgoing transition.
-                * This is optional and will be used if provided, otherwise the out
+            * This is optional and will be used if provided, otherwise the out
             * transition defaults to the same as in but reversed.
-                */
+            */
         ],
         "textAreas": [
             {
@@ -100,10 +119,10 @@ The way the transitions work, it will animate values that differs from when it i
                 "horizontalAlignment": 0, // Horizontal alignment, 0 = left, 1 = center, 2 = right
                 "verticalAlignment": 0, // Vertical alignment, 0 = left, 1 = center, 2 = right
             }
+            /*
+            * You can add more text areas by filling up this array with more objects.
+            */
         ]
-        /*
-         * You can add more text areas by filling up this array with more objects.
-         */
     }
 }
 ```
