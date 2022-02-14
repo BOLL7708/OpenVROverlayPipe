@@ -155,22 +155,22 @@
             </select>
             <input name="frequency" type="number" value="0" step="1"/>
             <input name="amplitude" type="number" value="0" step="0.1"/>
-            <select name="phaseType">
-                <option value="0">Linear</option>
-                <option value="1">Sine</option>
-                <option value="2">Cosine</option>
-                <option value="3">Negative Sine</option>
-                <option value="4">Negative Cosine</option>
-            </select>
-            <select name="waveType">
-                <option value="0">None</option>
-                <option value="1">PhaseBased</option>
+            <input name="flipWaveform" type="checkbox" value="true"/>
+            <select name="waveform">
+                <option value="0">PhaseBased</option>
                 <!--
                 <option value="2">Square</option>
                 <option value="3">Triangular</option>
                 <option value="4">Sawtooth</option>
                 <option value="5">SawtoothReversed</option>
                 -->
+            </select>
+            <select name="phase">
+                <option value="0">Linear</option>
+                <option value="1">Sine</option>
+                <option value="2">Cosine</option>
+                <option value="3">Negative Sine</option>
+                <option value="4">Negative Cosine</option>
             </select>
         </template>
 
@@ -459,9 +459,9 @@
             data.customProperties.follow = {}
             if(followJSON.enabled) data.customProperties.follow = followJSON
             data.customProperties.animations = []
-            if(animationJSON1.property != 0 && animationJSON1.waveType != 0) data.customProperties.animations.push(animationJSON1)
-            if(animationJSON2.property != 0 && animationJSON2.waveType != 0) data.customProperties.animations.push(animationJSON2)
-            if(animationJSON3.property != 0 && animationJSON3.waveType != 0) data.customProperties.animations.push(animationJSON3)
+            if(animationJSON1.property != 0) data.customProperties.animations.push(animationJSON1)
+            if(animationJSON2.property != 0) data.customProperties.animations.push(animationJSON2)
+            if(animationJSON3.property != 0) data.customProperties.animations.push(animationJSON3)
             data.customProperties.transitions = []
             data.customProperties.transitions.push(transitionsInJSON)
             data.customProperties.transitions.push(transitionsOutJSON)

@@ -8,7 +8,7 @@ namespace OpenVRNotificationPipe.Notification
 {
     class Cycle
     {
-        static public Func<float, float> GetFunc(int waveType, int phaseType)
+        static public Func<float, float> GetFunc(bool flip, int waveType, int phaseType)
         {
             var phaseFunc = (phaseType < phaseFuncs.Length && phaseType >= 0)
                 ? phaseFuncs[phaseType]
@@ -17,7 +17,8 @@ namespace OpenVRNotificationPipe.Notification
                 ? waveFuncs[waveType]
                 : waveFuncs[0];
             return value => {
-                return waveFunc(phaseFunc(value));
+                var result = waveFunc(phaseFunc(value));
+                return flip ? -result : result;
             };
         }
 
@@ -36,7 +37,6 @@ namespace OpenVRNotificationPipe.Notification
         };
 
         // Wave types
-        static readonly private Func<float, float> None = value => 1f;
         static readonly private Func<float, float> PhaseBased = value => value;
         
         // TODO: Work in progress
@@ -46,7 +46,6 @@ namespace OpenVRNotificationPipe.Notification
         static readonly private Func<float, float> SawtoothReversed = value => value;
 
         static readonly private Func<float, float>[] waveFuncs = {
-            None,
             PhaseBased,
             // SquareWave,
             // TriangularWave,
@@ -56,25 +55,19 @@ namespace OpenVRNotificationPipe.Notification
     }
 
     class Cycler { 
-        private float _amplitude = 0;
-        private float _frequency = 0;
-        private Func<float, float> _func = Cycle.GetFunc(0, 0);
+        private float _amplitude;
+        private float _frequency;
+        private Func<float, float> _func;
 
         public Cycler() {
-            // Empty constructor if no config was provided, uses above defaults.
+            Reset();
         }
 
         public Cycler(Payload.Animation anim)
         {
             _amplitude = anim.amplitude;
             _frequency = anim.frequency;
-            _func = Cycle.GetFunc(anim.waveType, anim.phaseType);
-        }
-
-        public Cycler(float amplitude, float frequency, int phaseType, int waveType) {
-            _amplitude = amplitude;
-            _frequency = frequency;
-            _func = Cycle.GetFunc(waveType, phaseType);
+            _func = Cycle.GetFunc(anim.flipWaveform, anim.waveform, anim.phase);
         }
 
         public float GetRatio(float value) {
@@ -84,7 +77,7 @@ namespace OpenVRNotificationPipe.Notification
         public void Reset() {
             _amplitude = 0;
             _frequency = 0;
-            _func = Cycle.GetFunc(0, 0);
+            _func = Cycle.GetFunc(false, 0, 0);
         }
     }
 }

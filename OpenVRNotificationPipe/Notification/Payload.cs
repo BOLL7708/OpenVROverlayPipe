@@ -56,11 +56,12 @@ namespace OpenVRNotificationPipe
 
         public class Animation
         {
-            public int property = 0; // 0: None, 1: Yaw, 2: Pitch, 3: Roll, 4: Z, 5: Y, 6: X, 7: Scale, 8: Opacity
+            public int property = 0; // 0: None (disabled), 1: Yaw, 2: Pitch, 3: Roll, 4: Z, 5: Y, 6: X, 7: Scale, 8: Opacity
             public float frequency = 0;
             public float amplitude = 0;
-            public int phaseType = 0; // 0: Sine, 1: Cosine, 2: Negative Sine, 3: Negative Cosine
-            public int waveType = 0; // 0: None (disabled), 1: PhaseBased
+            public bool flipWaveform = false;
+            public int waveform = 0; // 0: PhaseBased
+            public int phase = 0; // 0: Sine, 1: Cosine, 2: Negative Sine, 3: Negative Cosine
         }
 
         public class Transition {
