@@ -2,109 +2,27 @@
 <head>
     <meta charset="utf-8">
     <title>Pipe Editor</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            font-size: 14px;
-            color: #333;
-            background-color: #ccc;
-        }
-        canvas {
-            border: 1px solid #d3d3d3;
-            background-color: #f1f1f1;
-            width: 48px;
-            height: 48px;
-            margin: 4px;
-        }
-        h3 {
-            margin: 0.5em;
-        }
-
-        form {
-            border-radius: 16px;
-            float: left;
-            background-color: #eee;
-            padding: 4px;
-            margin: 4px;
-            box-shadow: 4px 4px 6px #888;
-        }
-        #formProperties {
-            clear: both;
-        }
-        form p label {
-            display: inline-block;
-            width: 9em;
-            text-align: right;
-            padding-right: 4px;
-            user-select: none;
-        }
-        form p {
-            margin: 0;
-            padding: 2px;
-            vertical-align: text-top;
-        }
-        form p label:hover {
-            background-color: #888;
-            color: white;
-            border-radius: 2px;
-        }
-        a {
-            color: inherit;
-            text-decoration: underline;
-        }
-
-        input, textarea, select {
-            border-radius: 4px;
-            border-width: 1px;
-            border-color: #ddd;
-        }
-        button {
-            background-image: linear-gradient( #fff, #FFACFF, #FF69FF);
-            font-weight: bold;
-            border-radius: 8px;
-            border-width: 1px;
-            border-color: #bbb;
-            color: white;
-            text-shadow:
-                -1px -1px 0 #333,
-                1px -1px 0 #333,
-                -1px 1px 0 #333,
-                1px 1px 0 #333;
-            box-shadow: 2px 2px 3px #888;
-        }
-        button:hover {
-            background-image: linear-gradient( #FFDCFF, #FF89FF, #FF34FF);
-        }
-        label {
-            cursor: text;
-            text-transform: capitalize;
-            padding: 2px;
-        }
-        input[type=number] {
-            width: 5em;
-        }
-        canvas {
-            margin: 0;
-        }
-        button {
-            width: 100%;
-            height: 2em;
-        }
-        textarea {
-            width: 25em;
-            height: 30em;
-        }
-    </style>
+    <link rel="stylesheet" href="inc/editor.css"></link>
+    <script src="inc/demo.js"></script>
     </head> 
     <body onload="init()">
+        <h1>Custom Notification Editor</h1>
         <form id="formSubmit">
             <h3>Submit Notification</h3>
-            <p>Supply an image for this to do anything at all.</p>
-            <p><button id="submit">Submit Custom Notification</button></p>
+            <p>Pick an image to start.</p>
+            <p>Use the copy buttons to use in your app.</p>
+            <p></p>
+            <p><button id="submit">Submit to Pipe (enter key)</button></p>
+            <hr/>
+            <h3>Export Config</h3>
+            <input name="indentation" type="number" step="1" value="4"/>
+            <p><button id="copyJSON">Copy as JSON</button><button id="copyJS">Copy as JS</button></p>
+            <p><textarea id="config"></textarea></p>
         </form>
 
-        <form id="formImage">   
+        <form id="formImage" class="unset">   
             <h3>Image</h3>
+            <p>Maximum of 1024x1024px is supported.</p>
             <canvas id="canvas"></canvas>
             <input type="file" name="file" accept="image/*"/>
         </form>
@@ -153,9 +71,15 @@
                 <option value="7">Scale</option>
                 <option value="8">Opacity</option>
             </select>
-            <input name="frequency" type="number" value="0" step="1"/>
-            <input name="amplitude" type="number" value="0" step="0.1"/>
-            <input name="flipWaveform" type="checkbox" value="true"/>
+            <input name="amplitude" type="number" value="1" step="0.1"/>
+            <input name="frequency" type="number" value="1" step="1"/>
+            <select name="phase">
+                <option value="0">Linear</option>
+                <option value="1">Sine</option>
+                <option value="2">Cosine</option>
+                <option value="3">Negative Sine</option>
+                <option value="4">Negative Cosine</option>
+            </select>
             <select name="waveform">
                 <option value="0">PhaseBased</option>
                 <!--
@@ -165,13 +89,7 @@
                 <option value="5">SawtoothReversed</option>
                 -->
             </select>
-            <select name="phase">
-                <option value="0">Linear</option>
-                <option value="1">Sine</option>
-                <option value="2">Cosine</option>
-                <option value="3">Negative Sine</option>
-                <option value="4">Negative Cosine</option>
-            </select>
+            <input name="flipWaveform" type="checkbox" value="true"/>
         </template>
 
         <form id="formAnimation1">
@@ -240,354 +158,6 @@
                 <option value="2">Far</option>
             </select>
         </form>
-
-        <form id="formConfig">
-            <h3>Config</h3>
-            <input name="indentation" type="number" step="1" value="4"/>
-            <p><button id="copyJSON">Copy as JSON</button></p>
-            <p><button id="copyJS">Copy as JS</button></p>
-            <p><textarea id="config"></textarea></p>
-        </form>
     </body>
-    <script>
-        // Websocket 
-        let _ws = null
-        let _wsActive = false
-        const _localStorageKey = 'OpenVRNotificationPipe.BOLL7708.Config'
-        let _lastData = null
-
-        // Construct forms
-        const _formProperties = document.querySelector('#formProperties')
-        const _formFollow = document.querySelector('#formFollow')
-        const _formAnimation1 = document.querySelector('#formAnimation1')
-        const _formAnimation2 = document.querySelector('#formAnimation2')
-        const _formAnimation3 = document.querySelector('#formAnimation3')
-        const _templateAnimation = document.querySelector('#templateAnimation')
-        const _formTransitionIn = document.querySelector('#formTransitionIn')
-        const _formTransitionOut = document.querySelector('#formTransitionOut')
-        const _formTextarea = document.querySelector('#formTextarea')
-        const _templateTransition = document.querySelector('#templateTransition')
-        const _templateTween = document.querySelector('#templateTween')
-        const _formConfig = document.querySelector('#formConfig')
-        _formFollow.appendChild(_templateTween.content.cloneNode(true))
-        _formAnimation1.appendChild(_templateAnimation.content.cloneNode(true))
-        _formAnimation2.appendChild(_templateAnimation.content.cloneNode(true))
-        _formAnimation3.appendChild(_templateAnimation.content.cloneNode(true))
-        _formTransitionIn.appendChild(_templateTransition.content.cloneNode(true))
-        _formTransitionIn.appendChild(_templateTween.content.cloneNode(true))
-        _formTransitionOut.appendChild(_templateTransition.content.cloneNode(true))
-        _formTransitionOut.appendChild(_templateTween.content.cloneNode(true))
-
-        // Input wrapping & IDing
-        const _elements = document.querySelectorAll('input, select, canvas')
-        _elements.forEach(el => {
-            // ID
-            const form = el.parentElement
-            const name = el.name ?? el.id
-            const id = `${form.id}-${name}`
-            el.id = id
-            
-            // Wrapping + label
-            const wrapper = document.createElement('p')
-            el.parentNode.insertBefore(wrapper, el)
-            const label = document.createElement('label')
-            label.setAttribute('for', id)
-            label.innerHTML = name.toLowerCase() == 'tweentype' 
-                ? `<a href="https://easings.net/" target="_blank">${name}</a>`
-                : `${name}:`
-            wrapper.appendChild(label)
-            wrapper.appendChild(el)
-        })
-
-        // Canvas slements
-        const _canvas = document.querySelector('#formImage-canvas')
-		const _ctx = _canvas.getContext('2d')
-        const _file = document.querySelector('#formImage-file')
-		_file.addEventListener('change', readImage)
-        const _submit = document.querySelector('#submit')
-        _submit.addEventListener('click', sendNotification)
-        
-        // Config elements
-        const _config = document.querySelector('#config')
-        const _copyJSON = document.querySelector('#copyJSON')
-        _copyJSON.addEventListener('click', copyConfigJSON)
-        const _copyJS = document.querySelector('#copyJS')
-        _copyJS.addEventListener('click', copyConfigJS)
-        // const _load = document.querySelector('#load')
-        // _load.addEventListener('click', loadConfig)
-
-        // Key listener
-        document.onkeypress = function (e) {
-            e = e || window.event
-            switch(e.keyCode) {
-                case 13: sendNotification(e)
-                    break
-                default: console.log(e.keyCode)
-                    break
-            }
-		}
-
-        // Program loop
-        function init()
-		{
-			connectLoop()
-            _config.innerHTML = localStorage.getItem(_localStorageKey) ?? ''
-            if(_config.innerHTML.length > 0) {
-                // TODO: Make this an option.
-                // loadConfig()
-            }
-		}
-		function connectLoop() 
-		{
-			if(!_wsActive) {
-                const url = new URL(window.location.href)
-                const params = new URLSearchParams(url.search)
-                const port = params.get('port') ?? 8077
-				var wsUri = `ws://localhost:${port}`
-				_wsActive = true
-				if(_ws != null) _ws.close()
-				try {
-					_ws = new WebSocket(wsUri)
-					_ws.onopen = function(evt) { 
-                        _wsActive = true
-                        document.title = 'Pipe Editor - CONNECTED'
-                    }
-					_ws.onclose = function(evt) { 
-                        _wsActive = false
-                        document.title = 'Pipe Editor - DISCONNECTED'
-                     }
-					_ws.onmessage = function(evt) {
-                        console.log(JSON.stringify(evt))
-                     }
-					_ws.onerror = function(evt) { 
-                        _wsActive = false
-                        console.error(`WebSocket Connection Error`)
-                        document.title = `Pipe Editor - ERROR`
-                    }
-				} catch (error) {
-                    console.error(`WebSocket Init Error: ${error}`)
-                    _wsActive = false
-					document.title = `Pipe Editor - ERROR`
-				}
-			}
-			setTimeout(connectLoop, 5000);
-		}
-
-        // Image functions
-        function readImage() {
-		    if(this.files && this.files[0]) {
-		        var FR = new FileReader()
-		        FR.onload = function(e) {
-		           	var img = new Image()
-		           	img.addEventListener("load", function() {
-		           		_canvas.width = img.width
-                        _canvas.height = img.height
-                        _ctx.clearRect(0, 0, _canvas.width, _canvas.height)
-                        _ctx.drawImage(img, 0, 0, img.width, img.height)
-		           	});
-		           	img.src = e.target.result
-		        };       
-		        FR.readAsDataURL( this.files[0] )
-		    }
-		}
-        function getImageData() {
-            return _canvas.toDataURL().split(',')[1]
-        }
-
-        // Data
-        function sendNotification(e) {
-            e?.preventDefault()
-            var data = {
-                // General
-				imageData: getImageData(),
-				
-				// Standard
-				basicTitle: "",
-				basicMessage: "",
-
-				// Custom
-				customProperties: {
-                    follow: {},
-                    animations: [],
-                    transitions: [],
-                    textAreas: []
-                }
-			};
-
-            // Get all form data
-            const propertiesData = new FormData(_formProperties)
-            const propertiesJSON = Object.fromEntries(propertiesData.entries())
-            propertiesJSON.anchorType = propertiesData.getAll('anchorType').pop()
-
-            const followData = new FormData(_formFollow)
-            const followJSON = Object.fromEntries(followData.entries())
-            followJSON.tweenType = followData.getAll('tweenType').pop()
-
-            const animationData1 = new FormData(_formAnimation1)
-            const animationJSON1 = Object.fromEntries(animationData1.entries())
-            animationJSON1.property = animationData1.getAll('property').pop()
-            animationJSON1.phaseType = animationData1.getAll('phaseType').pop()
-            animationJSON1.waveType = animationData1.getAll('waveType').pop()
-
-            const animationData2 = new FormData(_formAnimation2)
-            const animationJSON2 = Object.fromEntries(animationData2.entries())
-            animationJSON2.property = animationData2.getAll('property').pop()
-            animationJSON2.phaseType = animationData2.getAll('phaseType').pop()
-            animationJSON2.waveType = animationData2.getAll('waveType').pop()
-
-            const animationData3 = new FormData(_formAnimation3)
-            const animationJSON3 = Object.fromEntries(animationData3.entries())
-            animationJSON3.property = animationData3.getAll('property').pop()
-            animationJSON3.phaseType = animationData3.getAll('phaseType').pop()
-            animationJSON3.waveType = animationData3.getAll('waveType').pop()
-
-            const transitionsInData = new FormData(_formTransitionIn)
-            const transitionsInJSON = Object.fromEntries(transitionsInData.entries())
-            transitionsInJSON.tweenType = transitionsInData.getAll('tweenType').pop()
-
-            const transitionsOutData = new FormData(_formTransitionOut)
-            const transitionsOutJSON = Object.fromEntries(transitionsOutData.entries())
-            transitionsOutJSON.tweenType = transitionsOutData.getAll('tweenType').pop()
-
-            const textareaData = new FormData(_formTextarea)
-            const textareaJSON = Object.fromEntries(textareaData.entries())
-            textareaJSON.horizontalAlignment = textareaData.getAll('horizontalAlignment').pop()
-            textareaJSON.verticalAlignment = textareaData.getAll('verticalAlignment').pop()
-
-            // Fill data
-            data.customProperties = propertiesJSON
-            data.customProperties.follow = {}
-            if(followJSON.enabled) data.customProperties.follow = followJSON
-            data.customProperties.animations = []
-            if(animationJSON1.property != 0) data.customProperties.animations.push(animationJSON1)
-            if(animationJSON2.property != 0) data.customProperties.animations.push(animationJSON2)
-            if(animationJSON3.property != 0) data.customProperties.animations.push(animationJSON3)
-            data.customProperties.transitions = []
-            data.customProperties.transitions.push(transitionsInJSON)
-            data.customProperties.transitions.push(transitionsOutJSON)
-            data.customProperties.textAreas = []
-            if(textareaJSON.text.length > 0) data.customProperties.textAreas.push(textareaJSON)
-
-            // Send data
-            _ws.send(JSON.stringify(data))
-
-            // Update config text
-            data.imageData = '(removed)'
-            _lastData = data
-
-            // TODO: Change be a config load/save management system
-            window.localStorage.setItem(_localStorageKey, JSON.stringify(data))
-        }
-
-        function copyConfigJSON(e) {
-            e?.preventDefault()
-            const indent = _formConfig.querySelector('#formConfig-indentation').value
-            _config.innerHTML = JSON.stringify(_lastData, null, parseInt(indent))
-            _config.select()
-            document.execCommand('copy')
-        }
-
-        function copyConfigJS(e) {
-            e?.preventDefault()
-            _config.innerHTML = renderJS(_lastData, null, 0)
-            _config.select()
-            document.execCommand('copy')
-        }
-
-        function loadConfig(e) {
-            e?.preventDefault()
-            const data = JSON.parse(_config.value)
-            if(_config.value.length > 0) window.localStorage.setItem(_localStorageKey, _config.value)
-            const properties = data.customProperties ?? {}
-            const follow = data.customProperties.follow ?? {}
-            const animation1 = data.customProperties.animations[0] ?? {}
-            const animation2 = data.customProperties.animations[1] ?? {}
-            const animation3 = data.customProperties.animations[2] ?? {}
-            const transitionIn = data.customProperties.transitions[0] ?? {}
-            const transitionOut = data.customProperties.transitions[1] ?? {}
-            const textarea = data.customProperties.textAreas[0] ?? {}
-
-            applyDataToForm(_formProperties, properties)
-            applyDataToForm(_formFollow, follow)
-            applyDataToForm(_formAnimation1, animation1)
-            applyDataToForm(_formAnimation2, animation2)
-            applyDataToForm(_formAnimation3, animation3)
-            applyDataToForm(_formTransitionIn, transitionIn)
-            applyDataToForm(_formTransitionOut, transitionOut)
-            applyDataToForm(_formTextarea, textarea)
-
-            function applyDataToForm(form, data) {
-                for(const key in data) {
-                    const id = `${form.id}-${key}`
-                    const el = document.querySelector(`#${id}`)
-                    if(typeof data[key] != 'object') {
-                        if(el.type == 'checkbox') {
-                            el.checked = data[key] ?? ''
-                        } else {
-                            el.value = data[key]
-                        }
-                    }
-                }
-            }
-        }
-
-        function getIndentationString(count, size) {
-            return count == 0 
-                ? ''
-                : new Array(count+1).join(
-                    size == 0 
-                        ? ''
-                        : new Array(size+1).join(' ') 
-                )
-        }
-
-        function renderJS(value, key, indentCount) {
-            const indentSize = parseInt(_formConfig.querySelector('#formConfig-indentation').value)
-			const indentStr = getIndentationString(indentCount, indentSize)
-			const keyStr = key == null 
-				? ''
-				: key.includes('-') 
-					? `'${key}': `
-					: `${key}: `
-			let result = ""
-            if(value === null || typeof value == 'undefined') {
-                result += `${indentStr}${keyStr}null`
-            } else if(Array.isArray(value)) {
-				result += `${indentStr}${keyStr}[`
-				const resultArr = []
-				for(v of value) {
-					resultArr.push(renderJS(v, null, indentCount+1))
-				}
-				result += resultArr.length == 0 
-					? ']' 
-					: `\n${resultArr.join(',\n')}${indentStr}\n${indentStr}]`
-			} else {
-                const floatValue = parseFloat(value)
-                const boolValue = value == 'true' 
-                    ? true
-                    : value == 'false'
-                        ? false
-                        : null                
-                if(!isNaN(floatValue)) { 
-                    result += `${indentStr}${keyStr}${parseFloat(value)}`
-                } else if (boolValue !== null) {
-                    result += `${indentStr}${keyStr}${value ? 'true' : 'false'}`
-                } else if(typeof value == 'string') {
-                    result += `${indentStr}${keyStr}'${value}'`
-                } else if(typeof value == 'object') {
-                    result += `${indentStr}${keyStr}{`
-						const resultArr = []
-						for (const [p, val] of Object.entries(value)) {
-							resultArr.push(renderJS(val, p, indentCount+1))
-						}
-						result += resultArr.length == 0 
-							? '}' 
-							: `\n${resultArr.join(',\n')}${indentStr}\n${indentStr}}`
-                } else {
-                    result += `${indentStr}${keyStr}undefined`
-                }
-			}
-			return result
-		}
-    </script>
+    <script src="inc/editor.js"></script>
 </html>

@@ -1,0 +1,104 @@
+body {
+    font-family: sans-serif;
+    font-size: 14px;
+    color: #333;
+    background-color: #ccc;
+}
+canvas {
+    border: 1px solid #d3d3d3;
+    background-color: #f1f1f1;
+    width: 64px;
+    height: 64px;
+    margin: 4px;
+}
+h1 {
+    color: #fff;
+    text-shadow: 4px 4px 6px #888;
+    margin: 0.25em;
+}
+h3 {
+    margin: 0.5em;
+}
+
+form {
+    border-radius: 16px;
+    float: left;
+    background-color: #eee;
+    padding: 4px;
+    margin: 4px;
+    box-shadow: 4px 4px 6px #888;
+}
+#formProperties {
+    clear: both;
+}
+form p label {
+    display: inline-block;
+    width: 9em;
+    text-align: right;
+    padding-right: 4px;
+    user-select: none;
+}
+form p {
+    margin: 0;
+    padding: 2px;
+    vertical-align: text-top;
+}
+form p label:hover {
+    background-color: #888;
+    color: white;
+    border-radius: 2px;
+}
+a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+input, textarea, select {
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: #ddd;
+}
+button {
+    background-image: linear-gradient( #fff, #FFACFF, #FF69FF);
+    font-weight: bold;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: #bbb;
+    color: white;
+    text-shadow:
+        -1px -1px 0 #333,
+        1px -1px 0 #333,
+        -1px 1px 0 #333,
+        1px 1px 0 #333;
+    box-shadow: 2px 2px 3px #888;
+    height: 2em;
+}
+button:hover {
+    background-image: linear-gradient( #FFDCFF, #FF89FF, #FF34FF);
+}
+label {
+    cursor: text;
+    text-transform: capitalize;
+    padding: 2px;
+}
+input[type=number] {
+    width: 5em;
+}
+canvas {
+    margin: 0;
+}
+textarea {
+    width: 25em;
+    height: 30em;
+}
+#formSubmit {
+    overflow: hidden;
+}
+#config {
+    position: absolute;
+    top: -5000px;
+    left: -5000px;
+}
+.unset {
+    background-color: lightyellow;
+}

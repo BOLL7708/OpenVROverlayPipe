@@ -79,11 +79,11 @@ The way the transitions work, it will animate values that differs from when it i
         "animations": [
             {
                 "property": 0, // 0: None (disabled), 1: Yaw, 2: Pitch, 3: Roll, 4: Pos Z, 5: Pos Y, 6: Pos X, 7: Scale, 8: Opacity
-                "frequency": 0, // Times per second for the loop to happen, or speed for a linear animation
-                "amplitude": 0, // Strength of the effect, degrees for angles, meters for positions, percent for scale & opacity
-                "flipWaveform": false, // Will flip the waveform upside down
-                "waveform": 0, // 0: PhaseBased
-                "phase": 0 // 0: Sine, 1: Cosine, 2: Negative Sine, 3: Negative Cosine
+                "amplitude": 1, // Strength of the effect, degrees for angles, meters for positions, percent for scale & opacity
+                "frequency": 1, // Times per second for the loop to happen, or speed for a linear animation
+                "phase": 0, // 0: Sine, 1: Cosine, 2: Negative Sine, 3: Negative Cosine
+                "waveform": 0, // 0: PhaseBased (more to be added)
+                "flipWaveform": false // Will flip the waveform upside down
             }
             /*
              * You can add as many different animations as you want here, with one limitation:
