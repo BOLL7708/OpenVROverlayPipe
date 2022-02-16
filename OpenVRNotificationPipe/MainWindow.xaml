@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OpenVRNotificationPipe"
+        xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
         mc:Ignorable="d"
         Title="MainWindow" Height="250" Width="360" StateChanged="Window_StateChanged" Icon="resources/logo.ico" Closing="Window_Closing">
     <StackPanel Orientation="Vertical" Margin="10">
@@ -50,5 +51,12 @@
                 </StackPanel>
             </StackPanel>
         </GroupBox>
+        <glWpfControl:GLWpfControl
+            Margin="0 5 0 5"
+            Width="1"
+            Height="1"
+            x:Name="OpenTKControl"
+            Render="OpenTKControl_OnRender"
+            Ready="OpenTKControl_OnReady"/>
     </StackPanel>
 </Window>
