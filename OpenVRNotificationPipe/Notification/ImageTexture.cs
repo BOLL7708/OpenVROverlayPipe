@@ -131,7 +131,11 @@ namespace OpenVRNotificationPipe.Notification
             try
             {
                 image = new Bitmap(new MemoryStream(bytes));
-                image.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                // using (var stream = new MemoryStream(bytes))
+                // {
+                //     image = new Bitmap(stream);
+                //     // image.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                // }
             }
             catch (Exception e)
             {
@@ -144,27 +148,79 @@ namespace OpenVRNotificationPipe.Notification
         
         public static ImageTexture LoadImage(Bitmap image)
         {
-            var textureId = GL.GenTexture();
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter,
-                (int) TextureMinFilter.Nearest);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter,
-                (int) TextureMagFilter.Nearest);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS,
-                (int) TextureWrapMode.ClampToEdge);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT,
-                (int) TextureWrapMode.ClampToEdge);
-            
-            BitmapData data = image.LockBits(new System.Drawing.Rectangle(0, 0, image.Width, image.Height),
-                ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            int frameCount = image.GetFrameCount(FrameDimension.Time);
+            Debug.WriteLine($"The image has {frameCount} frames.");
 
-            GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, image.Width, image.Height);
-            
-            GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, image.Width, image.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+            if (frameCount > 1)
+            {
+                Bitmap[] Frames = new Bitmap[frameCount];
+                
+                for (int i = 0; i < frameCount; i++)
+                {
+                    image.SelectActiveFrame(FrameDimension.Time, i);
+                    Frames[i] = new Bitmap(image.Size.Width, image.Size.Height);
+                    Graphics.FromImage(Frames[i]).DrawImage(image, new Point(0, 0));
+                    Frames[i].RotateFlip(RotateFlipType.RotateNoneFlipY);
+                }
+                
+                var textureId = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2DArray, textureId);
+                GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMinFilter,
+                    (int) TextureMinFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMagFilter,
+                    (int) TextureMagFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureWrapS,
+                    (int) TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureWrapT,
+                    (int) TextureWrapMode.ClampToEdge);
 
-            image.UnlockBits(data);
+                int depth = frameCount;
             
-            return new ImageTexture(textureId, image.Width, image.Height, TextureTarget.Texture2D, 1);
+                GL.TexStorage3D(TextureTarget3d.Texture2DArray, 1, SizedInternalFormat.Rgba8, image.Size.Width, image.Size.Height,
+                    depth);
+            
+                GL.PixelStore(PixelStoreParameter.UnpackRowLength, image.Width);
+                for (int i = 0; i < depth; i++)
+                {
+                    // image.SelectActiveFrame(FrameDimension.Time, i);
+                    BitmapData data = Frames[i].LockBits(new System.Drawing.Rectangle(0, 0, image.Width, image.Height),
+                        ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    
+                    GL.TexSubImage3D(TextureTarget.Texture2DArray,
+                        0, 0, 0, i, image.Size.Width, image.Size.Height, 1,
+                        OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte,
+                        data.Scan0); // 4 bytes in an Bgra value.
+                    
+                    Frames[i].UnlockBits(data);
+                }
+
+                return new ImageTexture(textureId, image.Size.Width,  image.Size.Height, TextureTarget.Texture2DArray, depth);
+            }
+            else
+            {
+                image.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                var textureId = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, textureId);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter,
+                    (int) TextureMinFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter,
+                    (int) TextureMagFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS,
+                    (int) TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT,
+                    (int) TextureWrapMode.ClampToEdge);
+            
+                BitmapData data = image.LockBits(new System.Drawing.Rectangle(0, 0, image.Width, image.Height),
+                    ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, image.Width, image.Height);
+            
+                GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, image.Width, image.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+
+                image.UnlockBits(data);
+            
+                return new ImageTexture(textureId, image.Width, image.Height, TextureTarget.Texture2D, 1);
+            }
         }
         
         public void Bind()
