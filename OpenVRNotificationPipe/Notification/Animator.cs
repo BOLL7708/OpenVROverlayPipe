@@ -1,29 +1,78 @@
 ﻿using BOLL7708;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
+using System.Windows.Threading;
+using OpenTK.Graphics.OpenGL;
 using Valve.VR;
+using GL = OpenTK.Graphics.ES10.GL;
 
 namespace OpenVRNotificationPipe.Notification
 {
     class Animator
     {
-        private readonly Texture _texture;
+        private ImageTexture _texture;
+        private RenderTexture _renderTexture;
+        private Texture_t _vrTexture;
         private readonly ulong _overlayHandle = 0;
         private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private Action _requestForNewPayload = null;
         private volatile Payload _payload;
         private volatile bool _shouldShutdown = false;
+        private int _currentFrame = 0;
+        private Dispatcher _uiDispatcher;
 
         public Animator(ulong overlayHandle, Action requestForNewAnimation)
         {
             _overlayHandle = overlayHandle;
             _requestForNewPayload = requestForNewAnimation;
-            
-            _texture = new Texture(_overlayHandle);
-            
+            _uiDispatcher = Dispatcher.CurrentDispatcher;
+
             var thread = new Thread(Worker);
             if (!thread.IsAlive) thread.Start();
+            Debug.WriteLine("Animator thread started");
+        }
+
+        public void OnRender()
+        {
+            if (_renderTexture == null)
+            {
+                // _texture = new Texture(_overlayHandle);
+                _renderTexture = new RenderTexture(1024, 1024);
+            
+                // Create SteamVR texture
+                _vrTexture = new Texture_t
+                {
+                    eType = ETextureType.OpenGL,
+                    eColorSpace = EColorSpace.Auto,
+                    handle = (IntPtr)_renderTexture.GetTexture()
+                };
+            }
+            
+            if (_texture == null) return;
+            _renderTexture.Bind();
+            _texture.Bind();
+            MainWindow.FitToScreen(_renderTexture.GetWidth(), _renderTexture.GetHeight(), _texture.Width, _texture.Height);
+        }
+
+        public void PostRender()
+        {
+            // Assign texture
+            var error = OpenVR.Overlay.SetOverlayTexture(_overlayHandle, ref _vrTexture);
+        }
+
+        public int GetFrame()
+        {
+            if (_texture == null || _texture.TextureTarget == TextureTarget.Texture2D) return 0;
+            var frame = _currentFrame;
+            _currentFrame = (_currentFrame + 1) % _texture.TextureDepth;
+            return frame;
+        }
+        
+        public TextureTarget GetTextureTarget()
+        {
+            return _texture?.TextureTarget ?? TextureTarget.Texture1D;
         }
 
         public enum AnimationStage {
@@ -123,10 +172,26 @@ namespace OpenVRNotificationPipe.Notification
                     }
 
                     // Size of overlay
-                    var size = _texture.Load(_payload.imageData, properties.textAreas);
+                    if (Dispatcher.CurrentDispatcher != MainController.UiDispatcher)
+                    {
+                        MainController.UiDispatcher.Invoke(delegate()
+                        {
+                            Debug.WriteLine("Creating texture on UI thread");
+                            _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight) : ImageTexture.LoadImageBase64(_payload.imageData);
+                            Debug.WriteLine($"Texture created on UI thread, {_texture.Height}x{_texture.Width}");
+                        });
+                    }
+                    else
+                    {
+                        Debug.WriteLine("Creating texture on UI thread");
+                        _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight) : ImageTexture.LoadImageBase64(_payload.imageData);
+                        Debug.WriteLine($"Texture created on UI thread, {_texture.Height}x{_texture.Width}");
+                    }
+
+                    // var size = _texture.Load(_payload.imageData, properties.textAreas);
                     width = properties.widthM;
-                    height = width / size.v0 * size.v1;
-                    Debug.WriteLine($"Texture width: {size.v0}, height: {size.v1}");
+                    // height = width / size.v0 * size.v1;
+                    // Debug.WriteLine($"Texture width: {size.v0}, height: {size.v1}");
 
                     // Animation limits
                     easeInCount = (
@@ -326,13 +391,14 @@ namespace OpenVRNotificationPipe.Notification
                         stage = AnimationStage.Idle;                        
                         properties = null;
                         animationCount = 0;
+                        _currentFrame = 0;
                         _payload = null;
-                        _texture.Unload();
+                        _texture.Delete();
                     }
                 }
 
                 if (_shouldShutdown) { // Finish
-                    _texture.Unload(); // TODO: Watch for possible instability here depending on what is going on timing-wise...
+                    _texture.Delete(); // TODO: Watch for possible instability here depending on what is going on timing-wise...
                     OpenVR.Overlay.DestroyOverlay(_overlayHandle);
                     Thread.CurrentThread.Abort();
                 }

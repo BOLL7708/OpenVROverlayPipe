@@ -26,6 +26,10 @@ namespace OpenVRNotificationPipe
             public bool attachToHorizon = false;
             public bool alignToHorizon = false;
 
+            public bool isSpritesheet = false;
+            public int spriteWidth = 0;
+            public int spriteHeight = 0;
+
             public int overlayChannel = 0;
             public int animationHz = -1;
             public int durationMs = 5000;

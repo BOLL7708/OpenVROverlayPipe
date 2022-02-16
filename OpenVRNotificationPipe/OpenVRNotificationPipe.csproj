@@ -130,6 +130,8 @@
     </ApplicationDefinition>
     <Compile Include="Notification\Animator.cs" />
     <Compile Include="Notification\Cycle.cs" />
+    <Compile Include="Notification\ImageTexture.cs" />
+    <Compile Include="Notification\RenderTexture.cs" />
     <Compile Include="Notification\Shader.cs" />
     <Compile Include="Notification\Tween.cs" />
     <Compile Include="Notification\Overlay.cs" />
@@ -208,13 +210,25 @@
     <Content Include="inc\editor.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Shaders\shader.frag">
+    <Content Include="Shaders\shader3d.frag">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Shaders\shader.vert">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Shaders\shader2d.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Tiles\sheet1.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Tiles\sheet2.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Tiles\sheet2.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Tiles\sheet4.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <EmbeddedResource Include="costura64\openvr_api.dll" />

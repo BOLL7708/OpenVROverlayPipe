@@ -13,6 +13,7 @@ namespace OpenVRNotificationPipe.Notification
     {
         private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private Animator _animator;
+        public Animator Animator => _animator;
         private ulong _overlayHandle;
         private readonly string _title;
         private readonly int _channel;
@@ -41,9 +42,12 @@ namespace OpenVRNotificationPipe.Notification
                 _vr.SetOverlayVisibility(_overlayHandle, false);
 
                 // Initiate helper with action
-                _animator = new Animator(_overlayHandle, ()=>{
-                    var payload = DequeueNotification();
-                    if (payload != null) _animator.ProvideNewPayload(payload);
+                MainController.UiDispatcher.Invoke(() =>
+                {
+                    _animator = new Animator(_overlayHandle, ()=>{
+                        var payload = DequeueNotification();
+                        if (payload != null) _animator.ProvideNewPayload(payload);
+                    });
                 });
             }
 
