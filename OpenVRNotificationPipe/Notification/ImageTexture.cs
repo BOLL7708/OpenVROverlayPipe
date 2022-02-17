@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using OpenTK.Graphics.OpenGL;
+using OpenVRNotificationPipe.Extensions;
 
 namespace OpenVRNotificationPipe.Notification
 {
-    public class ImageTexture
+    internal class ImageTexture
     {
         private readonly int _textureId;
         private readonly int _width;
@@ -32,7 +34,6 @@ namespace OpenVRNotificationPipe.Notification
             try
             {
                 image = new Bitmap(path);
-                image.RotateFlip(RotateFlipType.RotateNoneFlipY);
             }
             catch (Exception e)
             {
@@ -43,18 +44,17 @@ namespace OpenVRNotificationPipe.Notification
             return LoadSpritesheet(image, spriteWidth, spriteHeight);
         }
         
-        public static ImageTexture LoadSpritesheetBase64(string bytes, int spriteWidth, int spriteHeight)
+        public static ImageTexture LoadSpritesheetBase64(string bytes, int spriteWidth, int spriteHeight, IEnumerable<Payload.TextArea> textAreas = null)
         {
-            return LoadSpritesheetBytes(Convert.FromBase64String(bytes), spriteWidth, spriteHeight);
+            return LoadSpritesheetBytes(Convert.FromBase64String(bytes), spriteWidth, spriteHeight, textAreas);
         }
         
-        public static ImageTexture LoadSpritesheetBytes(byte[] bytes, int spriteWidth, int spriteHeight)
+        public static ImageTexture LoadSpritesheetBytes(byte[] bytes, int spriteWidth, int spriteHeight, IEnumerable<Payload.TextArea> textAreas = null)
         {
             Bitmap image;
             try
             {
                 image = new Bitmap(new MemoryStream(bytes));
-                image.RotateFlip(RotateFlipType.RotateNoneFlipY);
             }
             catch (Exception e)
             {
@@ -62,11 +62,12 @@ namespace OpenVRNotificationPipe.Notification
                 return null;
             }
             
-            return LoadSpritesheet(image, spriteWidth, spriteHeight);
+            return LoadSpritesheet(image, spriteWidth, spriteHeight, textAreas);
         }
         
-        public static ImageTexture LoadSpritesheet(Bitmap image, int spriteWidth, int spriteHeight)
+        public static ImageTexture LoadSpritesheet(Bitmap image, int spriteWidth, int spriteHeight, IEnumerable<Payload.TextArea> textAreas = null)
         {
+            image.RotateFlip(RotateFlipType.RotateNoneFlipY);
             var textureId = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2DArray, textureId);
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMinFilter,
@@ -103,13 +104,12 @@ namespace OpenVRNotificationPipe.Notification
             return new ImageTexture(textureId, spriteWidth, spriteHeight, TextureTarget.Texture2DArray, depth);
         }
         
-        public static ImageTexture LoadImageFile(string path)
+        public static ImageTexture LoadImageFile(string path, IEnumerable<Payload.TextArea> textAreas = null)
         {
             Bitmap image;
             try
             {
                 image = new Bitmap(path);
-                image.RotateFlip(RotateFlipType.RotateNoneFlipY);
             }
             catch (Exception e)
             {
@@ -117,25 +117,20 @@ namespace OpenVRNotificationPipe.Notification
                 return null;
             }
             
-            return LoadImage(image);
+            return LoadImage(image, textAreas);
         }
         
-        public static ImageTexture LoadImageBase64(string bytes)
+        public static ImageTexture LoadImageBase64(string bytes, IEnumerable<Payload.TextArea> textAreas = null)
         {
-            return LoadImageBytes(Convert.FromBase64String(bytes));
+            return LoadImageBytes(Convert.FromBase64String(bytes), textAreas);
         }
         
-        public static ImageTexture LoadImageBytes(byte[] bytes)
+        public static ImageTexture LoadImageBytes(byte[] bytes, IEnumerable<Payload.TextArea> textAreas = null)
         {
             Bitmap image;
             try
             {
                 image = new Bitmap(new MemoryStream(bytes));
-                // using (var stream = new MemoryStream(bytes))
-                // {
-                //     image = new Bitmap(stream);
-                //     // image.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                // }
             }
             catch (Exception e)
             {
@@ -143,12 +138,22 @@ namespace OpenVRNotificationPipe.Notification
                 return null;
             }
             
-            return LoadImage(image);
+            return LoadImage(image, textAreas);
         }
         
-        public static ImageTexture LoadImage(Bitmap image)
+        public static ImageTexture LoadImage(Bitmap image, IEnumerable<Payload.TextArea> textAreas = null)
         {
-            int frameCount = image.GetFrameCount(FrameDimension.Time);
+            int frameCount = 1;
+
+            try
+            {
+                frameCount = image.GetFrameCount(FrameDimension.Time);
+            }
+            catch (Exception e)
+            {
+                frameCount = 1;
+            }
+            
             Debug.WriteLine($"The image has {frameCount} frames.");
 
             if (frameCount > 1)
@@ -160,6 +165,7 @@ namespace OpenVRNotificationPipe.Notification
                     image.SelectActiveFrame(FrameDimension.Time, i);
                     Frames[i] = new Bitmap(image.Size.Width, image.Size.Height);
                     Graphics.FromImage(Frames[i]).DrawImage(image, new Point(0, 0));
+                    if (!(textAreas is null)) Frames[i].DrawTextAreas(textAreas);
                     Frames[i].RotateFlip(RotateFlipType.RotateNoneFlipY);
                 }
                 
@@ -198,6 +204,7 @@ namespace OpenVRNotificationPipe.Notification
             }
             else
             {
+                if (!(textAreas is null)) image.DrawTextAreas(textAreas);
                 image.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 var textureId = GL.GenTexture();
                 GL.BindTexture(TextureTarget.Texture2D, textureId);

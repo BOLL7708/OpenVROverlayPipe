@@ -129,6 +129,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Extensions\BitmapExtensions.cs" />
     <Compile Include="Notification\Animator.cs" />
     <Compile Include="Notification\Cycle.cs" />
     <Compile Include="Notification\ImageTexture.cs" />

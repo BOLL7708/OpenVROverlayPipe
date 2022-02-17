@@ -123,10 +123,10 @@ namespace OpenVRNotificationPipe
             }
             _controller.SetPort(_settings.Port);
 
-            while (!EasyOpenVRSingleton.Instance.IsInitialized())
-            {
-                Thread.Sleep(500);
-            }
+            // while (!EasyOpenVRSingleton.Instance.IsInitialized())
+            // {
+            //     Thread.Sleep(500);
+            // }
             
             // OpenTK Initialization
             var settings = new GLWpfControlSettings

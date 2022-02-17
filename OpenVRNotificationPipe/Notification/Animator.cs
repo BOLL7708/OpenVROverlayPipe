@@ -176,15 +176,15 @@ namespace OpenVRNotificationPipe.Notification
                     {
                         MainController.UiDispatcher.Invoke(delegate()
                         {
-                            Debug.WriteLine("Creating texture on UI thread");
-                            _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight) : ImageTexture.LoadImageBase64(_payload.imageData);
+                            Debug.WriteLine($"Creating texture on UI thread with {_payload.customProperties.textAreas.Length} text areas");
+                            _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight, _payload.customProperties.textAreas) : ImageTexture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
                             Debug.WriteLine($"Texture created on UI thread, {_texture.Height}x{_texture.Width}");
                         });
                     }
                     else
                     {
                         Debug.WriteLine("Creating texture on UI thread");
-                        _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight) : ImageTexture.LoadImageBase64(_payload.imageData);
+                        _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight, _payload.customProperties.textAreas) : ImageTexture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
                         Debug.WriteLine($"Texture created on UI thread, {_texture.Height}x{_texture.Width}");
                     }
 
