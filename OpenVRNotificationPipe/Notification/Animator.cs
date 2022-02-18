@@ -20,7 +20,7 @@ namespace OpenVRNotificationPipe.Notification
         private Action _requestForNewPayload = null;
         private volatile Payload _payload;
         private volatile bool _shouldShutdown = false;
-        private int _currentFrame = 0;
+        private double _elapsedTime = 0;
         private Dispatcher _uiDispatcher;
 
         public Animator(ulong overlayHandle, Action requestForNewAnimation)
@@ -34,7 +34,7 @@ namespace OpenVRNotificationPipe.Notification
             Debug.WriteLine("Animator thread started");
         }
 
-        public void OnRender()
+        public bool OnRender(double deltaTime)
         {
             if (_renderTexture == null)
             {
@@ -50,10 +50,19 @@ namespace OpenVRNotificationPipe.Notification
                 };
             }
             
-            if (_texture == null) return;
+            if (_texture == null)
+            {
+                _renderTexture.Bind();
+                return false;
+            }
+            
+            _elapsedTime += deltaTime;
+            
             _renderTexture.Bind();
             _texture.Bind();
             MainWindow.FitToScreen(_renderTexture.GetWidth(), _renderTexture.GetHeight(), _texture.Width, _texture.Height);
+            // Debug.WriteLine($"MainWindow.FitToScreen({_renderTexture.GetWidth()}, {_renderTexture.GetHeight()}, {_texture.Width}, {_texture.Height})");
+            return true;
         }
 
         public void PostRender()
@@ -64,10 +73,8 @@ namespace OpenVRNotificationPipe.Notification
 
         public int GetFrame()
         {
-            if (_texture == null || _texture.TextureTarget == TextureTarget.Texture2D) return 0;
-            var frame = _currentFrame;
-            _currentFrame = (_currentFrame + 1) % _texture.TextureDepth;
-            return frame;
+            if (_texture is null || _texture.TextureTarget == TextureTarget.Texture2D) return 0;
+            return _texture.GetFrame(_elapsedTime);
         }
         
         public TextureTarget GetTextureTarget()
@@ -180,7 +187,6 @@ namespace OpenVRNotificationPipe.Notification
                             Debug.WriteLine($"Creating texture on UI thread with {_payload.customProperties.textAreas.Length} text areas");
                             if (!(_texture is null))
                             {
-                                _texture.Delete();
                                 _texture = null;
                             }
                             _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight, _payload.customProperties.textAreas) : ImageTexture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
@@ -190,13 +196,14 @@ namespace OpenVRNotificationPipe.Notification
                                 stage = AnimationStage.Idle;
                                 properties = null;
                                 animationCount = 0;
-                                _currentFrame = 0;
+                                _elapsedTime = 0;
                                 _payload = null;
                             }
                             else
                             {
                                 stage = AnimationStage.Animating;
-                                Debug.WriteLine($"Texture created on UI thread, {_texture.Height}x{_texture.Width}");
+                                Debug.WriteLine($"[{_texture.TextureId}]: {_texture.TextureDepth}, {_texture.TextureTarget}");
+                                Debug.WriteLine($"Texture created on UI thread, {_texture.Width}x{_texture.Height}");
                             }
                         });
                     }
@@ -205,7 +212,6 @@ namespace OpenVRNotificationPipe.Notification
                         Debug.WriteLine("Creating texture on UI thread");
                         if (!(_texture is null))
                         {
-                            _texture.Delete();
                             _texture = null;
                         }
                         _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight, _payload.customProperties.textAreas) : ImageTexture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
@@ -215,7 +221,7 @@ namespace OpenVRNotificationPipe.Notification
                             stage = AnimationStage.Idle;
                             properties = null;
                             animationCount = 0;
-                            _currentFrame = 0;
+                            _elapsedTime = 0;
                             _payload = null;
                         }
                         else
@@ -428,14 +434,15 @@ namespace OpenVRNotificationPipe.Notification
                         stage = AnimationStage.Idle;                        
                         properties = null;
                         animationCount = 0;
-                        _currentFrame = 0;
+                        _elapsedTime = 0;
                         _payload = null;
-                        _texture.Delete();
+                        _texture = null;
                     }
                 }
 
                 if (_shouldShutdown) { // Finish
-                    _texture.Delete(); // TODO: Watch for possible instability here depending on what is going on timing-wise...
+                    // _texture.Delete(); // TODO: Watch for possible instability here depending on what is going on timing-wise...
+                    _texture = null;
                     OpenVR.Overlay.DestroyOverlay(_overlayHandle);
                     Thread.CurrentThread.Abort();
                 }

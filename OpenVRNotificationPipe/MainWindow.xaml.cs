@@ -221,7 +221,7 @@ namespace OpenVRNotificationPipe
         // Rendering Variables
         private Shader _shader3d;
         private Shader _shader2d;
-        private const double FrameInterval = 0.1;
+        private const double FrameInterval = 0.01;
         private double _elapsedTime;
 
         private readonly float[] _vertices =
@@ -258,8 +258,6 @@ namespace OpenVRNotificationPipe
 
             if (_elapsedTime > FrameInterval)
             {
-                _elapsedTime = 0;
-
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
                 foreach (var overlay in _controller.Overlays.Values)
@@ -274,10 +272,13 @@ namespace OpenVRNotificationPipe
                         _shader3d.SetInt("tex_index", overlay.Animator.GetFrame());
                     }
                     
-                    overlay.Animator.OnRender();
+                    bool textureToDraw = overlay.Animator.OnRender(_elapsedTime);
+                    GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
                     GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
-                    GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
+                    if (textureToDraw) GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
                 }
+                
+                _elapsedTime = 0;
             }
 
             GL.Finish();
