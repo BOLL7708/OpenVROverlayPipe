@@ -81,7 +81,8 @@ namespace OpenVRNotificationPipe.Notification
             Staying,
             Animating,
             EasingOut,
-            Finished
+            Finished,
+            LoadingImage
         }
 
         private void Worker() {
@@ -148,7 +149,7 @@ namespace OpenVRNotificationPipe.Notification
                     #region init 
                     // Initialize things that stay the same during the whole animation
                     
-                    stage = AnimationStage.EasingIn;
+                    stage = AnimationStage.LoadingImage;
                     properties = _payload.customProperties;
                     follow = properties.follow;
                     followTween = Tween.GetFunc(follow.tweenType);
@@ -177,15 +178,51 @@ namespace OpenVRNotificationPipe.Notification
                         MainController.UiDispatcher.Invoke(delegate()
                         {
                             Debug.WriteLine($"Creating texture on UI thread with {_payload.customProperties.textAreas.Length} text areas");
+                            if (!(_texture is null))
+                            {
+                                _texture.Delete();
+                                _texture = null;
+                            }
                             _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight, _payload.customProperties.textAreas) : ImageTexture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
-                            Debug.WriteLine($"Texture created on UI thread, {_texture.Height}x{_texture.Width}");
+                            if (_texture is null)
+                            {
+                                Debug.WriteLine("Failed to load texture");
+                                stage = AnimationStage.Idle;
+                                properties = null;
+                                animationCount = 0;
+                                _currentFrame = 0;
+                                _payload = null;
+                            }
+                            else
+                            {
+                                stage = AnimationStage.Animating;
+                                Debug.WriteLine($"Texture created on UI thread, {_texture.Height}x{_texture.Width}");
+                            }
                         });
                     }
                     else
                     {
                         Debug.WriteLine("Creating texture on UI thread");
+                        if (!(_texture is null))
+                        {
+                            _texture.Delete();
+                            _texture = null;
+                        }
                         _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight, _payload.customProperties.textAreas) : ImageTexture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
-                        Debug.WriteLine($"Texture created on UI thread, {_texture.Height}x{_texture.Width}");
+                        if (_texture is null)
+                        {
+                            Debug.WriteLine("Failed to load texture");
+                            stage = AnimationStage.Idle;
+                            properties = null;
+                            animationCount = 0;
+                            _currentFrame = 0;
+                            _payload = null;
+                        }
+                        else
+                        {
+                            stage = AnimationStage.Animating;
+                            Debug.WriteLine($"Texture created on UI thread, {_texture.Height}x{_texture.Width}");
+                        }
                     }
 
                     // var size = _texture.Load(_payload.imageData, properties.textAreas);
@@ -254,7 +291,7 @@ namespace OpenVRNotificationPipe.Notification
                     #endregion
                 }
 
-                if (!skip && stage != AnimationStage.Idle) // Animate
+                if (!skip && stage != AnimationStage.Idle && stage != AnimationStage.LoadingImage) // Animate
                 {
                     // Animation stage
                     if (animationCount < easeInLimit) stage = AnimationStage.EasingIn;
