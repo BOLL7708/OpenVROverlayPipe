@@ -20,10 +20,12 @@ using OpenTK.Wpf;
 using OpenTK_Animation_Testing;
 using Valve.VR;
 using System.IO;
+using System.Windows.Forms;
 using BOLL7708;
 using OpenTK;
 using OpenVRNotificationPipe.Notification;
 using Brushes = System.Windows.Media.Brushes;
+using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
 using PixelFormat = OpenTK.Graphics.OpenGL.PixelFormat;
 using WindowState = System.Windows.WindowState;
 
@@ -60,7 +62,19 @@ namespace OpenVRNotificationPipe
             // Tray icon
             var icon = Properties.Resources.Icon.Clone() as System.Drawing.Icon;
             _notifyIcon = new System.Windows.Forms.NotifyIcon();
-            _notifyIcon.Click += NotifyIcon_Click;
+            _notifyIcon.MouseClick += NotifyIcon_Click;
+            
+            _notifyIcon.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip(new System.ComponentModel.Container());
+            _notifyIcon.ContextMenuStrip.SuspendLayout();
+            var openMenuItem = new System.Windows.Forms.ToolStripMenuItem("Open");
+            openMenuItem.Click += (sender, args) => NotifyIcon_Click(sender, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
+            var exitMenuItem = new System.Windows.Forms.ToolStripMenuItem("Exit");
+            exitMenuItem.Click += (sender, args) => System.Windows.Application.Current.Shutdown();
+            _notifyIcon.ContextMenuStrip.Items.Add(openMenuItem);
+            _notifyIcon.ContextMenuStrip.Items.Add(exitMenuItem);
+            _notifyIcon.ContextMenuStrip.Name = "NotifyIconContextMenu";
+            _notifyIcon.ContextMenuStrip.ResumeLayout(false);
+
             _notifyIcon.Text = $"Click to show the {Properties.Resources.AppName} window";
             _notifyIcon.Icon = icon;
             _notifyIcon.Visible = true;
@@ -115,18 +129,6 @@ namespace OpenVRNotificationPipe
                     });
                 }
             );
-            if (_settings.LaunchMinimized)
-            {
-                Hide();
-                WindowState = WindowState.Minimized;
-                ShowInTaskbar = !_settings.Tray;
-            }
-            _controller.SetPort(_settings.Port);
-
-            // while (!EasyOpenVRSingleton.Instance.IsInitialized())
-            // {
-            //     Thread.Sleep(500);
-            // }
             
             // OpenTK Initialization
             var settings = new GLWpfControlSettings
@@ -135,6 +137,9 @@ namespace OpenVRNotificationPipe
                 GraphicsContextFlags = GraphicsContextFlags.Offscreen | GraphicsContextFlags.Default,
             };
             OpenTKControl.Start(settings);
+            _controller.SetPort(_settings.Port);
+
+            WindowState = WindowState.Minimized;
         }
 
         private void LoadSettings()
@@ -196,8 +201,9 @@ namespace OpenVRNotificationPipe
             _settings.Save();
         }
 
-        private void NotifyIcon_Click(object sender, EventArgs e)
+        private void NotifyIcon_Click(object sender, MouseEventArgs e)
         {
+            if (e.Button == MouseButtons.Right) return;
             WindowState = WindowState.Normal;
             ShowInTaskbar = true;
             Show();
