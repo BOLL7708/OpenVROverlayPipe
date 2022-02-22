@@ -57,6 +57,20 @@ _file.addEventListener('change', readImage)
 const _submit = document.querySelector('#submit')
 _submit.addEventListener('click', sendNotification)
 
+// Property elements
+const _attachToAnchorCheckbox = document.querySelector('#formProperties-attachToAnchor')
+const _attachToHorizonCheckbox = document.querySelector('#formProperties-attachToHorizon')
+const _alignToHorizonCheckbox = document.querySelector('#formProperties-alignToHorizon')
+_attachToAnchorCheckbox.addEventListener('change', (e) => {
+    if(_attachToAnchorCheckbox.checked) {
+        _attachToHorizonCheckbox.disabled = true
+        _alignToHorizonCheckbox.disabled = true
+    } else {
+        _attachToHorizonCheckbox.disabled = false
+        _alignToHorizonCheckbox.disabled = false
+    }
+})
+
 // Config elements
 const _config = document.querySelector('#config')
 const _copyJSON = document.querySelector('#copyJSON')
@@ -84,11 +98,13 @@ document.onkeyup = function (e) {
 function init()
 {
     connectLoop()
+    /*
+    // TODO: Make this an option.
     _config.innerHTML = localStorage.getItem(_localStorageKey) ?? ''
     if(_config.innerHTML.length > 0) {
-        // TODO: Make this an option.
-        // loadConfig()
+        loadConfig()
     }
+    */
 }
 function connectLoop() 
 {
@@ -96,6 +112,9 @@ function connectLoop()
         const url = new URL(window.location.href)
         const params = new URLSearchParams(url.search)
         const port = params.get('port') ?? 8077
+
+        // TODO: Save port in local data
+
         var wsUri = `ws://localhost:${port}`
         _wsActive = true
         if(_ws != null) _ws.close()
@@ -104,10 +123,12 @@ function connectLoop()
             _ws.onopen = function(evt) { 
                 _wsActive = true
                 document.title = 'Pipe Editor - CONNECTED'
+                _submit.disabled = false
             }
             _ws.onclose = function(evt) { 
                 _wsActive = false
                 document.title = 'Pipe Editor - DISCONNECTED'
+                _submit.disabled = true
              }
             _ws.onmessage = function(evt) {
                 console.log(JSON.stringify(evt))
