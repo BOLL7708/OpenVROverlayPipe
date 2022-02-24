@@ -137,6 +137,10 @@ namespace OpenVRNotificationPipe
                 _controller.SetPort(_settings.Port);
             }
         }
+
+        private void Button_Editor_Click(object sender, RoutedEventArgs e) {
+            Process.Start("editor.html");
+        }
         
         private void ClickedURL(object sender, RoutedEventArgs e)
         {

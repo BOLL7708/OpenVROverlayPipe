@@ -118,7 +118,8 @@ function connectLoop()
                 _submit.disabled = true
              }
             _ws.onmessage = function(evt) {
-                console.log(JSON.stringify(evt))
+                const data = JSON.parse(evt.data)
+                console.log(data)
              }
             _ws.onerror = function(evt) { 
                 _wsActive = false

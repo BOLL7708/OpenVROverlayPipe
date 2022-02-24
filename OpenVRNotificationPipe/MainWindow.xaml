@@ -10,19 +10,20 @@
         <GroupBox Header="Status &amp; Help"  Background="WhiteSmoke">
 
             <StackPanel Orientation="Vertical">
-                <StackPanel Orientation="Horizontal" Margin="5">
-                    <Label Content="OpenVR status:"/>
-                    <Label x:Name="label_OpenVRStatus" Content="Status" Foreground="White" Background="Gray"/>
-                </StackPanel>
+                <Grid>
+                    <StackPanel Orientation="Vertical">
+                        <StackPanel Orientation="Horizontal" Margin="5">
+                            <Label Content="OpenVR status:"/>
+                            <Label x:Name="label_OpenVRStatus" Content="Status" Foreground="White" Background="Gray"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="5 0 5 5">
+                            <Label Content="Server status:"/>
+                            <Label x:Name="label_ServerStatus" Content="Status" Foreground="White" Background="Gray"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Button x:Name="button_Editor" Click="Button_Editor_Click" Margin="10" Padding="10" Content="Notification Editor" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </Grid>
                 <StackPanel Orientation="Horizontal" Margin="5 0 5 5">
-                    <Label Content="Server status:"/>
-                    <Label x:Name="label_ServerStatus" Content="Status" Foreground="White" Background="Gray"/>
-                </StackPanel>
-
-                <StackPanel Orientation="Horizontal" Margin="5 0 5 5">
-                    <TextBlock x:Name="textBlock_Example" HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Top" Margin="5 0 0 0">
-                            <Hyperlink NavigateUri="editor.html" Click="ClickedURL">Editor</Hyperlink>
-                    </TextBlock>
                     <TextBlock x:Name="textBlock_Help" HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Top" Margin="10 0 10 0">
                             <Hyperlink NavigateUri="https://github.com/BOLL7708/OpenVRNotificationPipe" Click="ClickedURL">Help</Hyperlink>
                     </TextBlock>
