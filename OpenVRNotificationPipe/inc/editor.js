@@ -58,20 +58,6 @@ const _ctx = _canvas.getContext('2d')
 const _file = document.querySelector('#formImage-file')
 _file.addEventListener('change', readImage)
 
-// Property elements
-const _attachToAnchorCheckbox = document.querySelector('#formProperties-attachToAnchor')
-const _attachToHorizonCheckbox = document.querySelector('#formProperties-attachToHorizon')
-const _alignToHorizonCheckbox = document.querySelector('#formProperties-alignToHorizon')
-_attachToAnchorCheckbox.addEventListener('change', (e) => {
-    if(_attachToAnchorCheckbox.checked) {
-        _attachToHorizonCheckbox.disabled = true
-        _alignToHorizonCheckbox.disabled = true
-    } else {
-        _attachToHorizonCheckbox.disabled = false
-        _alignToHorizonCheckbox.disabled = false
-    }
-})
-
 // Config elements
 const _config = document.querySelector('#config')
 const _copyJSON = document.querySelector('#copyJSON')

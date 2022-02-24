@@ -152,12 +152,13 @@ namespace OpenVRNotificationPipe.Notification
                     deviceTransform = properties.anchorType == 0 
                         ? EasyOpenVRSingleton.Utils.GetEmptyTransform()
                         : _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
-                    if(!properties.attachToAnchor)
+                    if (!properties.attachToAnchor)
                     {
                         // Restrict rotation if necessary
                         HmdVector3_t hmdEuler = deviceTransform.EulerAngles();
-                        if(properties.alignToHorizon) hmdEuler.v2 = 0;
-                        if(properties.attachToHorizon) hmdEuler.v0 = 0;
+                        if (properties.ignoreAnchorYaw) hmdEuler.v1 = 0;
+                        if (properties.ignoreAnchorRoll) hmdEuler.v2 = 0;
+                        if (properties.ignoreAnchorPitch) hmdEuler.v0 = 0;
                         deviceTransform = deviceTransform.FromEuler(hmdEuler);
                     }
                     originTransform = deviceTransform;
@@ -195,7 +196,11 @@ namespace OpenVRNotificationPipe.Notification
                     // Animation stage
                     if (animationCount < easeInLimit) stage = AnimationStage.EasingIn;
                     else if (animationCount >= stayLimit) stage = AnimationStage.EasingOut;
-                    else stage = follow.enabled || properties.animations.Length > 0 ? AnimationStage.Animating : AnimationStage.Staying;
+                    else stage = follow.enabled 
+                            || properties.animations.Length > 0 
+                            || (properties.anchorType != 0 && properties.attachToAnchor && (properties.ignoreAnchorYaw || properties.ignoreAnchorPitch || properties.ignoreAnchorRoll))
+                            ? AnimationStage.Animating 
+                            : AnimationStage.Staying;
                     animationSeconds = (float) animationCount / (float) hz;
 
                     #region stage inits
@@ -255,8 +260,9 @@ namespace OpenVRNotificationPipe.Notification
                                 {
                                     // Restrict rotation if necessary
                                     HmdVector3_t hmdEuler = currentPose.EulerAngles();
-                                    if (properties.alignToHorizon) hmdEuler.v2 = 0;
-                                    if (properties.attachToHorizon) hmdEuler.v0 = 0;
+                                    if (properties.ignoreAnchorYaw) hmdEuler.v1 = 0;
+                                    if (properties.ignoreAnchorRoll) hmdEuler.v2 = 0;
+                                    if (properties.ignoreAnchorPitch) hmdEuler.v0 = 0;
                                     currentPose = currentPose.FromEuler(hmdEuler);
                                 }
                                 targetTransform = currentPose;
@@ -282,27 +288,49 @@ namespace OpenVRNotificationPipe.Notification
                         // Build transform with origin, transitions and animations
                         animationTransform = (properties.attachToAnchor || properties.anchorType == 0)
                             ? EasyOpenVRSingleton.Utils.GetEmptyTransform()
-                            : deviceTransform;
-                        if (properties.anchorType == 0) { 
+                            // : properties.anchorType != 0 && properties.alignToHorizon
+                                // ?
+                                : deviceTransform;
+                        
+                        if (properties.anchorType == 0) {
                             // World related, so all rotations are local to the overlay
                             animationTransform = animationTransform
                                 .Translate(translate)
                                 .RotateY(-properties.yawDeg + transition.yawDeg * ratioReversed + animateYaw.GetRatio(animationSeconds))
                                 .RotateX(properties.pitchDeg + transition.pitchDeg * ratioReversed + animatePitch.GetRatio(animationSeconds))
                                 .RotateZ(properties.rollDeg + transition.rollDeg * ratioReversed + animateRoll.GetRatio(animationSeconds));
-                        } else { 
+                        } else if (properties.anchorType != 0 && properties.attachToAnchor && (properties.ignoreAnchorYaw || properties.ignoreAnchorPitch || properties.ignoreAnchorRoll)) { 
+                            var anchorTransform = _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
+                            HmdVector3_t hmdAnchorEuler = anchorTransform.EulerAngles();
+                            if (properties.ignoreAnchorYaw) hmdAnchorEuler.v1 = 0;
+                            if (properties.ignoreAnchorPitch) hmdAnchorEuler.v2 = 0;
+                            if (properties.ignoreAnchorRoll) hmdAnchorEuler.v0 = 0;
+                            animationTransform = anchorTransform.FromEuler(hmdAnchorEuler)
+                                .Translate(translate)
+                                .RotateY(-properties.yawDeg + transition.yawDeg * ratioReversed + animateYaw.GetRatio(animationSeconds))
+                                .RotateX(properties.pitchDeg + transition.pitchDeg * ratioReversed + animatePitch.GetRatio(animationSeconds))
+                                .RotateZ(properties.rollDeg + transition.rollDeg * ratioReversed + animateRoll.GetRatio(animationSeconds));
+                        } else {
                             // Device related, so all rotations are at the origin of the device
                             animationTransform = animationTransform
+                                // Properties
                                 .RotateY(-properties.yawDeg)
                                 .RotateX(properties.pitchDeg)
                                 .RotateZ(properties.rollDeg)
                                 .Translate(translate)
+                                // Transitions
                                 .RotateY(transition.yawDeg * ratioReversed + animateYaw.GetRatio(animationSeconds))
                                 .RotateX(transition.pitchDeg * ratioReversed + animatePitch.GetRatio(animationSeconds))
                                 .RotateZ(transition.rollDeg * ratioReversed + animateRoll.GetRatio(animationSeconds));
                         }
 
-                        _vr.SetOverlayTransform(_overlayHandle, animationTransform, properties.attachToAnchor ? anchorIndex : uint.MaxValue);
+                        _vr.SetOverlayTransform(
+                            _overlayHandle, 
+                            animationTransform, 
+                            properties.attachToAnchor && !properties.ignoreAnchorRoll 
+                                ? anchorIndex 
+                                : uint.MaxValue
+                        );
                         var transitionOpacityRatio = (transition.opacityPer + (transitionRatio * (1f - transition.opacityPer)));
                         _vr.SetOverlayAlpha(_overlayHandle,
                                 // the transition part becomes 0-1, times the property that sets the maximum, and we just add the animation value.

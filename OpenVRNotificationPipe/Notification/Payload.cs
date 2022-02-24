@@ -24,8 +24,9 @@ namespace OpenVRNotificationPipe
             public string nonce = "";
             public int anchorType = 1; // 0: World, 1: Head, 2: Left Hand, 3: Right Hand
             public bool attachToAnchor = false; // Fixes the overlay to the anchor
-            public bool attachToHorizon = false;
-            public bool alignToHorizon = false;
+            public bool ignoreAnchorYaw = false;
+            public bool ignoreAnchorPitch = false;
+            public bool ignoreAnchorRoll = false;
 
             public int overlayChannel = 0;
             public int animationHz = -1;

@@ -58,8 +58,9 @@ The way the transitions work, it will animate values that differs from when it i
         "nonce": "", // Supply a unique value that will be returned upon completion, pipe `|` is a reserved character, meaning don't use that in a nonce value.
         "anchorType": 1, // What to anchor the notification to, 0: world, 1: head, 2: left hand, 3: right hand
         "attachToAnchor": false, // Will fix the overlay to the anchor, overrides attachToHorizon and alignToHorizon
-        "attachToHorizon": false, // Will ignore pitch of the headset and keep the origin leveled with the horizon
-        "alignToHorizon": false, // Initial roll alignment to the horizon, else relative to anchor
+        "ignoreAnchorYaw": false, // Will ignore the yaw angle for the anchor device
+        "ignoreAnchorPitch": false, // Will ignore the pitch angle of the anchor device
+        "ignoreAnchorRoll": false, // Will ignore the roll angle of the anchor device
         "overlayChannel": 0, // Use different channels to show notifications simultaneously
         "animationHz": -1, // Animation frame rate, -1 uses the headset refresh rate instead
         "durationMs": 5000, // The time the notification stays up, in milliseconds
