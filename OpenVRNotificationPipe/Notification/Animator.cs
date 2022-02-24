@@ -12,14 +12,15 @@ namespace OpenVRNotificationPipe.Notification
         private readonly ulong _overlayHandle = 0;
         private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private Action _requestForNewPayload = null;
+        private Action<string> _responseAtCompletion = null;
         private volatile Payload _payload;
         private volatile bool _shouldShutdown = false;
 
-        public Animator(ulong overlayHandle, Action requestForNewAnimation)
+        public Animator(ulong overlayHandle, Action requestForNewAnimation, Action<string> responseAtCompletion)
         {
             _overlayHandle = overlayHandle;
             _requestForNewPayload = requestForNewAnimation;
-            
+            _responseAtCompletion = responseAtCompletion;
             _texture = new Texture(_overlayHandle);
             
             var thread = new Thread(Worker);
@@ -323,7 +324,8 @@ namespace OpenVRNotificationPipe.Notification
                     if (stage == AnimationStage.Finished) {
                         Debug.WriteLine("DONE!");
                         _vr.SetOverlayVisibility(_overlayHandle, false);
-                        stage = AnimationStage.Idle;                        
+                        stage = AnimationStage.Idle;
+                        if (properties.nonce.Length > 0) _responseAtCompletion(properties.nonce);
                         properties = null;
                         animationCount = 0;
                         _payload = null;

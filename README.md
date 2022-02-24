@@ -53,13 +53,14 @@ The way the transitions work, it will animate values that differs from when it i
 ```jsonc
 {
     "imageData": "", // A base64 string with *.png image data, only the data part of a data URL
-    "customPproperties": {
+    "customProperties": {
         "enabled": false, // True to do a custom notification
+        "nonce": "", // Supply a unique value that will be returned upon completion, pipe `|` is a reserved character, meaning don't use that in a nonce value.
         "anchorType": 1, // What to anchor the notification to, 0: world, 1: head, 2: left hand, 3: right hand
         "attachToAnchor": false, // Will fix the overlay to the anchor, overrides attachToHorizon and alignToHorizon
         "attachToHorizon": false, // Will ignore pitch of the headset and keep the origin leveled with the horizon
         "alignToHorizon": false, // Initial roll alignment to the horizon, else relative to anchor
-	    "overlayChannel": 0, // Use different channels to show notifications simultaneously
+        "overlayChannel": 0, // Use different channels to show notifications simultaneously
         "animationHz": -1, // Animation frame rate, -1 uses the headset refresh rate instead
         "durationMs": 5000, // The time the notification stays up, in milliseconds
         "opacityPer": 1, // The opacity of the notificaiton when it is idle

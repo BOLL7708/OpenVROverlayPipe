@@ -48,14 +48,15 @@ _elements.forEach(el => {
     wrapper.appendChild(el)
 })
 
-// Canvas slements
+// General elements
+const _submit = document.querySelector('#submit')
+_submit.addEventListener('click', sendNotification)
 
+// Canvas slements
 const _canvas = document.querySelector('#formImage-canvas')
 const _ctx = _canvas.getContext('2d')
 const _file = document.querySelector('#formImage-file')
 _file.addEventListener('change', readImage)
-const _submit = document.querySelector('#submit')
-_submit.addEventListener('click', sendNotification)
 
 // Property elements
 const _attachToAnchorCheckbox = document.querySelector('#formProperties-attachToAnchor')
