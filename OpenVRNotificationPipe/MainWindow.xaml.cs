@@ -139,7 +139,11 @@ namespace OpenVRNotificationPipe
             OpenTKControl.Start(settings);
             _controller.SetPort(_settings.Port);
 
-            WindowState = WindowState.Minimized;
+            if (_settings.LaunchMinimized)
+            {
+                WindowState = WindowState.Minimized;
+                ShowInTaskbar = !_settings.Tray;
+            }
         }
 
         private void LoadSettings()
