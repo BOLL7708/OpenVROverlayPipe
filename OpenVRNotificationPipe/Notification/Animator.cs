@@ -47,6 +47,7 @@ namespace OpenVRNotificationPipe.Notification
             var height = 1f;
             var properties = new Payload.CustomProperties();
             var anchorIndex = uint.MaxValue;
+			var useWorldDeviceTransform = false;
 
             // Follow
             var follow = new Payload.Follow();
@@ -102,6 +103,7 @@ namespace OpenVRNotificationPipe.Notification
                     
                     stage = AnimationStage.EasingIn;
                     properties = _payload.customProperties;
+					useWorldDeviceTransform = properties.anchorType != 0 && properties.attachToAnchor && (properties.ignoreAnchorYaw || properties.ignoreAnchorPitch || properties.ignoreAnchorRoll);
                     follow = properties.follow;
                     followTween = Tween.GetFunc(follow.tweenType);
                     var hmdHz = (int) Math.Round(_vr.GetFloatTrackedDeviceProperty(0, ETrackedDeviceProperty.Prop_DisplayFrequency_Float));
@@ -157,8 +159,8 @@ namespace OpenVRNotificationPipe.Notification
                         // Restrict rotation if necessary
                         HmdVector3_t hmdEuler = deviceTransform.EulerAngles();
                         if (properties.ignoreAnchorYaw) hmdEuler.v1 = 0;
-                        if (properties.ignoreAnchorRoll) hmdEuler.v2 = 0;
                         if (properties.ignoreAnchorPitch) hmdEuler.v0 = 0;
+                        if (properties.ignoreAnchorRoll) hmdEuler.v2 = 0;
                         deviceTransform = deviceTransform.FromEuler(hmdEuler);
                     }
                     originTransform = deviceTransform;
@@ -198,7 +200,7 @@ namespace OpenVRNotificationPipe.Notification
                     else if (animationCount >= stayLimit) stage = AnimationStage.EasingOut;
                     else stage = follow.enabled 
                             || properties.animations.Length > 0 
-                            || (properties.anchorType != 0 && properties.attachToAnchor && (properties.ignoreAnchorYaw || properties.ignoreAnchorPitch || properties.ignoreAnchorRoll))
+                            || useWorldDeviceTransform
                             ? AnimationStage.Animating 
                             : AnimationStage.Staying;
                     animationSeconds = (float) animationCount / (float) hz;
@@ -288,10 +290,8 @@ namespace OpenVRNotificationPipe.Notification
                         // Build transform with origin, transitions and animations
                         animationTransform = (properties.attachToAnchor || properties.anchorType == 0)
                             ? EasyOpenVRSingleton.Utils.GetEmptyTransform()
-                            // : properties.anchorType != 0 && properties.alignToHorizon
-                                // ?
-                                : deviceTransform;
-                        
+							: deviceTransform;
+						
                         if (properties.anchorType == 0) {
                             // World related, so all rotations are local to the overlay
                             animationTransform = animationTransform
@@ -299,12 +299,13 @@ namespace OpenVRNotificationPipe.Notification
                                 .RotateY(-properties.yawDeg + transition.yawDeg * ratioReversed + animateYaw.GetRatio(animationSeconds))
                                 .RotateX(properties.pitchDeg + transition.pitchDeg * ratioReversed + animatePitch.GetRatio(animationSeconds))
                                 .RotateZ(properties.rollDeg + transition.rollDeg * ratioReversed + animateRoll.GetRatio(animationSeconds));
-                        } else if (properties.anchorType != 0 && properties.attachToAnchor && (properties.ignoreAnchorYaw || properties.ignoreAnchorPitch || properties.ignoreAnchorRoll)) { 
+                        } else if (useWorldDeviceTransform) {
+                            // Device related but using world coordinates, local overlay rotation and allows for rotation cancellation
                             var anchorTransform = _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
                             HmdVector3_t hmdAnchorEuler = anchorTransform.EulerAngles();
                             if (properties.ignoreAnchorYaw) hmdAnchorEuler.v1 = 0;
-                            if (properties.ignoreAnchorPitch) hmdAnchorEuler.v2 = 0;
-                            if (properties.ignoreAnchorRoll) hmdAnchorEuler.v0 = 0;
+                            if (properties.ignoreAnchorPitch) hmdAnchorEuler.v0 = 0;
+                            if (properties.ignoreAnchorRoll) hmdAnchorEuler.v2 = 0;
                             animationTransform = anchorTransform.FromEuler(hmdAnchorEuler)
                                 .Translate(translate)
                                 .RotateY(-properties.yawDeg + transition.yawDeg * ratioReversed + animateYaw.GetRatio(animationSeconds))
@@ -327,7 +328,7 @@ namespace OpenVRNotificationPipe.Notification
                         _vr.SetOverlayTransform(
                             _overlayHandle, 
                             animationTransform, 
-                            properties.attachToAnchor && !properties.ignoreAnchorRoll 
+                            (properties.attachToAnchor && !useWorldDeviceTransform)
                                 ? anchorIndex 
                                 : uint.MaxValue
                         );
@@ -370,7 +371,6 @@ namespace OpenVRNotificationPipe.Notification
                 var timeSpent = (int) Math.Round((double) (DateTime.Now.Ticks - timeStarted) / TimeSpan.TicksPerMillisecond);
                 Thread.Sleep(Math.Max(1, msPerFrame-timeSpent)); // Animation time per frame adjusted by the time it took to animate.
             }
-
         }
 
         public void ProvideNewPayload(Payload payload) {
