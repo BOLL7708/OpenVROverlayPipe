@@ -76,6 +76,17 @@ button {
 button:hover {
     background-image: linear-gradient( #FFDCFF, #FF89FF, #FF34FF);
 }
+button:disabled {
+    background-image: linear-gradient( #ccc, #888);
+    text-shadow: none;
+    color: #ddd;
+    text-shadow:
+        -1px -1px 0 #555,
+        1px -1px 0 #555,
+        -1px 1px 0 #555,
+        1px 1px 0 #555;
+    box-shadow: none;
+}
 label {
     cursor: text;
     text-transform: capitalize;

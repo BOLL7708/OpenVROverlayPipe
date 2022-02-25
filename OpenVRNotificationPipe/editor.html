@@ -12,7 +12,7 @@
             <p>Pick an image to start.</p>
             <p>Use the copy buttons to use in your app.</p>
             <p></p>
-            <p><button id="submit">Submit to Pipe (enter key)</button></p>
+            <p><button id="submit" disabled>Submit to Pipe (enter key)</button></p>
             <hr/>
             <h3>Export Config</h3>
             <input name="indentation" type="number" step="1" value="4"/>
@@ -30,6 +30,7 @@
         <form id="formProperties">
             <h3>Properties</h3>
             <input name="enabled" type="checkbox" value="true" checked/>
+            <input name="nonce" type="text" value=""/>
             <select name="anchorType">
                 <option value="0">World</option>
                 <option value="1" selected>Head</option>
@@ -42,6 +43,9 @@
             <input name="isSpritesheet" type="checkbox" value="true"/>
             <input name="spriteWidth" type="number" value="512" step="1"/>
             <input name="spriteHeight" type="number" value="512" step="1"/>
+            <input name="ignoreAnchorYaw" type="checkbox" value="true"/>
+            <input name="ignoreAnchorPitch" type="checkbox" value="true"/>
+            <input name="ignoreAnchorRoll" type="checkbox" value="true"/>
             <input name="overlayChannel" type="number" value="0" step="1"/>
             <input name="opacityPer" type="number" value="1" step="0.1"/>
             <input name="animationHz" type="number" value="0" step="10"/>

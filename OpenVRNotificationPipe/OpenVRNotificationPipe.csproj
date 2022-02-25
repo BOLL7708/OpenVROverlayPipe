@@ -58,13 +58,12 @@
     <DefineConstants>TRACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
-    <DebugType>none</DebugType>
+    <DebugType>pdbonly</DebugType>
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
-    <WarningLevel>2</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>resources\logo.ico</ApplicationIcon>
@@ -135,6 +134,7 @@
     <Compile Include="Notification\ImageTexture.cs" />
     <Compile Include="Notification\RenderTexture.cs" />
     <Compile Include="Notification\Shader.cs" />
+    <Compile Include="Notification\Response.cs" />
     <Compile Include="Notification\Tween.cs" />
     <Compile Include="Notification\Overlay.cs" />
     <Compile Include="Notification\Texture.cs" />

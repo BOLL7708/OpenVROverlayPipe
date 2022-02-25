@@ -48,6 +48,10 @@ _elements.forEach(el => {
     wrapper.appendChild(el)
 })
 
+// General elements
+const _submit = document.querySelector('#submit')
+_submit.addEventListener('click', sendNotification)
+
 // Canvas slements
 
 let _imgData = null;
@@ -55,8 +59,6 @@ const _canvas = document.querySelector('#formImage-canvas')
 const _ctx = _canvas.getContext('2d')
 const _file = document.querySelector('#formImage-file')
 _file.addEventListener('change', readImage)
-const _submit = document.querySelector('#submit')
-_submit.addEventListener('click', sendNotification)
 
 // Config elements
 const _config = document.querySelector('#config')
@@ -85,11 +87,13 @@ document.onkeyup = function (e) {
 function init()
 {
     connectLoop()
+    /*
+    // TODO: Make this an option.
     _config.innerHTML = localStorage.getItem(_localStorageKey) ?? ''
     if(_config.innerHTML.length > 0) {
-        // TODO: Make this an option.
-        // loadConfig()
+        loadConfig()
     }
+    */
 }
 function connectLoop() 
 {
@@ -97,6 +101,9 @@ function connectLoop()
         const url = new URL(window.location.href)
         const params = new URLSearchParams(url.search)
         const port = params.get('port') ?? 8077
+
+        // TODO: Save port in local data
+
         var wsUri = `ws://localhost:${port}`
         _wsActive = true
         if(_ws != null) _ws.close()
@@ -105,13 +112,16 @@ function connectLoop()
             _ws.onopen = function(evt) { 
                 _wsActive = true
                 document.title = 'Pipe Editor - CONNECTED'
+                _submit.disabled = false
             }
             _ws.onclose = function(evt) { 
                 _wsActive = false
                 document.title = 'Pipe Editor - DISCONNECTED'
+                _submit.disabled = true
              }
             _ws.onmessage = function(evt) {
-                console.log(JSON.stringify(evt))
+                const data = JSON.parse(evt.data)
+                console.log(data)
              }
             _ws.onerror = function(evt) { 
                 _wsActive = false

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ namespace OpenVRNotificationPipe.Notification
         private readonly int _channel;
         private bool _initSuccess = false;
         private readonly ConcurrentQueue<Payload> _notifications = new ConcurrentQueue<Payload>();
+        public EventHandler<string> DoneEvent;
 
         public Overlay(string title, int channel) {
             _title = title;
@@ -27,6 +29,8 @@ namespace OpenVRNotificationPipe.Notification
         }
 
         public bool Reinit() {
+            if (!_vr.IsInitialized()) return false;
+
             // Dispose of any existing overlay
             if (_overlayHandle != 0) OpenVR.Overlay.DestroyOverlay(_overlayHandle);
             
@@ -47,6 +51,9 @@ namespace OpenVRNotificationPipe.Notification
                     _animator = new Animator(_overlayHandle, ()=>{
                         var payload = DequeueNotification();
                         if (payload != null) _animator.ProvideNewPayload(payload);
+                    }, (nonce)=>{
+                        Debug.WriteLine($"Nonce value at completion: {nonce}");
+                        DoneEvent.Invoke(this, nonce);
                     });
                 });
             }
