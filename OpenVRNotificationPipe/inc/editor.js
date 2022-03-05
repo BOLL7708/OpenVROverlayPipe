@@ -53,6 +53,8 @@ const _submit = document.querySelector('#submit')
 _submit.addEventListener('click', sendNotification)
 
 // Canvas slements
+
+let _imgData = null;
 const _canvas = document.querySelector('#formImage-canvas')
 const _ctx = _canvas.getContext('2d')
 const _file = document.querySelector('#formImage-file')
@@ -138,6 +140,7 @@ function connectLoop()
 // Image functions
 function readImage() {
     _formImage.classList.remove('unset')
+    
     if(this.files && this.files[0]) {
         var FR = new FileReader()
         FR.onload = function(e) {
@@ -149,12 +152,13 @@ function readImage() {
                 _ctx.drawImage(img, 0, 0, img.width, img.height)
                });
                img.src = e.target.result
+               _imgData = e.target.result.split(',')[1]
         };       
         FR.readAsDataURL( this.files[0] )
     }
 }
 function getImageData() {
-    return _canvas.toDataURL().split(',')[1]
+    return _imgData
 }
 
 // Data

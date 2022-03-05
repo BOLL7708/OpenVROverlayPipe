@@ -9,6 +9,7 @@ using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Windows.Threading;
 using Valve.VR;
 using static BOLL7708.EasyOpenVRSingleton;
 
@@ -16,6 +17,8 @@ namespace OpenVRNotificationPipe
 {
     class MainController
     {
+        public static Dispatcher UiDispatcher { get; private set; }
+        public ConcurrentDictionary<int, Overlay> Overlays => _overlays;
         private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private readonly SuperServer _server = new SuperServer();
         private readonly ConcurrentDictionary<string, WebSocketSession> _sessions = new ConcurrentDictionary<string, WebSocketSession>();
@@ -27,6 +30,7 @@ namespace OpenVRNotificationPipe
 
         public MainController(Action<SuperServer.ServerStatus, int> serverStatus, Action<bool> openvrStatus)
         {
+            UiDispatcher = Dispatcher.CurrentDispatcher;
             _openvrStatusAction = openvrStatus;
             InitServer(serverStatus);
             var thread = new Thread(Worker);
