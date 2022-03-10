@@ -19,17 +19,17 @@ To send things to this application you need a WebSockets client, you can easily 
 ```html
 <html>
     <body>
-        <p>Title: <input id="basicTitle"/></p>
-        <p>Message: <input id="basicMessage"/></p>
+        <p>Title: <input id="title"/></p>
+        <p>Message: <input id="message"/></p>
         <p><button onclick="submit();">Send</button></p>
     </body>
     <script>
         const _socket = new WebSocket("ws://localhost:8077");
         _socket.onopen = (e) => {console.log("Connected!");};
         function submit() {
-            const title = document.querySelector('#basicTitle').value;
-            const message = document.querySelector('#basicMessage').value;
-	    _socket.send(JSON.stringify({title: title, message: message}));
+            const title = document.querySelector('#title').value;
+            const message = document.querySelector('#message').value;
+	    _socket.send(JSON.stringify({basicTitle: title, basicMessage: message}));
         }
     </script>
 </html>

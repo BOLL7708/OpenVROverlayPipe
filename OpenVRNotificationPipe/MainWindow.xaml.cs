@@ -141,8 +141,11 @@ namespace OpenVRNotificationPipe
 
             if (_settings.LaunchMinimized)
             {
-                WindowState = WindowState.Minimized;
-                ShowInTaskbar = !_settings.Tray;
+                Loaded += (sender, args) =>
+                {
+                    WindowState = WindowState.Minimized;
+                    ShowInTaskbar = !_settings.Tray;
+                };
             }
         }
 

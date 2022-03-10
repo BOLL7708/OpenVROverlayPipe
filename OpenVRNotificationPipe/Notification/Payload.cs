@@ -28,10 +28,6 @@ namespace OpenVRNotificationPipe
             public bool ignoreAnchorPitch = false;
             public bool ignoreAnchorRoll = false;
 
-            public bool isSpritesheet = false;
-            public int spriteWidth = 0;
-            public int spriteHeight = 0;
-
             public int overlayChannel = 0;
             public int animationHz = -1;
             public int durationMs = 5000;

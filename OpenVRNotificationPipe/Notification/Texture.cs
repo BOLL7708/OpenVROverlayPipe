@@ -1,182 +1,213 @@
 ﻿using System;
-using Valve.VR;
-using OpenTK.Graphics.OpenGL;
+using System.Collections.Generic;
 using System.Diagnostics;
-using OpenTK;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
-using static OpenVRNotificationPipe.Payload;
-using System.Drawing.Drawing2D;
-using System.Drawing.Text;
+using System.Linq;
+using OpenTK.Graphics.OpenGL;
+using OpenVRNotificationPipe.Extensions;
 
 namespace OpenVRNotificationPipe.Notification
 {
-    class Texture
+    internal class Texture : IDisposable
     {
-        private GameWindow _glWindow; // So GL will work at all
-        private IntPtr _textureId = IntPtr.Zero;
-        private readonly ulong _overlayHandle = 0;
-        private readonly int _textureMaxSide = 1024; // What seems like a good idea right now.
-        
-        public Texture(ulong overlayHandle) {
-            _overlayHandle = overlayHandle;
-        }
+        private bool _disposed = false;
+        private int[] _frameTimes;
+        public int Width { get; }
+        public int Height { get; }
+        public int TextureDepth { get; }
+        public int TextureId { get; }
 
-        /**
-         * This got complicated due to SteamVR not using new textures even with the old ones deleted,
-         * which is why we create an empty image at the maximum size allowed, and then we draw the
-         * incoming bitmap onto it, then tighten the UV to the original image dimensions. Phew.
-         */
+        public TextureTarget TextureTarget { get; }
 
-            /**
-             * Jeppe is locking up the pipe with his water spam. 
-             * Not sure if a system limitation or this application.
-             * I guess try to do a stress test.
-             */
-
-        public HmdVector2_t Load(string base64png, TextArea[] textAreas)
+        public Texture(int textureId, int width, int height, TextureTarget textureTarget = TextureTarget.Texture2D, int textureDepth = 0, int[] frameTimes = null)
         {
-            if (_glWindow == null) _glWindow = new GameWindow(); // Init OpenGL
-            
-            var size = new HmdVector2_t();
+            TextureId = textureId;
+            Width = width;
+            Height = height;
+            TextureTarget = textureTarget;
+            TextureDepth = textureDepth;
+            _frameTimes = frameTimes;
+        }
+        
+        public static Texture LoadImageFile(string path, IEnumerable<Payload.TextArea> textAreas = null)
+        {
+            Bitmap image;
             try
             {
-                // Loading image from incoming base64 encoded string
-                Debug.WriteLine($"Image hash: {MainController.CreateMD5(base64png)}");
-                var imageBytes = Convert.FromBase64String(base64png);
-                var bmp = new Bitmap(new MemoryStream(imageBytes));
-
-                foreach (TextArea ta in textAreas)
-                {
-                    // https://stackoverflow.com/a/32012246/2076423
-                    var g = Graphics.FromImage(bmp);
-                    RectangleF rectf = new RectangleF(
-                        Math.Min(Math.Max(0, ta.xPositionPx), bmp.Width),
-                        Math.Min(Math.Max(0, ta.yPositionPx), bmp.Height),
-                        Math.Min(ta.widthPx, bmp.Width), 
-                        Math.Min(ta.heightPx, bmp.Height)
-                    );
-                    g.SmoothingMode = SmoothingMode.AntiAlias;
-                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                    g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-                    StringFormat format = new StringFormat()
-                    {
-                        Alignment = (StringAlignment) Math.Min((int) StringAlignment.Far, Math.Max(ta.horizontalAlignment, (int) StringAlignment.Near)),
-                        LineAlignment = (StringAlignment) Math.Min((int) StringAlignment.Far, Math.Max(ta.verticalAlignment, (int) StringAlignment.Near)),
-                        Trimming = StringTrimming.EllipsisWord
-                        // FormatFlags = StringFormatFlags.DirectionVertical
-                    };
-                    Debug.WriteLine($"Gravity: {ta.horizontalAlignment}:{format.Alignment}, Alignment: {ta.verticalAlignment}:{format.LineAlignment}");
-                    var color = Color.White;
-                    try { color = ColorTranslator.FromHtml(ta.fontColor); } 
-                    catch (Exception e) { Debug.WriteLine($"Invalid HTML color: {e.Message}"); }
-                    if (color.A == 0) color = Color.White; // Empty string parses out to transparent black (0,0,0,0)
-                    var brush = new SolidBrush(color);
-                    g.DrawString(
-                        ta.text, 
-                        new Font(ta.fontFamily, ta.fontSizePt), 
-                        brush,
-                        rectf,
-                        format
-                    );
-                    g.Flush();
-                }
-
-                Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
-                bmp.RotateFlip(RotateFlipType.RotateNoneFlipY); // Flip it for OpenGL
-                if(bmp.Width > _textureMaxSide || bmp.Height > _textureMaxSide)
-                {
-                    if (bmp.Width > bmp.Height) 
-                    {
-                        size.v0 = _textureMaxSide;
-                        size.v1 = (float) _textureMaxSide / bmp.Width * bmp.Height;
-                    } 
-                    else
-                    {
-                        size.v0 = (float) _textureMaxSide / bmp.Height * bmp.Width;
-                        size.v1 = _textureMaxSide;
-                    }
-                } 
-                else
-                {
-                    size.v0 = bmp.Width;
-                    size.v1 = bmp.Height;
-                }
-
-                // Initiate canvas to draw incoming bitmap on to match original size, 
-                // this is the to avoid the texture not updating problem.
-                var bmpMax = new Bitmap(_textureMaxSide, _textureMaxSide, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                var canvas = Graphics.FromImage(bmpMax);
-
-                var destRect = new Rectangle() { 
-                    Width = (int) size.v0, 
-                    Height = (int) size.v1, 
-                    X = (bmpMax.Width - (int) size.v0)/2, 
-                    Y = (bmpMax.Height - (int) size.v1)/2
-                };
-                canvas.DrawImage(bmp, destRect, 0, 0, bmp.Width, bmp.Height, GraphicsUnit.Pixel);
-                canvas.Save();
-                bmp.Dispose();
-
-                // Lock bits so we can supply them to the texture
-                var bmpBits = bmpMax.LockBits(
-                    new Rectangle(0, 0, bmpMax.Width, bmpMax.Height),
-                    System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                    System.Drawing.Imaging.PixelFormat.Format32bppArgb
-                );
-
-                // Create OpenGL texture
-                if (_textureId == IntPtr.Zero)
-                {
-                    _textureId = (IntPtr) GL.GenTexture();
-                    GL.BindTexture(TextureTarget.Texture2D, (int)_textureId);
-                    GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, bmpMax.Width, bmpMax.Height);
-                }
-                GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, bmpMax.Width, bmpMax.Height, PixelFormat.Bgra, PixelType.UnsignedByte, bmpBits.Scan0);
-                bmpMax.UnlockBits(bmpBits);
-                bmpMax.Dispose();
-
-                // Create SteamVR texture
-                Texture_t texture = new Texture_t
-                {
-                    eType = ETextureType.OpenGL,
-                    eColorSpace = EColorSpace.Auto,
-                    handle = (IntPtr)_textureId
-                };
-
-                // Assign texture
-                var error = OpenVR.Overlay.SetOverlayTexture(_overlayHandle, ref texture);
-
-                // Adjust UV if needed to remove padding
-                var side = Math.Max(size.v0, size.v1);
-                var bounds = new VRTextureBounds_t();
-                if (side < _textureMaxSide) {
-                    bounds.uMin = bounds.vMin = (1f - (side / _textureMaxSide)) / 2;
-                    bounds.uMax = bounds.vMax = 1f - bounds.uMin;
-                } else bounds.uMax = bounds.vMax = 1;
-                Debug.WriteLine($"Bounds: ({bounds.uMin}, {bounds.vMin}) => ({bounds.uMax}, {bounds.vMax})");
-                OpenVR.Overlay.SetOverlayTextureBounds(_overlayHandle, ref bounds);
-
-                // Check for error
-                if (error != EVROverlayError.None)
-                {
-                    size = new HmdVector2_t();
-                    Debug.WriteLine($"SetOverlayTexture error: {Enum.GetName(error.GetType(), error)}");
-                }
+                image = new Bitmap(path);
             }
             catch (Exception e)
             {
-                Debug.WriteLine($"Texture Exception: {e.ToString()}");
+                Debug.WriteLine($"ImageTexture: Exception loading image file: {e.Message}");
+                return null;
             }
-            return size;
+            return LoadImage(image, textAreas);
         }
         
-        // If we unload too quickly we get an exception and crash.
-        public void Unload() {
-            OpenVR.Overlay.ClearOverlayTexture(_overlayHandle);
-            if (_textureId != IntPtr.Zero) GL.DeleteTexture((int) _textureId);
-            _textureId = IntPtr.Zero;
+        public static Texture LoadImageBase64(string bytes, IEnumerable<Payload.TextArea> textAreas = null)
+        {
+            return LoadImageBytes(Convert.FromBase64String(bytes), textAreas);
+        }
+        
+        public static Texture LoadImageBytes(byte[] bytes, IEnumerable<Payload.TextArea> textAreas = null)
+        {
+            Bitmap image;
+            try
+            {
+                image = new Bitmap(new MemoryStream(bytes));
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine($"ImageTexture: Exception loading image bytes: {e.Message}");
+                return null;
+            }            
+            return LoadImage(image, textAreas);
+        }
+        
+        public static Texture LoadImage(Bitmap image, IEnumerable<Payload.TextArea> textAreas = null)
+        {
+            int frameCount = image.FrameDimensionsList.Any(d => d == FrameDimension.Time.Guid)
+                ? image.GetFrameCount(FrameDimension.Time)
+                : 1;
+
+            Debug.WriteLine($"ImageTexture: The image has {frameCount} frames.");
+
+            if (frameCount > 0)
+            {
+                Bitmap[] Frames = new Bitmap[frameCount];
+                int[] frameTimes = new int[frameCount];
+
+                if (frameCount > 1)
+                {
+                    byte[] times = image.GetPropertyItem(0x5100).Value;
+                    for (int i = 0; i < frameCount; i++)
+                    {
+                        int dur = BitConverter.ToInt32(times, (i * 4) % times.Length) * 10;
+                        frameTimes[i] = dur;
+                        image.SelectActiveFrame(FrameDimension.Time, i);
+                        Frames[i] = new Bitmap(image.Size.Width, image.Size.Height);
+                        var g = Graphics.FromImage(Frames[i]);
+                        g.DrawImage(image, new Point(0, 0));
+                        g.Dispose();
+                        if (!(textAreas is null)) Frames[i].DrawTextAreas(textAreas);
+                        Frames[i].RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    }
+                }
+
+                var textureId = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2DArray, textureId);
+                GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureWrapS, (int) TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureWrapT, (int) TextureWrapMode.ClampToEdge);
+
+                int depth = frameCount;
+            
+                GL.TexStorage3D(TextureTarget3d.Texture2DArray, 1, SizedInternalFormat.Rgba8, image.Width, image.Height, depth);
+            
+                GL.PixelStore(PixelStoreParameter.UnpackRowLength, image.Width);
+                if (frameCount > 1)
+                {
+                    for (int i = 0; i < depth; i++)
+                    {
+                        // image.SelectActiveFrame(FrameDimension.Time, i);
+                        BitmapData data = Frames[i].LockBits(
+                            new System.Drawing.Rectangle(0, 0, image.Width, image.Height),
+                            ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                        GL.TexSubImage3D(
+                            // 4 bytes in an Bgra value.
+                            TextureTarget.Texture2DArray,
+                            0, 0, 0, i, image.Size.Width, image.Size.Height, 1,
+                            OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte,
+                            data.Scan0
+                        ); 
+                        Frames[i].UnlockBits(data);
+                    }
+                }
+                else
+                {
+                    if (!(textAreas is null)) image.DrawTextAreas(textAreas);
+                    image.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    BitmapData data = image.LockBits(
+                        new System.Drawing.Rectangle(0, 0, image.Width, image.Height),
+                        ImageLockMode.ReadOnly, 
+                        System.Drawing.Imaging.PixelFormat.Format32bppArgb
+                    );
+                    GL.TexSubImage3D(
+                        // 4 bytes in an Bgra value.
+                        TextureTarget.Texture2DArray,
+                        0, 0, 0, 0, image.Size.Width, image.Size.Height, 1,
+                        OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte,
+                        data.Scan0
+                    ); 
+                    image.UnlockBits(data);
+                }
+
+                return new Texture(textureId, image.Width,  image.Height, TextureTarget.Texture2DArray, depth, frameTimes);
+            }
+            else
+            {
+                if (!(textAreas is null)) image.DrawTextAreas(textAreas);
+                image.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                var textureId = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, textureId);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.ClampToEdge);
+            
+                BitmapData data = image.LockBits(
+                    new System.Drawing.Rectangle(0, 0, image.Width, image.Height),
+                    ImageLockMode.ReadOnly, 
+                    System.Drawing.Imaging.PixelFormat.Format32bppArgb
+                );
+
+                GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, image.Width, image.Height);
+                GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, image.Width, image.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+                image.UnlockBits(data);
+            
+                return new Texture(textureId, image.Width, image.Height, TextureTarget.Texture2D, 1);
+            }
+        }
+        
+        public void Bind()
+        {
+            GL.BindTexture(TextureTarget, TextureId);
+        }
+
+        public int Duration => _frameTimes.Sum();
+
+        public int GetFrame(double time)
+        {
+            if (TextureDepth == 1) return 0;
+            
+            int elapsedTime = (int)((time * 1000) + 0.5) % Duration;
+            int totalTime = 0;
+            
+            for (int i = 0; i < TextureDepth; i++)
+            {
+                totalTime += _frameTimes[i];
+                if (elapsedTime < totalTime)
+                {
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            MainController.UiDispatcher.Invoke(() =>
+            {
+                GL.DeleteTexture(TextureId);
+            });
+            _disposed = true;
+            GC.SuppressFinalize(this);
         }
     }
 }

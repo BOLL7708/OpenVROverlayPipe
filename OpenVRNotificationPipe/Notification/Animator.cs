@@ -12,7 +12,7 @@ namespace OpenVRNotificationPipe.Notification
 {
     class Animator
     {
-        private ImageTexture _texture;
+        private Texture _texture;
         private RenderTexture _renderTexture;
         private Texture_t _vrTexture;
         private readonly ulong _overlayHandle = 0;
@@ -194,7 +194,7 @@ namespace OpenVRNotificationPipe.Notification
                             {
                                 _texture = null;
                             }
-                            _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight, _payload.customProperties.textAreas) : ImageTexture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
+                            _texture = Texture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
                             if (_texture is null)
                             {
                                 Debug.WriteLine("Failed to load texture");
@@ -219,7 +219,7 @@ namespace OpenVRNotificationPipe.Notification
                         {
                             _texture = null;
                         }
-                        _texture = properties.isSpritesheet ? ImageTexture.LoadSpritesheetBase64(_payload.imageData, properties.spriteWidth, properties.spriteHeight, _payload.customProperties.textAreas) : ImageTexture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
+                        _texture = Texture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
                         if (_texture is null)
                         {
                             Debug.WriteLine("Failed to load texture");
