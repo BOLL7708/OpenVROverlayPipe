@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:OpenVRNotificationPipe"
         xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
         mc:Ignorable="d"
-        Title="MainWindow" Height="250" Width="360" StateChanged="Window_StateChanged" Icon="resources/logo.ico" Closing="Window_Closing">
+        Title="MainWindow" Height="250" Width="360" StateChanged="Window_StateChanged" Icon="resources/logo.ico" Closing="Window_Closing" Top="-10000" Left="-10000">
     <StackPanel Orientation="Vertical" Margin="10">
         <GroupBox Header="Status &amp; Help"  Background="WhiteSmoke">
 

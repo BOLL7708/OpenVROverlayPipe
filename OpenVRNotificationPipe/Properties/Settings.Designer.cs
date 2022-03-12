@@ -70,5 +70,29 @@ namespace OpenVRNotificationPipe.Properties {
                 this["ExitWithSteam"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("-1")]
+        public double WindowTop {
+            get {
+                return ((double)(this["WindowTop"]));
+            }
+            set {
+                this["WindowTop"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("-1")]
+        public double WindowLeft {
+            get {
+                return ((double)(this["WindowLeft"]));
+            }
+            set {
+                this["WindowLeft"] = value;
+            }
+        }
     }
 }

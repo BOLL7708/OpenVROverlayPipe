@@ -44,6 +44,21 @@ namespace OpenVRNotificationPipe
         public MainWindow()
         {
             InitializeComponent();
+            if (!_settings.LaunchMinimized) {
+                // Position in last known location, unless negative, then center on screen.
+                var wa = Screen.PrimaryScreen.WorkingArea;
+                var b = Screen.PrimaryScreen.Bounds;
+                if (
+                    _settings.WindowTop >= wa.Y
+                    && _settings.WindowLeft >= wa.X
+                    && _settings.WindowTop < (b.Height - Height)
+                    && _settings.WindowLeft < (b.Width - Width)
+                ) {
+                    Top = _settings.WindowTop; 
+                    Left = _settings.WindowLeft; 
+                }
+                else WindowStartupLocation = WindowStartupLocation.CenterScreen; 
+            }
 
             // Prevent multiple instances
             _mutex = new Mutex(true, Properties.Resources.AppName, out bool createdNew);
@@ -143,10 +158,27 @@ namespace OpenVRNotificationPipe
             {
                 Loaded += (sender, args) =>
                 {
+                    var wa = Screen.PrimaryScreen.WorkingArea;
+                    var b = Screen.PrimaryScreen.Bounds;
+                    if ( // If we have a valid stored location, use it
+                        _settings.WindowTop >= wa.Y
+                        && _settings.WindowLeft >= wa.X
+                        && _settings.WindowTop < (b.Height - Height)
+                        && _settings.WindowLeft < (b.Width - Width) 
+                    ) {
+                        Top = _settings.WindowTop;
+                        Left = _settings.WindowLeft;
+                    } else { // Otherwise center on screen
+                        Top = wa.Y + (wa.Height / 2 - Height / 2);
+                        Left = wa.X + (wa.Width / 2 - Width / 2);
+                    }
+                    
                     WindowState = WindowState.Minimized;
                     ShowInTaskbar = !_settings.Tray;
                 };
             }
+
+            
         }
 
         private void LoadSettings()
@@ -232,6 +264,11 @@ namespace OpenVRNotificationPipe
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            var wa = Screen.PrimaryScreen.WorkingArea;
+            var b = Screen.PrimaryScreen.Bounds;
+            if (Top >= wa.Y && Top < (b.Height - Height)) _settings.WindowTop = Top;
+            if(Left >= wa.X && Left < (b.Width - Width)) _settings.WindowLeft = Left;
+            _settings.Save();
             if (_notifyIcon != null) _notifyIcon.Dispose();
         }
         
