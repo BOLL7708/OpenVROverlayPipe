@@ -1,12 +1,10 @@
 ﻿using BOLL7708;
 using System;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
 using System.Windows.Threading;
 using OpenTK.Graphics.OpenGL;
 using Valve.VR;
-using GL = OpenTK.Graphics.ES10.GL;
 
 namespace OpenVRNotificationPipe.Notification
 {
@@ -63,8 +61,7 @@ namespace OpenVRNotificationPipe.Notification
             
             _renderTexture.Bind();
             _texture.Bind();
-            MainWindow.FitToScreen(_renderTexture.GetWidth(), _renderTexture.GetHeight(), _texture.Width, _texture.Height);
-            // Debug.WriteLine($"MainWindow.FitToScreen({_renderTexture.GetWidth()}, {_renderTexture.GetHeight()}, {_texture.Width}, {_texture.Height})");
+            GraphicsCompanion.SetViewportDimensions(_renderTexture.GetWidth(), _renderTexture.GetHeight(), _texture.Width, _texture.Height);
             return true;
         }
 

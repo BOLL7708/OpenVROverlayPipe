@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using OpenVRNotificationPipe.Notification;
 using SuperSocket.WebSocket;
 using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -18,12 +17,8 @@ namespace OpenVRNotificationPipe
     class MainController
     {
         public static Dispatcher UiDispatcher { get; private set; }
-        public ConcurrentDictionary<int, Overlay> Overlays => _overlays;
         private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private readonly SuperServer _server = new SuperServer();
-        private readonly ConcurrentDictionary<string, WebSocketSession> _sessions = new ConcurrentDictionary<string, WebSocketSession>();
-        private readonly ConcurrentDictionary<WebSocketSession, ulong> _overlayHandles = new ConcurrentDictionary<WebSocketSession, ulong>();
-        private readonly ConcurrentDictionary<int, Overlay> _overlays = new ConcurrentDictionary<int, Overlay>();
         private Action<bool> _openvrStatusAction;
         private bool _openVRConnected = false;
         private bool _shouldShutDown = false;
@@ -76,7 +71,7 @@ namespace OpenVRNotificationPipe
                 if (_shouldShutDown) {
                     _shouldShutDown = false;
                     initComplete = false;
-                    foreach(var overlay in _overlays.Values) overlay.Deinit();
+                    foreach(var overlay in Session.Overlays.Values) overlay.Deinit();
                     _vr.AcknowledgeShutdown();
                     Thread.Sleep(500); // Allow things to deinit properly
                     _vr.Shutdown();
@@ -95,11 +90,11 @@ namespace OpenVRNotificationPipe
         private void PostNotification(WebSocketSession session, Payload payload)
         {
             // Overlay
-            _overlayHandles.TryGetValue(session, out ulong overlayHandle);
+            Session.OverlayHandles.TryGetValue(session, out ulong overlayHandle);
             if (overlayHandle == 0L) {
-                if (_overlayHandles.Count >= 32) _overlayHandles.Clear(); // Max 32, restart!
+                if (Session.OverlayHandles.Count >= 32) Session.OverlayHandles.Clear(); // Max 32, restart!
                 overlayHandle = _vr.InitNotificationOverlay(payload.basicTitle);
-                _overlayHandles.TryAdd(session, overlayHandle);
+                Session.OverlayHandles.TryAdd(session, overlayHandle);
             }
 
             // Image
@@ -132,7 +127,7 @@ namespace OpenVRNotificationPipe
             var channel = payload.customProperties.overlayChannel;
             Debug.WriteLine($"Posting image texture notification to channel {channel}!");
             Overlay overlay;
-            if(!_overlays.ContainsKey(channel))
+            if(!Session.Overlays.ContainsKey(channel))
             {
                 overlay = new Overlay($"OpenVRNotificationPipe[{channel}]", channel);
                 if (overlay != null && overlay.IsInitialized())
@@ -141,9 +136,9 @@ namespace OpenVRNotificationPipe
                     {
                         OnOverlayDoneEvent(nonce);
                     };
-                    _overlays.TryAdd(channel, overlay);
+                    Session.Overlays.TryAdd(channel, overlay);
                 }
-            } else overlay = _overlays[channel];
+            } else overlay = Session.Overlays[channel];
             if (overlay != null && overlay.IsInitialized()) overlay.EnqueueNotification(payload);
         }
 
@@ -153,11 +148,10 @@ namespace OpenVRNotificationPipe
                 var sessionId = arr[0];
                 var originalNonce = arr[1];
                 WebSocketSession session;
-                var sessionExists = _sessions.TryGetValue(sessionId, out session);
+                var sessionExists = Session.Sessions.TryGetValue(sessionId, out session);
                 if (sessionExists) _server.SendMessage(session, JsonConvert.SerializeObject(new Response(originalNonce, "Finished", "")));
             }
         }
-
         #endregion
 
         private void InitServer(Action<SuperServer.ServerStatus, int> serverStatus)
@@ -165,8 +159,8 @@ namespace OpenVRNotificationPipe
             _server.StatusAction = serverStatus;
             _server.MessageReceievedAction = (session, payloadJson) =>
             {
-                if (!_sessions.ContainsKey(session.SessionID)) {
-                    _sessions.TryAdd(session.SessionID, session);
+                if (!Session.Sessions.ContainsKey(session.SessionID)) {
+                    Session.Sessions.TryAdd(session.SessionID, session);
                 }
                 var payload = new Payload();
                 try { payload = JsonConvert.DeserializeObject<Payload>(payloadJson); }
@@ -218,5 +212,7 @@ namespace OpenVRNotificationPipe
                 return sb.ToString();
             }
         }
+
+
     }
 }
