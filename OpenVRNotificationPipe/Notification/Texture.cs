@@ -148,29 +148,8 @@ namespace OpenVRNotificationPipe.Notification
 
                 return new Texture(textureId, image.Width,  image.Height, TextureTarget.Texture2DArray, depth, frameTimes);
             }
-            else
-            {
-                if (!(textAreas is null)) image.DrawTextAreas(textAreas);
-                image.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                var textureId = GL.GenTexture();
-                GL.BindTexture(TextureTarget.Texture2D, textureId);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Nearest);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Nearest);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.ClampToEdge);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.ClampToEdge);
             
-                BitmapData data = image.LockBits(
-                    new System.Drawing.Rectangle(0, 0, image.Width, image.Height),
-                    ImageLockMode.ReadOnly, 
-                    System.Drawing.Imaging.PixelFormat.Format32bppArgb
-                );
-
-                GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, image.Width, image.Height);
-                GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, image.Width, image.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-                image.UnlockBits(data);
-            
-                return new Texture(textureId, image.Width, image.Height, TextureTarget.Texture2D, 1);
-            }
+            return null;
         }
         
         public void Bind()
