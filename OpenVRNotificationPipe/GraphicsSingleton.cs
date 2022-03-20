@@ -28,7 +28,6 @@ namespace OpenVRNotificationPipe
         #region OpenTK from Window
         // Rendering Variables
         private Shader _shader3d;
-        private Shader _shader2d;
         private const double FrameInterval = 0.01;
         private double _elapsedTime;
 
@@ -70,15 +69,8 @@ namespace OpenVRNotificationPipe
 
                 foreach (var overlay in Session.Overlays.Values)
                 {
-                    if (overlay.Animator.GetTextureTarget() == TextureTarget.Texture2D)
-                    {
-                        _shader2d.Use();
-                    }
-                    else
-                    {
-                        _shader3d.Use();
-                        _shader3d.SetInt("tex_index", overlay.Animator.GetFrame());
-                    }
+                    _shader3d.Use();
+                    _shader3d.SetInt("tex_index", overlay.Animator.GetFrame());
 
                     bool textureToDraw = overlay.Animator.OnRender(_elapsedTime);
                     GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -111,14 +103,12 @@ namespace OpenVRNotificationPipe
             GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
 
             _shader3d = new Shader("Shaders/shader.vert", "Shaders/shader3d.frag");
-            _shader2d = new Shader("Shaders/shader.vert", "Shaders/shader2d.frag");
-            _shader2d.Use();
 
-            var vertexLocation = _shader2d.GetAttribLocation("aPosition");
+            var vertexLocation = _shader3d.GetAttribLocation("aPosition");
             GL.EnableVertexAttribArray(vertexLocation);
             GL.VertexAttribPointer(vertexLocation, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
 
-            var texCoordLocation = _shader2d.GetAttribLocation("aTexCoord");
+            var texCoordLocation = _shader3d.GetAttribLocation("aTexCoord");
             GL.EnableVertexAttribArray(texCoordLocation);
             GL.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
         }
