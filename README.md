@@ -44,6 +44,7 @@ The minimum to provide for this is `title` and `message`, those are mandatory to
 ```jsonc
 {
     "imageData": "", // Optional: A base64 string with *.png image data, only the data part of a data URL
+    "imagePath": "", // Optional: Local path to image on disk, `imageData` is prioratized.
     "basicTitle": "", // The title above the notification
     "basicMessage": "" // The main message of the notification
 }
@@ -52,7 +53,8 @@ The minimum to provide for this is `title` and `message`, those are mandatory to
 The way the transitions work, it will animate values that differs from when it is static, so setting `opacityPer` to `0` means it will transition from 0% to 100% when appearing, and from 100% to 0% when disappearing.
 ```jsonc
 {
-    "imageData": "", // A base64 string with *.png image data, only the data part of a data URL
+    "imageData": "", // A base64 string with *.png image data, only the data part of a data URL, not needed if `imagePath` is set.
+    "imagePath": "", // Local path to image on disk, not needed if `imageData` is set which is also prioratized.
     "customProperties": {
         "enabled": false, // True to do a custom notification
         "nonce": "", // Supply a unique value that will be returned upon completion, pipe `|` is a reserved character, meaning don't use that in a nonce value.

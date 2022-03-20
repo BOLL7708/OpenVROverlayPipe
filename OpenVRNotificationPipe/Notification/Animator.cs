@@ -56,12 +56,11 @@ namespace OpenVRNotificationPipe.Notification
                 _renderTexture.Bind();
                 return false;
             }
-            
             _elapsedTime += deltaTime;
-            
             _renderTexture.Bind();
-            _texture.Bind();
-            GraphicsCompanion.SetViewportDimensions(_renderTexture.GetWidth(), _renderTexture.GetHeight(), _texture.Width, _texture.Height);
+            if (_texture == null) return false; // This can somehow still happen for some reason?
+            _texture?.Bind();
+            GraphicsCompanion.SetViewportDimensions(_renderTexture.GetWidth(), _renderTexture.GetHeight(), _texture?.Width ?? 1, _texture?.Height ?? 1);
             return true;
         }
 
@@ -181,42 +180,16 @@ namespace OpenVRNotificationPipe.Notification
                             break;
                     }
 
-                    // Size of overlay
-                    if (Dispatcher.CurrentDispatcher != MainController.UiDispatcher)
+                    void LoadImage()
                     {
-                        MainController.UiDispatcher.Invoke(delegate()
-                        {
-                            Debug.WriteLine($"Creating texture on UI thread with {_payload.customProperties.textAreas.Length} text areas");
-                            if (!(_texture is null))
-                            {
-                                _texture = null;
-                            }
-                            _texture = Texture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
-                            if (_texture is null)
-                            {
-                                Debug.WriteLine("Failed to load texture");
-                                stage = AnimationStage.Idle;
-                                properties = null;
-                                animationCount = 0;
-                                _elapsedTime = 0;
-                                _payload = null;
-                            }
-                            else
-                            {
-                                stage = AnimationStage.Animating;
-                                Debug.WriteLine($"[{_texture.TextureId}]: {_texture.TextureDepth}, {_texture.TextureTarget}");
-                                Debug.WriteLine($"Texture created on UI thread, {_texture.Width}x{_texture.Height}");
-                            }
-                        });
-                    }
-                    else
-                    {
-                        Debug.WriteLine("Creating texture on UI thread");
+                        Debug.WriteLine($"Creating texture on UI thread with {_payload.customProperties.textAreas.Length} text areas");
                         if (!(_texture is null))
                         {
                             _texture = null;
                         }
-                        _texture = Texture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas);
+                        _texture = _payload.imageData.Length > 0
+                            ? Texture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas)
+                            : Texture.LoadImageFile(_payload.imagePath);
                         if (_texture is null)
                         {
                             Debug.WriteLine("Failed to load texture");
@@ -229,8 +202,19 @@ namespace OpenVRNotificationPipe.Notification
                         else
                         {
                             stage = AnimationStage.Animating;
-                            Debug.WriteLine($"Texture created on UI thread, {_texture.Height}x{_texture.Width}");
+                            Debug.WriteLine($"[{_texture.TextureId}]: {_texture.TextureDepth}, {_texture.TextureTarget}");
+                            Debug.WriteLine($"Texture created on UI thread, {_texture.Width}x{_texture.Height}");
                         }
+                    }
+
+                    // Size of overlay
+                    if (Dispatcher.CurrentDispatcher != MainController.UiDispatcher)
+                    {
+                        MainController.UiDispatcher.Invoke(LoadImage);
+                    }
+                    else
+                    {
+                        LoadImage();
                     }
 
                     // var size = _texture.Load(_payload.imageData, properties.textAreas);
@@ -491,5 +475,7 @@ namespace OpenVRNotificationPipe.Notification
             _payload = null;
             _shouldShutdown = true;
         }
+
+
     }
 }

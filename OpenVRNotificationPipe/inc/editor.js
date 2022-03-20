@@ -160,6 +160,9 @@ function readImage() {
 function getImageData() {
     return _imgData
 }
+function getImagePath() {
+    return 'C:/replace/with/path/on/disk/'+_file.files[0].name
+}
 
 // Data
 function sendNotification(e) {
@@ -176,6 +179,7 @@ function getData() {
     var data = {
         // General
         imageData: getImageData(),
+        imagePath: getImagePath(),
         
         // Standard
         basicTitle: "",
@@ -250,7 +254,7 @@ function copyConfigJSON(e) {
     e?.preventDefault()
     const indent = _formSubmit.querySelector('#formSubmit-indentation').value
     const data = getData()
-    data.imageData = '(removed)'
+    data.imageData = ''
     _config.innerHTML = JSON.stringify(data, null, parseInt(indent))
     _config.select()
     document.execCommand('copy')
@@ -259,7 +263,7 @@ function copyConfigJSON(e) {
 function copyConfigJS(e) {
     e?.preventDefault()
     const data = getData()
-    data.imageData = '(removed)'
+    data.imageData = ''
     _config.innerHTML = renderJS(data, null, 0)
     _config.select()
     document.execCommand('copy')

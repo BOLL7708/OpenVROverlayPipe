@@ -103,11 +103,19 @@ namespace OpenVRNotificationPipe
             NotificationBitmap_t bitmap = new NotificationBitmap_t();
             try
             {
-                var imageBytes = Convert.FromBase64String(payload.imageData);
-                var bmp = new Bitmap(new MemoryStream(imageBytes));
-                Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
-                bitmap = BitmapUtils.NotificationBitmapFromBitmap(bmp, true);
-                bmp.Dispose();
+                Bitmap bmp = null;
+                if (payload.imageData.Length > 0) {
+                    var imageBytes = Convert.FromBase64String(payload.imageData);
+                    bmp = new Bitmap(new MemoryStream(imageBytes));
+                } else if(payload.imagePath.Length > 0)
+                {
+                    bmp = new Bitmap(payload.imagePath);
+                }
+                if (bmp != null) {
+                    Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
+                    bitmap = BitmapUtils.NotificationBitmapFromBitmap(bmp, true);
+                    bmp.Dispose();
+                }
             }
             catch (Exception e)
             {

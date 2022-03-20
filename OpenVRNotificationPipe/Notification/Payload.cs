@@ -11,6 +11,7 @@ namespace OpenVRNotificationPipe
     {
         // General
         public string imageData = "";
+        public string imagePath = "";
 
         // Standard notification
         public string basicTitle = "";
