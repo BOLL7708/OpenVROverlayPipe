@@ -1,14 +1,8 @@
 ﻿using OpenTK.Graphics;
 using OpenTK.Wpf;
-using OpenTK;
 using OpenTK_Animation_Testing;
-using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OpenVRNotificationPipe
 {

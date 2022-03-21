@@ -132,6 +132,7 @@
     <Compile Include="GraphicsSingleton.cs" />
     <Compile Include="Notification\Animator.cs" />
     <Compile Include="Notification\Cycle.cs" />
+    <Compile Include="Notification\QueueItem.cs" />
     <Compile Include="Notification\Texture.cs" />
     <Compile Include="Notification\RenderTexture.cs" />
     <Compile Include="Notification\Shader.cs" />

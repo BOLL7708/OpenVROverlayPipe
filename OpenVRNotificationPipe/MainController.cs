@@ -119,8 +119,9 @@ namespace OpenVRNotificationPipe
             }
             catch (Exception e)
             {
-                Debug.WriteLine($"Reading image failed: {e.Message}");
-                _server.SendMessage(session, JsonConvert.SerializeObject(new Response("", "Image Read Failure", e.Message)));
+                var message = $"Image Read Failure: {e.Message}";
+                Debug.WriteLine(message);
+                _server.SendMessage(session, JsonConvert.SerializeObject(new Response(payload.customProperties.nonce, "Error", message)));
             }
             // Broadcast
             if(overlayHandle != 0)
@@ -130,7 +131,7 @@ namespace OpenVRNotificationPipe
             }
         }
 
-        private void PostImageNotification(Payload payload)
+        private void PostImageNotification(string sessionId, Payload payload)
         {
             var channel = payload.customProperties.overlayChannel;
             Debug.WriteLine($"Posting image texture notification to channel {channel}!");
@@ -140,24 +141,24 @@ namespace OpenVRNotificationPipe
                 overlay = new Overlay($"OpenVRNotificationPipe[{channel}]", channel);
                 if (overlay != null && overlay.IsInitialized())
                 {
-                    overlay.DoneEvent += (s, nonce) =>
+                    overlay.DoneEvent += (s, args) =>
                     {
-                        OnOverlayDoneEvent(nonce);
+                        OnOverlayDoneEvent(args);
                     };
                     Session.Overlays.TryAdd(channel, overlay);
                 }
             } else overlay = Session.Overlays[channel];
-            if (overlay != null && overlay.IsInitialized()) overlay.EnqueueNotification(payload);
+            if (overlay != null && overlay.IsInitialized()) overlay.EnqueueNotification(sessionId, payload);
         }
 
-        private void OnOverlayDoneEvent(string nonce) {
-            var arr = nonce.Split('|');
-            if (arr.Length == 2) {
-                var sessionId = arr[0];
-                var originalNonce = arr[1];
+        private void OnOverlayDoneEvent(string[] args) {
+            if (args.Length == 3) {
+                var sessionId = args[0];
+                var nonce = args[1];
+                var error = args[2];
                 WebSocketSession session;
                 var sessionExists = Session.Sessions.TryGetValue(sessionId, out session);
-                if (sessionExists) _server.SendMessage(session, JsonConvert.SerializeObject(new Response(originalNonce, "Finished", "")));
+                if (sessionExists) _server.SendMessage(session, JsonConvert.SerializeObject(new Response(nonce, error.Length > 0 ? "Error" : "OK", error)));
             }
         }
         #endregion
@@ -175,18 +176,20 @@ namespace OpenVRNotificationPipe
                 catch (Exception e) {
                     var message = $"JSON Parsing Exception: {e.Message}";
                     Debug.WriteLine(message);
-                    _server.SendMessage(session, JsonConvert.SerializeObject(new Response("", "JSON Parsing Exception", e.Message)));
+                    _server.SendMessage(session, JsonConvert.SerializeObject(new Response(payload.customProperties.nonce, "Error", message)));
                 }
                 // Debug.WriteLine($"Payload was received: {payloadJson}");
                 if (payload.customProperties.enabled)
                 {
-                    var nonce = payload.customProperties.nonce;
-                    if (nonce.Length > 0) {
-                        payload.customProperties.nonce = $"{session.SessionID}|{nonce}";
-                    }
-                    PostImageNotification(payload);
+                    PostImageNotification(session.SessionID, payload);
                 }
-                else PostNotification(session, payload);
+                else if (payload.basicMessage?.Length > 0)
+                {
+                    PostNotification(session, payload);
+                }
+                else {
+                    _server.SendMessage(session, JsonConvert.SerializeObject(new Response(payload.customProperties.nonce, "Error", "Payload appears to be missing data.")));
+                }
             };
         }
 
@@ -220,7 +223,5 @@ namespace OpenVRNotificationPipe
                 return sb.ToString();
             }
         }
-
-
     }
 }

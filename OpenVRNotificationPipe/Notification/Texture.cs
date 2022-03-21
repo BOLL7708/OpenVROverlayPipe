@@ -19,14 +19,11 @@ namespace OpenVRNotificationPipe.Notification
         public int TextureDepth { get; }
         public int TextureId { get; }
 
-        public TextureTarget TextureTarget { get; }
-
-        public Texture(int textureId, int width, int height, TextureTarget textureTarget = TextureTarget.Texture2D, int textureDepth = 0, int[] frameTimes = null)
+        public Texture(int textureId, int width, int height, int textureDepth = 0, int[] frameTimes = null)
         {
             TextureId = textureId;
             Width = width;
             Height = height;
-            TextureTarget = textureTarget;
             TextureDepth = textureDepth;
             _frameTimes = frameTimes;
         }
@@ -40,7 +37,7 @@ namespace OpenVRNotificationPipe.Notification
             }
             catch (Exception e)
             {
-                Debug.WriteLine($"ImageTexture: Exception loading image file: {e.Message}");
+                Debug.WriteLine($"Texture: Exception loading image file: {e.Message}");
                 return null;
             }
             return LoadImage(image, textAreas);
@@ -60,7 +57,7 @@ namespace OpenVRNotificationPipe.Notification
             }
             catch (Exception e)
             {
-                Debug.WriteLine($"ImageTexture: Exception loading image bytes: {e.Message}");
+                Debug.WriteLine($"Texture: Exception loading image bytes: {e.Message}");
                 return null;
             }            
             return LoadImage(image, textAreas);
@@ -72,7 +69,7 @@ namespace OpenVRNotificationPipe.Notification
                 ? image.GetFrameCount(FrameDimension.Time)
                 : 1;
 
-            Debug.WriteLine($"ImageTexture: The image has {frameCount} frames.");
+            Debug.WriteLine($"Texture: The image has {frameCount} frames.");
 
             if (frameCount > 0)
             {
@@ -104,10 +101,9 @@ namespace OpenVRNotificationPipe.Notification
                 GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureWrapT, (int) TextureWrapMode.ClampToEdge);
 
                 int depth = frameCount;
-            
                 GL.TexStorage3D(TextureTarget3d.Texture2DArray, 1, SizedInternalFormat.Rgba8, image.Width, image.Height, depth);
-            
                 GL.PixelStore(PixelStoreParameter.UnpackRowLength, image.Width);
+                
                 if (frameCount > 1)
                 {
                     for (int i = 0; i < depth; i++)
@@ -145,16 +141,14 @@ namespace OpenVRNotificationPipe.Notification
                     ); 
                     image.UnlockBits(data);
                 }
-
-                return new Texture(textureId, image.Width,  image.Height, TextureTarget.Texture2DArray, depth, frameTimes);
+                return new Texture(textureId, image.Width,  image.Height, depth, frameTimes);
             }
-            
             return null;
         }
         
         public void Bind()
         {
-            GL.BindTexture(TextureTarget, TextureId);
+            GL.BindTexture(TextureTarget.Texture2DArray, TextureId);
         }
 
         public int Duration => _frameTimes.Sum();
@@ -165,7 +159,6 @@ namespace OpenVRNotificationPipe.Notification
             
             int elapsedTime = (int)((time * 1000) + 0.5) % Duration;
             int totalTime = 0;
-            
             for (int i = 0; i < TextureDepth; i++)
             {
                 totalTime += _frameTimes[i];
@@ -174,7 +167,6 @@ namespace OpenVRNotificationPipe.Notification
                     return i;
                 }
             }
-
             return 0;
         }
 

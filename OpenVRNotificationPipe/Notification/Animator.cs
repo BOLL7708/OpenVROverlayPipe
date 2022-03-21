@@ -3,7 +3,6 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Windows.Threading;
-using OpenTK.Graphics.OpenGL;
 using Valve.VR;
 
 namespace OpenVRNotificationPipe.Notification
@@ -16,19 +15,24 @@ namespace OpenVRNotificationPipe.Notification
         private readonly ulong _overlayHandle = 0;
         private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private Action _requestForNewPayload = null;
-        private Action<string> _responseAtCompletion = null;
+        private Action<string, string> _responseAtCompletion = null;
+        private Action<string, string, string> _responseAtError = null;
         private volatile Payload _payload;
         private volatile bool _shouldShutdown = false;
         private double _elapsedTime = 0;
-        private Dispatcher _uiDispatcher;
+        private string _sessionId = "";
 
-        public Animator(ulong overlayHandle, Action requestForNewAnimation, Action<string> responseAtCompletion)
+        public Animator(
+            ulong overlayHandle, 
+            Action requestForNewAnimation, 
+            Action<string, string> responseAtCompletion, 
+            Action<string, string, string> responseAtError
+        )
         {
             _overlayHandle = overlayHandle;
             _requestForNewPayload = requestForNewAnimation;
-            _uiDispatcher = Dispatcher.CurrentDispatcher;
-
             _responseAtCompletion = responseAtCompletion;
+            _responseAtError = responseAtError;
 
             var thread = new Thread(Worker);
             if (!thread.IsAlive) thread.Start();
@@ -68,17 +72,14 @@ namespace OpenVRNotificationPipe.Notification
         {
             // Assign texture
             var error = OpenVR.Overlay.SetOverlayTexture(_overlayHandle, ref _vrTexture);
+            if (error != EVROverlayError.None) {
+                _responseAtError?.Invoke(_sessionId, _payload.customProperties.nonce, Enum.GetName(typeof(EVROverlayError), error));
+            }
         }
 
         public int GetFrame()
         {
-            if (_texture is null || _texture.TextureTarget == TextureTarget.Texture2D) return 0;
-            return _texture.GetFrame(_elapsedTime);
-        }
-        
-        public TextureTarget GetTextureTarget()
-        {
-            return _texture?.TextureTarget ?? TextureTarget.Texture1D;
+            return _texture?.GetFrame(_elapsedTime) ?? 0;
         }
 
         public enum AnimationStage {
@@ -147,7 +148,7 @@ namespace OpenVRNotificationPipe.Notification
                 
                 if (_payload == null) // Get new payload
                 {
-                    _requestForNewPayload();
+                    _requestForNewPayload?.Invoke();
                     skip = true;
                     Thread.Sleep(100);
                 }
@@ -155,7 +156,6 @@ namespace OpenVRNotificationPipe.Notification
                 {
                     #region init 
                     // Initialize things that stay the same during the whole animation
-                    
                     stage = AnimationStage.LoadingImage;
                     properties = _payload.customProperties;
 					useWorldDeviceTransform = properties.anchorType != 0 && properties.attachToAnchor && (properties.ignoreAnchorYaw || properties.ignoreAnchorPitch || properties.ignoreAnchorRoll);
@@ -180,7 +180,7 @@ namespace OpenVRNotificationPipe.Notification
                             break;
                     }
 
-                    void LoadImage()
+                    bool LoadImage()
                     {
                         Debug.WriteLine($"Creating texture on UI thread with {_payload.customProperties.textAreas.Length} text areas");
                         if (!(_texture is null))
@@ -193,29 +193,36 @@ namespace OpenVRNotificationPipe.Notification
                         if (_texture is null)
                         {
                             Debug.WriteLine("Failed to load texture");
+                            _responseAtError?.Invoke(_sessionId, _payload.customProperties.nonce, "Failed to load image into texture");
                             stage = AnimationStage.Idle;
                             properties = null;
                             animationCount = 0;
                             _elapsedTime = 0;
                             _payload = null;
+                            return false;
                         }
                         else
                         {
                             stage = AnimationStage.Animating;
-                            Debug.WriteLine($"[{_texture.TextureId}]: {_texture.TextureDepth}, {_texture.TextureTarget}");
+                            Debug.WriteLine($"[{_texture.TextureId}]: {_texture.TextureDepth}");
                             Debug.WriteLine($"Texture created on UI thread, {_texture.Width}x{_texture.Height}");
+                            return true;
                         }
                     }
 
                     // Size of overlay
+                    var loadedImage = false;
                     if (Dispatcher.CurrentDispatcher != MainController.UiDispatcher)
                     {
-                        MainController.UiDispatcher.Invoke(LoadImage);
+                        Debug.WriteLine("Running animator on Dispatcher.");
+                        MainController.UiDispatcher.Invoke(() => { loadedImage = LoadImage(); });
                     }
                     else
                     {
-                        LoadImage();
+                        Debug.WriteLine("Running animator on GUI thread already.");
+                        loadedImage = LoadImage();
                     }
+                    if (!loadedImage) continue;
 
                     // var size = _texture.Load(_payload.imageData, properties.textAreas);
                     width = properties.widthM;
@@ -445,7 +452,7 @@ namespace OpenVRNotificationPipe.Notification
                         Debug.WriteLine("DONE!");
                         _vr.SetOverlayVisibility(_overlayHandle, false);
                         stage = AnimationStage.Idle;
-                        if (properties.nonce.Length > 0) _responseAtCompletion(properties.nonce);
+                        _responseAtCompletion?.Invoke(_sessionId, properties.nonce);
                         properties = null;
                         animationCount = 0;
                         _elapsedTime = 0;
@@ -466,12 +473,15 @@ namespace OpenVRNotificationPipe.Notification
             }
         }
 
-        public void ProvideNewPayload(Payload payload) {
+        public void ProvideNewPayload(string sessionId, Payload payload) {
+            _sessionId = sessionId;
             _payload = payload;
         }
 
         public void Shutdown() {
-            _requestForNewPayload = () => { };
+            _requestForNewPayload = null;
+            _responseAtCompletion = null;
+            _responseAtError = null;
             _payload = null;
             _shouldShutdown = true;
         }
