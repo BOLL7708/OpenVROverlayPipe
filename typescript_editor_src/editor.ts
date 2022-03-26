@@ -23,10 +23,9 @@ class Editor {
     // General elements
     private _submit = document.querySelector<HTMLButtonElement>('#submit')    
 
-    // Canvas slements
+    // File elements
     private _imgData = null;
-    private _canvas = document.querySelector<HTMLCanvasElement>('#canvas')
-    private _ctx = this._canvas.getContext('2d')
+    private _image = document.querySelector<HTMLImageElement>('#image')
     private _file = document.querySelector<HTMLInputElement>('#file')
 
     // Config elements
@@ -114,8 +113,6 @@ class Editor {
             try {
                 this._ws = new WebSocket(wsUri)
                 this._ws.onopen = function(evt) { 
-                    console.log(this._wsActive)
-                    console.log(this._submit)
                     this._wsActive = true
                     document.title = 'Pipe Editor - CONNECTED'
                     this._submit.disabled = false
@@ -149,16 +146,9 @@ class Editor {
         const files = this._file.files
         if(files && files[0]) {
             var FR = new FileReader()
-            FR.onload = function(e) {
-                var img = new Image()
-                img.addEventListener("load", function() {
-                    this._canvas.width = img.width
-                    this._canvas.height = img.height
-                    this._ctx.clearRect(0, 0, this._canvas.width, this._canvas.height)
-                    this._ctx.drawImage(img, 0, 0, img.width, img.height)
-                }.bind(this))
-                img.src = e.target.result
-                this._imgData = e.target.result.split(',')[1]
+            FR.onload = function(e: ProgressEvent) {
+                this._image.src = FR.result
+                this._imgData = FR.result.toString().split(',')[1]
             }.bind(this)
             FR.readAsDataURL( files[0] )
         }

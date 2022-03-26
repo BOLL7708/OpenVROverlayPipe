@@ -4,8 +4,9 @@
     <title>Pipe Editor</title>
     <link rel="stylesheet" href="inc/editor.css"></link>
     <script src="inc/demo.js"></script>
+    <script src="inc/editor.js"></script>
     </head> 
-    <body onload="init()">
+    <body>
         <h1>Custom Notification Editor</h1>
         <form id="formSubmit">
             <h3>Submit Notification</h3>
@@ -31,9 +32,10 @@
 
         <form id="formImage" class="unset">   
             <h3>Image</h3>
-            <p>Maximum of 1024x1024px is supported.</p>
-            <canvas id="canvas"></canvas>
-            <input type="file" name="file" accept="image/*"/>
+            <div id="imageContainer">
+                <img src="" title="Selected Image" id="image"/>
+            </div>
+            <input type="file" name="file" id="file" accept="image/*"/>
         </form>
 
         <form id="formProperties">
@@ -169,6 +171,11 @@
                 <option value="2">Far</option>
             </select>
         </form>
+        <script>
+            const editor = new Editor()
+            window.onload = ()=>{
+                editor.init()
+            }
+        </script>
     </body>
-    <script src="inc/editor.js"></script>
 </html>

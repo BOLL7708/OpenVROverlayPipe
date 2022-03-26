@@ -104,7 +104,7 @@ namespace OpenVRNotificationPipe
             try
             {
                 Bitmap bmp = null;
-                if (payload.imageData.Length > 0) {
+                if (payload.imageData?.Length > 0) {
                     var imageBytes = Convert.FromBase64String(payload.imageData);
                     bmp = new Bitmap(new MemoryStream(imageBytes));
                 } else if(payload.imagePath.Length > 0)
