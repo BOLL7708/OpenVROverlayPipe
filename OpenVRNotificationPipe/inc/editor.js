@@ -53,7 +53,6 @@ const _submit = document.querySelector('#submit')
 _submit.addEventListener('click', sendNotification)
 
 // Canvas slements
-
 let _imgData = null;
 const _canvas = document.querySelector('#formImage-canvas')
 const _ctx = _canvas.getContext('2d')
@@ -62,12 +61,16 @@ _file.addEventListener('change', readImage)
 
 // Config elements
 const _config = document.querySelector('#config')
+
 const _copyJSON = document.querySelector('#copyJSON')
 _copyJSON.addEventListener('click', copyConfigJSON)
+const _downloadJSON = document.querySelector('#downloadJSON')
+_downloadJSON.addEventListener('click', downloadConfigJSON)
+
 const _copyJS = document.querySelector('#copyJS')
 _copyJS.addEventListener('click', copyConfigJS)
-// const _load = document.querySelector('#load')
-// _load.addEventListener('click', loadConfig)
+const _downloadJS = document.querySelector('#downloadJS')
+_downloadJS.addEventListener('click', downloadConfigJS)
 
 // Key listener
 document.onkeyup = function (e) {
@@ -260,6 +263,15 @@ function copyConfigJSON(e) {
     document.execCommand('copy')
 }
 
+function downloadConfigJSON(e) {
+    e?.preventDefault()
+    const indent = _formSubmit.querySelector('#formSubmit-indentation').value
+    const data = getData()
+    data.imageData = ''
+    const json = JSON.stringify(data, null, parseInt(indent))
+    download(json, 'pipe-config.json', 'text/plain')
+}
+
 function copyConfigJS(e) {
     e?.preventDefault()
     const data = getData()
@@ -267,6 +279,33 @@ function copyConfigJS(e) {
     _config.innerHTML = renderJS(data, null, 0)
     _config.select()
     document.execCommand('copy')
+}
+
+function downloadConfigJS(e) {
+    e?.preventDefault()
+    const data = getData()
+    data.imageData = ''
+    const json = renderJS(data, null, 0)
+    download(json, 'pipe-config.js', 'text/plain')
+}
+
+// Function to download data to a file https://stackoverflow.com/a/30832210
+function download(data, filename, type) {
+    var file = new Blob([data], {type: type});
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+        var a = document.createElement("a"),
+                url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+    }
 }
 
 function loadConfig(e) {

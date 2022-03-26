@@ -16,7 +16,16 @@
             <hr/>
             <h3>Export Config</h3>
             <input name="indentation" type="number" step="1" value="4"/>
-            <p><button id="copyJSON">Copy as JSON</button><button id="copyJS">Copy as JS</button></p>
+            <p>
+                <span>JSON: </span>
+                <button id="copyJSON">Copy</button>
+                <button id="downloadJSON">Download</button>
+            </p>
+            <p>
+                <span>JavaScript: </span>
+                <button id="copyJS">Copy</button>
+                <button id="downloadJS">Download</button>
+            </p>
             <p><textarea id="config"></textarea></p>
         </form>
 
