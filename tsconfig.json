@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "target": "es2019",
+        "watch": true,
+        "lib": ["dom", "es2019", "dom.iterable"],
+        "outDir": "OpenVRNotificationPipe/inc",
+        "rootDir": "typescript_editor_src",
+        "sourceMap": true
+    },
+    "include": ["typescript_editor_src/*"]
+}

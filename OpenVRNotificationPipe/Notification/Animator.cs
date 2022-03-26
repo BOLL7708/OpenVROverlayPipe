@@ -187,7 +187,7 @@ namespace OpenVRNotificationPipe.Notification
                         {
                             _texture = null;
                         }
-                        _texture = _payload.imageData.Length > 0
+                        _texture = _payload.imageData?.Length > 0
                             ? Texture.LoadImageBase64(_payload.imageData, _payload.customProperties.textAreas)
                             : Texture.LoadImageFile(_payload.imagePath);
                         if (_texture is null)

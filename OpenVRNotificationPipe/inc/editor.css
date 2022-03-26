@@ -5,11 +5,7 @@ body {
     background-color: #ccc;
 }
 canvas {
-    border: 1px solid #d3d3d3;
-    background-color: #f1f1f1;
-    width: 64px;
-    height: 64px;
-    margin: 4px;
+    display: none;
 }
 h1 {
     color: #fff;
