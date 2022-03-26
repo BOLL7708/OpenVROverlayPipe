@@ -43,7 +43,7 @@ class Editor {
             switch(e.code) {
                 case 'NumpadEnter':
                 case 'Enter': 
-                    this.sendNotification(e).bind(this)
+                    this.sendNotification.call(this, e)
                     break
                 default: 
                     // console.log(e.code)
