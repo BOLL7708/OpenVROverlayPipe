@@ -3,9 +3,12 @@ class Editor {
         // Websocket 
         this._ws = null;
         this._wsActive = false;
-        this._localStorageKey = 'OpenVRNotificationPipe.BOLL7708.Config';
+        this._localStorageConfigs = 'OpenVRNotificationPipe.BOLL7708.Config';
+        this._localStorageConfigNames = 'OpenVRNotificationPipe.BOLL7708.ConfigNames';
+        this._localStorageLastConfigName = 'OpenVRNotificationPipe.BOLL7708.LastConfigName';
         // Construct forms
         this._formSubmit = document.querySelector('#formSubmit');
+        this._formConfig = document.querySelector('#formConfig');
         this._formImage = document.querySelector('#formImage');
         this._formProperties = document.querySelector('#formProperties');
         this._formFollow = document.querySelector('#formFollow');
@@ -18,9 +21,11 @@ class Editor {
         this._formTransitionOut = document.querySelector('#formTransitionOut');
         this._formTextarea = document.querySelector('#formTextarea');
         this._templateTween = document.querySelector('#templateTween');
-        this._formConfig = document.querySelector('#formConfig');
         // General elements
         this._submit = document.querySelector('#submit');
+        this._loadConfig = document.querySelector('#loadConfig');
+        this._saveConfig = document.querySelector('#saveConfig');
+        this._deleteConfig = document.querySelector('#deleteConfig');
         // File elements
         this._imgData = null;
         this._image = document.querySelector('#image');
@@ -76,19 +81,20 @@ class Editor {
         });
         // Add event listeners
         this._submit.addEventListener('click', this.sendNotification.bind(this));
+        this._loadConfig.addEventListener('click', this.loadConfig.bind(this));
+        this._saveConfig.addEventListener('click', this.saveConfig.bind(this));
+        this._deleteConfig.addEventListener('click', this.deleteConfig.bind(this));
         this._file.addEventListener('change', this.readImage.bind(this));
         this._copyJSON.addEventListener('click', this.copyConfigJSON.bind(this));
         this._downloadJSON.addEventListener('click', this.downloadConfigJSON.bind(this));
         this._copyJS.addEventListener('click', this.copyConfigJS.bind(this));
         this._downloadJS.addEventListener('click', this.downloadConfigJS.bind(this));
+        this._configName = document.querySelector('#formConfig-configName');
+        this._configList = document.querySelector('#formConfig-configList');
+        this._configList.addEventListener('change', this.setCurrentConfigName.bind(this));
+        this._configList.addEventListener('focus', (e) => { this._configList.selectedIndex = -1; });
+        this.loadConfigNames();
         this.connectLoop();
-        /*
-        // TODO: Make this an option.
-        _config.innerHTML = localStorage.getItem(_localStorageKey) ?? ''
-        if(_config.innerHTML.length > 0) {
-            loadConfig()
-        }
-        */
     }
     connectLoop() {
         var _a;
@@ -148,7 +154,8 @@ class Editor {
         return this._imgData;
     }
     getImagePath() {
-        return 'C:/replace/with/path/on/disk/' + this._file.files[0].name;
+        var _a, _b;
+        return 'C:/replace/with/path/on/disk/' + ((_b = (_a = this._file.files[0]) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : 'image.png');
     }
     // Data
     sendNotification(e) {
@@ -156,8 +163,6 @@ class Editor {
         const data = this.getData();
         // Send data
         this._ws.send(JSON.stringify(data));
-        // TODO: Change be a config load/save management system
-        // window.localStorage.setItem(_localStorageKey, JSON.stringify(data))
     }
     getData() {
         const data = {
@@ -224,19 +229,17 @@ class Editor {
     }
     copyConfigJSON(e) {
         e === null || e === void 0 ? void 0 : e.preventDefault();
-        const indent = this._formSubmit.querySelector('#formSubmit-indentation').value;
         const data = this.getData();
         data.imageData = '';
-        this._config.innerHTML = JSON.stringify(data, null, parseInt(indent));
+        this._config.innerHTML = JSON.stringify(data, null, 4);
         this._config.select();
         document.execCommand('copy');
     }
     downloadConfigJSON(e) {
         e === null || e === void 0 ? void 0 : e.preventDefault();
-        const indent = this._formSubmit.querySelector('#formSubmit-indentation').value;
         const data = this.getData();
         data.imageData = '';
-        const json = JSON.stringify(data, null, parseInt(indent));
+        const json = JSON.stringify(data, null, 4);
         this.download(json, 'pipe-config.json', 'text/plain');
     }
     copyConfigJS(e) {
@@ -269,42 +272,129 @@ class Editor {
         }, 0);
     }
     loadConfig(e) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         e === null || e === void 0 ? void 0 : e.preventDefault();
-        const data = JSON.parse(this._config.value);
-        if (this._config.value.length > 0)
-            window.localStorage.setItem(this._localStorageKey, this._config.value);
-        const properties = (_a = data.customProperties) !== null && _a !== void 0 ? _a : {};
-        const follow = (_b = data.customProperties.follow) !== null && _b !== void 0 ? _b : {};
-        const animation1 = (_c = data.customProperties.animations[0]) !== null && _c !== void 0 ? _c : {};
-        const animation2 = (_d = data.customProperties.animations[1]) !== null && _d !== void 0 ? _d : {};
-        const animation3 = (_e = data.customProperties.animations[2]) !== null && _e !== void 0 ? _e : {};
-        const transitionIn = (_f = data.customProperties.transitions[0]) !== null && _f !== void 0 ? _f : {};
-        const transitionOut = (_g = data.customProperties.transitions[1]) !== null && _g !== void 0 ? _g : {};
-        const textarea = (_h = data.customProperties.textAreas[0]) !== null && _h !== void 0 ? _h : {};
-        applyDataToForm(this._formProperties, properties);
-        applyDataToForm(this._formFollow, follow);
-        applyDataToForm(this._formAnimation1, animation1);
-        applyDataToForm(this._formAnimation2, animation2);
-        applyDataToForm(this._formAnimation3, animation3);
-        applyDataToForm(this._formTransitionIn, transitionIn);
-        applyDataToForm(this._formTransitionOut, transitionOut);
-        applyDataToForm(this._formTextarea, textarea);
-        function applyDataToForm(form, data) {
-            var _a;
-            for (const key in data) {
-                const id = `${form.id}-${key}`;
-                const el = document.querySelector(`#${id}`);
-                if (typeof data[key] != 'object') {
-                    if (el['type'] == 'checkbox') {
-                        el['checked'] = (_a = data[key]) !== null && _a !== void 0 ? _a : '';
-                    }
-                    else {
-                        el['value'] = data[key];
+        const configName = (_a = this._configName.value) !== null && _a !== void 0 ? _a : '';
+        if (configName.length > 0) {
+            const json = window.localStorage.getItem(this.getConfigKey(configName));
+            window.localStorage.setItem(this._localStorageLastConfigName, configName);
+            const data = JSON.parse(json);
+            if (data == null)
+                return alert(`Config "${configName}" not found`);
+            const properties = (_b = data.customProperties) !== null && _b !== void 0 ? _b : {};
+            const follow = (_c = data.customProperties.follow) !== null && _c !== void 0 ? _c : {};
+            const animation1 = (_d = data.customProperties.animations[0]) !== null && _d !== void 0 ? _d : {};
+            const animation2 = (_e = data.customProperties.animations[1]) !== null && _e !== void 0 ? _e : {};
+            const animation3 = (_f = data.customProperties.animations[2]) !== null && _f !== void 0 ? _f : {};
+            const transitionIn = (_g = data.customProperties.transitions[0]) !== null && _g !== void 0 ? _g : {};
+            const transitionOut = (_h = data.customProperties.transitions[1]) !== null && _h !== void 0 ? _h : {};
+            const textarea = (_j = data.customProperties.textAreas[0]) !== null && _j !== void 0 ? _j : {};
+            applyDataToForm(this._formProperties, properties);
+            applyDataToForm(this._formFollow, follow);
+            applyDataToForm(this._formAnimation1, animation1);
+            applyDataToForm(this._formAnimation2, animation2);
+            applyDataToForm(this._formAnimation3, animation3);
+            applyDataToForm(this._formTransitionIn, transitionIn);
+            applyDataToForm(this._formTransitionOut, transitionOut);
+            applyDataToForm(this._formTextarea, textarea);
+            function applyDataToForm(form, data) {
+                var _a;
+                for (const key in data) {
+                    const id = `${form.id}-${key}`;
+                    const el = document.querySelector(`#${id}`);
+                    if (typeof data[key] != 'object') {
+                        if (el['type'] == 'checkbox') {
+                            el['checked'] = (_a = data[key]) !== null && _a !== void 0 ? _a : '';
+                        }
+                        else {
+                            el['value'] = data[key];
+                        }
                     }
                 }
             }
+            alert(`Config "${configName} loaded"`);
         }
+        else {
+            alert('Please enter a name for your config');
+        }
+    }
+    saveConfig(e) {
+        e === null || e === void 0 ? void 0 : e.preventDefault();
+        const configName = this._configName.value;
+        if (configName.length > 0) {
+            const data = JSON.stringify(this.getData());
+            window.localStorage.setItem(this.getConfigKey(configName), data);
+            window.localStorage.setItem(this._localStorageLastConfigName, configName);
+            this.saveConfigName(configName);
+            alert(`Config "${configName}" saved`);
+        }
+        else {
+            alert('Please enter a name for your config');
+        }
+    }
+    deleteConfig(e) {
+        e === null || e === void 0 ? void 0 : e.preventDefault();
+        const configName = this._configName.value;
+        if (configName.length > 0) {
+            const doIt = confirm(`Are you sure you want to delete config "${configName}"?`);
+            if (doIt) {
+                window.localStorage.removeItem(this.getConfigKey(configName));
+                window.localStorage.setItem(this._localStorageLastConfigName, '');
+                this.deleteConfigName(configName);
+                alert(`Config "${configName}" deleted`);
+            }
+        }
+        else {
+            alert('Please enter a name for your config');
+        }
+    }
+    setCurrentConfigName(e) {
+        e === null || e === void 0 ? void 0 : e.preventDefault();
+        const name = this._configList.value;
+        this._configName.value = name;
+        window.localStorage.setItem(this._localStorageLastConfigName, name);
+    }
+    loadConfigNames() {
+        var _a;
+        const configNames = window.localStorage.getItem(this._localStorageConfigNames);
+        const lastConfigName = window.localStorage.getItem(this._localStorageLastConfigName);
+        const names = (_a = JSON.parse(configNames)) !== null && _a !== void 0 ? _a : [''];
+        this._configName.value = lastConfigName !== null && lastConfigName !== void 0 ? lastConfigName : '';
+        this.applyConfigNamesToSelect(names, lastConfigName);
+    }
+    saveConfigName(name) {
+        var _a;
+        const namesData = window.localStorage.getItem(this._localStorageConfigNames);
+        const names = (_a = JSON.parse(namesData)) !== null && _a !== void 0 ? _a : [];
+        if (!names.includes(name))
+            names.push(name);
+        window.localStorage.setItem(this._localStorageConfigNames, JSON.stringify(names));
+        this.applyConfigNamesToSelect(names, name);
+    }
+    deleteConfigName(name) {
+        var _a;
+        const namesData = window.localStorage.getItem(this._localStorageConfigNames);
+        let names = (_a = JSON.parse(namesData)) !== null && _a !== void 0 ? _a : [];
+        if (names.includes(name))
+            delete names[names.indexOf(name)];
+        names = names.filter(n => n != null);
+        window.localStorage.setItem(this._localStorageConfigNames, JSON.stringify(names));
+        this.applyConfigNamesToSelect(names, name);
+        this._configName.value = '';
+    }
+    applyConfigNamesToSelect(names, selected = null) {
+        this._configList.innerHTML = '';
+        for (const name of names) {
+            const option = document.createElement('option');
+            option.value = name;
+            option.innerText = name;
+            if (name == selected)
+                option.selected = true;
+            this._configList.appendChild(option);
+        }
+    }
+    getConfigKey(name) {
+        return `${this._localStorageConfigs}-${name}`;
     }
     getIndentationString(count, size) {
         return count == 0
@@ -314,8 +404,7 @@ class Editor {
                 : new Array(size + 1).join(' '));
     }
     renderJS(value, key, indentCount) {
-        const indentSize = parseInt(this._formSubmit.querySelector('#formSubmit-indentation').value);
-        const indentStr = this.getIndentationString(indentCount, indentSize);
+        const indentStr = this.getIndentationString(indentCount, 4);
         const keyStr = key == null
             ? ''
             : key.includes('-')

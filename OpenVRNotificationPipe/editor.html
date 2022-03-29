@@ -14,9 +14,24 @@
             <p>Use the copy buttons to use in your app.</p>
             <p></p>
             <p><button id="submit" disabled>Submit to Pipe (enter key)</button></p>
+        </form>
+
+        <form id="formConfig">
+            <h3>Stored Configs</h3>
+            <olist>
+                <li>To load a config, select it in the drop-down and click the load button.</li>
+                <li>To create a new config, simply type in a new name in the name box.</li>
+                <li>Make sure to click the save button to save your changes.</li>
+            </olist>
+            <input name="configName" type="text" value=""/>
+            <select name="configList"></select>
+            <p>
+                <button id="loadConfig">📂 Load Config</button>
+                <button id="saveConfig">💾 Save Config</button>
+                <button id="deleteConfig">❌ Delete Config</button>
+            </p>
             <hr/>
             <h3>Export Config</h3>
-            <input name="indentation" type="number" step="1" value="4"/>
             <p>
                 <span>JSON: </span>
                 <button id="copyJSON">Copy</button>
@@ -27,7 +42,7 @@
                 <button id="copyJS">Copy</button>
                 <button id="downloadJS">Download</button>
             </p>
-            <p><textarea id="config"></textarea></p>
+            <textarea id="config"></textarea>
         </form>
 
         <form id="formImage" class="unset">   

@@ -2,10 +2,13 @@ class Editor {
     // Websocket 
     private _ws = null
     private _wsActive = false
-    private _localStorageKey = 'OpenVRNotificationPipe.BOLL7708.Config'
+    private _localStorageConfigs = 'OpenVRNotificationPipe.BOLL7708.Config'
+    private _localStorageConfigNames = 'OpenVRNotificationPipe.BOLL7708.ConfigNames'
+    private _localStorageLastConfigName = 'OpenVRNotificationPipe.BOLL7708.LastConfigName'
 
     // Construct forms
     private _formSubmit = document.querySelector<HTMLFormElement>('#formSubmit')
+    private _formConfig = document.querySelector<HTMLFormElement>('#formConfig')
     private _formImage = document.querySelector<HTMLFormElement>('#formImage')
     private _formProperties = document.querySelector<HTMLFormElement>('#formProperties')
     private _formFollow = document.querySelector<HTMLFormElement>('#formFollow')
@@ -18,10 +21,14 @@ class Editor {
     private _formTransitionOut = document.querySelector<HTMLFormElement>('#formTransitionOut')
     private _formTextarea = document.querySelector<HTMLFormElement>('#formTextarea')
     private _templateTween = document.querySelector<HTMLTemplateElement>('#templateTween')
-    private _formConfig = document.querySelector<HTMLTemplateElement>('#formConfig')
 
     // General elements
-    private _submit = document.querySelector<HTMLButtonElement>('#submit')    
+    private _submit = document.querySelector<HTMLButtonElement>('#submit')
+    private _configName: HTMLInputElement
+    private _configList: HTMLSelectElement
+    private _loadConfig = document.querySelector<HTMLButtonElement>('#loadConfig')
+    private _saveConfig = document.querySelector<HTMLButtonElement>('#saveConfig')
+    private _deleteConfig = document.querySelector<HTMLButtonElement>('#deleteConfig')
 
     // File elements
     private _imgData = null;
@@ -83,20 +90,22 @@ class Editor {
 
         // Add event listeners
         this._submit.addEventListener('click', this.sendNotification.bind(this))
+        this._loadConfig.addEventListener('click', this.loadConfig.bind(this))
+        this._saveConfig.addEventListener('click', this.saveConfig.bind(this))
+        this._deleteConfig.addEventListener('click', this.deleteConfig.bind(this))
         this._file.addEventListener('change', this.readImage.bind(this))
         this._copyJSON.addEventListener('click', this.copyConfigJSON.bind(this))
         this._downloadJSON.addEventListener('click', this.downloadConfigJSON.bind(this))
         this._copyJS.addEventListener('click', this.copyConfigJS.bind(this))
         this._downloadJS.addEventListener('click', this.downloadConfigJS.bind(this))
 
+        this._configName = document.querySelector<HTMLInputElement>('#formConfig-configName')
+        this._configList = document.querySelector<HTMLSelectElement>('#formConfig-configList')
+        this._configList.addEventListener('change', this.setCurrentConfigName.bind(this))
+        this._configList.addEventListener('focus', (e: Event)=> { this._configList.selectedIndex = -1 })
+        this.loadConfigNames()
+
         this.connectLoop()
-        /*
-        // TODO: Make this an option.
-        _config.innerHTML = localStorage.getItem(_localStorageKey) ?? ''
-        if(_config.innerHTML.length > 0) {
-            loadConfig()
-        }
-        */
     }
     connectLoop() 
     {
@@ -157,7 +166,7 @@ class Editor {
         return this._imgData
     }
     getImagePath() {
-        return 'C:/replace/with/path/on/disk/'+this._file.files[0].name
+        return 'C:/replace/with/path/on/disk/'+(this._file.files[0]?.name ?? 'image.png')
     }
 
     // Data
@@ -166,9 +175,6 @@ class Editor {
         const data = this.getData()
         // Send data
         this._ws.send(JSON.stringify(data))
-        
-        // TODO: Change be a config load/save management system
-        // window.localStorage.setItem(_localStorageKey, JSON.stringify(data))
     }
 
     getData() {
@@ -243,20 +249,18 @@ class Editor {
 
     copyConfigJSON(e: Event) {
         e?.preventDefault()
-        const indent = this._formSubmit.querySelector<HTMLInputElement>('#formSubmit-indentation').value
         const data = this.getData()
         data.imageData = ''
-        this._config.innerHTML = JSON.stringify(data, null, parseInt(indent))
+        this._config.innerHTML = JSON.stringify(data, null, 4)
         this._config.select()
         document.execCommand('copy')
     }
 
     downloadConfigJSON(e: Event) {
         e?.preventDefault()
-        const indent = this._formSubmit.querySelector<HTMLInputElement>('#formSubmit-indentation').value
         const data = this.getData()
         data.imageData = ''
-        const json = JSON.stringify(data, null, parseInt(indent))
+        const json = JSON.stringify(data, null, 4)
         this.download(json, 'pipe-config.json', 'text/plain')
     }
 
@@ -294,39 +298,121 @@ class Editor {
 
     loadConfig(e: Event) {
         e?.preventDefault()
-        const data = JSON.parse(this._config.value)
-        if(this._config.value.length > 0) window.localStorage.setItem(this._localStorageKey, this._config.value)
-        const properties = data.customProperties ?? {}
-        const follow = data.customProperties.follow ?? {}
-        const animation1 = data.customProperties.animations[0] ?? {}
-        const animation2 = data.customProperties.animations[1] ?? {}
-        const animation3 = data.customProperties.animations[2] ?? {}
-        const transitionIn = data.customProperties.transitions[0] ?? {}
-        const transitionOut = data.customProperties.transitions[1] ?? {}
-        const textarea = data.customProperties.textAreas[0] ?? {}
-
-        applyDataToForm(this._formProperties, properties)
-        applyDataToForm(this._formFollow, follow)
-        applyDataToForm(this._formAnimation1, animation1)
-        applyDataToForm(this._formAnimation2, animation2)
-        applyDataToForm(this._formAnimation3, animation3)
-        applyDataToForm(this._formTransitionIn, transitionIn)
-        applyDataToForm(this._formTransitionOut, transitionOut)
-        applyDataToForm(this._formTextarea, textarea)
-
-        function applyDataToForm(form, data) {
-            for(const key in data) {
-                const id = `${form.id}-${key}`
-                const el = document.querySelector(`#${id}`)
-                if(typeof data[key] != 'object') {
-                    if(el['type'] == 'checkbox') {
-                        el['checked'] = data[key] ?? ''
-                    } else {
-                        el['value'] = data[key]
+        const configName = this._configName.value ?? ''
+        if(configName.length > 0) {
+            const json = window.localStorage.getItem(this.getConfigKey(configName))
+            window.localStorage.setItem(this._localStorageLastConfigName, configName)
+            const data = JSON.parse(json)
+            if(data == null) return alert(`Config "${configName}" not found`)
+            
+            const properties = data.customProperties ?? {}
+            const follow = data.customProperties.follow ?? {}
+            const animation1 = data.customProperties.animations[0] ?? {}
+            const animation2 = data.customProperties.animations[1] ?? {}
+            const animation3 = data.customProperties.animations[2] ?? {}
+            const transitionIn = data.customProperties.transitions[0] ?? {}
+            const transitionOut = data.customProperties.transitions[1] ?? {}
+            const textarea = data.customProperties.textAreas[0] ?? {}
+    
+            applyDataToForm(this._formProperties, properties)
+            applyDataToForm(this._formFollow, follow)
+            applyDataToForm(this._formAnimation1, animation1)
+            applyDataToForm(this._formAnimation2, animation2)
+            applyDataToForm(this._formAnimation3, animation3)
+            applyDataToForm(this._formTransitionIn, transitionIn)
+            applyDataToForm(this._formTransitionOut, transitionOut)
+            applyDataToForm(this._formTextarea, textarea)
+    
+            function applyDataToForm(form, data) {
+                for(const key in data) {
+                    const id = `${form.id}-${key}`
+                    const el = document.querySelector(`#${id}`)
+                    if(typeof data[key] != 'object') {
+                        if(el['type'] == 'checkbox') {
+                            el['checked'] = data[key] ?? ''
+                        } else {
+                            el['value'] = data[key]
+                        }
                     }
                 }
             }
+            alert(`Config "${configName} loaded"`)
+        } else {
+            alert('Please enter a name for your config')
         }
+    }
+    saveConfig(e: Event) {
+        e?.preventDefault()
+        const configName = this._configName.value
+        if(configName.length > 0) {
+            const data = JSON.stringify(this.getData())
+            window.localStorage.setItem(this.getConfigKey(configName), data)
+            window.localStorage.setItem(this._localStorageLastConfigName, configName)
+            this.saveConfigName(configName)
+            alert(`Config "${configName}" saved`)
+        } else {
+            alert('Please enter a name for your config')
+        }
+    }
+    deleteConfig(e: Event) {
+        e?.preventDefault()
+        const configName = this._configName.value
+        if(configName.length > 0) {
+            const doIt = confirm(`Are you sure you want to delete config "${configName}"?`)
+            if(doIt) {
+                window.localStorage.removeItem(this.getConfigKey(configName))
+                window.localStorage.setItem(this._localStorageLastConfigName, '')
+                this.deleteConfigName(configName)
+                alert(`Config "${configName}" deleted`)
+            }
+        } else {
+            alert('Please enter a name for your config')
+        }
+    }
+
+    setCurrentConfigName(e: Event) {
+        e?.preventDefault()
+        const name = this._configList.value
+        this._configName.value = name
+        window.localStorage.setItem(this._localStorageLastConfigName, name)
+    }
+    loadConfigNames() {
+        const configNames = window.localStorage.getItem(this._localStorageConfigNames)
+        const lastConfigName = window.localStorage.getItem(this._localStorageLastConfigName)
+        const names = JSON.parse(configNames) ?? ['']
+        this._configName.value = lastConfigName ?? ''
+        this.applyConfigNamesToSelect(names, lastConfigName)
+    }
+    saveConfigName(name: string) {
+        const namesData = window.localStorage.getItem(this._localStorageConfigNames)
+        const names = JSON.parse(namesData) ?? []
+        if(!names.includes(name)) names.push(name)
+        window.localStorage.setItem(this._localStorageConfigNames, JSON.stringify(names))
+        this.applyConfigNamesToSelect(names, name)
+    }
+    deleteConfigName(name: string) {
+        const namesData = window.localStorage.getItem(this._localStorageConfigNames)
+        let names = JSON.parse(namesData) ?? []
+        if(names.includes(name)) delete names[names.indexOf(name)]
+        names = names.filter(n => n != null)
+        window.localStorage.setItem(this._localStorageConfigNames, JSON.stringify(names))
+        this.applyConfigNamesToSelect(names, name)
+        this._configName.value = ''
+    }
+
+    applyConfigNamesToSelect(names: string[], selected: string = null) {
+        this._configList.innerHTML = ''
+        for(const name of names) {
+            const option = document.createElement('option')
+            option.value = name
+            option.innerText = name
+            if(name == selected) option.selected = true
+            this._configList.appendChild(option)
+        }
+    }
+
+    getConfigKey(name: string): string {
+        return `${this._localStorageConfigs}-${name}`
     }
 
     getIndentationString(count: number, size: number) {
@@ -340,8 +426,7 @@ class Editor {
     }
 
     renderJS(value: any, key: string, indentCount: number) {
-        const indentSize = parseInt(this._formSubmit.querySelector<HTMLInputElement>('#formSubmit-indentation').value)
-        const indentStr = this.getIndentationString(indentCount, indentSize)
+        const indentStr = this.getIndentationString(indentCount, 4)
         const keyStr = key == null 
             ? ''
             : key.includes('-') 

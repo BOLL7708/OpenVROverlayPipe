@@ -80,7 +80,7 @@ namespace OpenVRNotificationPipe.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to v2.96.
+        ///   Looks up a localized string similar to v2.101.
         /// </summary>
         public static string Version {
             get {

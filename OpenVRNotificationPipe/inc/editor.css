@@ -20,7 +20,7 @@ form {
     border-radius: 16px;
     float: left;
     background-color: #eee;
-    padding: 4px;
+    padding: 8px;
     margin: 4px;
     box-shadow: 4px 4px 6px #888;
 }
@@ -115,4 +115,7 @@ textarea {
 }
 #imageContainer {
     text-align: center;
+}
+#saveConfig, #deleteConfig {
+    margin-left: 3em;
 }
