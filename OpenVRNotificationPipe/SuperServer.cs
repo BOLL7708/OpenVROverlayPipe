@@ -52,7 +52,7 @@ namespace OpenVRNotificationPipe
             // Start
             var config = new ServerConfig
             {
-                MaxRequestLength = 1024 * 1024,
+                MaxRequestLength = int.MaxValue,
                 ReceiveBufferSize = 1024 * 1024,
                 Port = port
             };
