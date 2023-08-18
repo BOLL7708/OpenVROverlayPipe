@@ -13,6 +13,7 @@ Run SteamVR, then run this application, if both the OpenVR and Server status are
 If you made something that is publicly available that use this pipe application, it can be listed here.
 * [Streaming Widget](https://github.com/BOLL7708/streaming_widget): Streaming browser source made specifically for OBS, Twitch, SteamVR and a range of other solutions.
 * [Twitch Logger](https://github.com/jeppevinkel/twitch-logger): Logs Twitch chat to disk and can pipe them to Discord and VR.
+* [NotificationCat VR](https://wtrace3zh.itch.io/notificationcat): This tool allows you to forward notification messages from Android® or iOS® devices to SteamVR
 
 ## Minimal WebSockets Client
 To send things to this application you need a WebSockets client, you can easily do this directly in a browser by opening a static page, below is example code you can use to quickly send a standard notification. If you have set a different server port you need to update that in the server URI in this example.
