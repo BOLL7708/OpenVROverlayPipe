@@ -101,7 +101,7 @@ class Editor {
         if (!this._wsActive) {
             const url = new URL(window.location.href);
             const params = new URLSearchParams(url.search);
-            const port = (_a = params.get('port')) !== null && _a !== void 0 ? _a : 8077;
+            const port = (_a = params.get('port')) !== null && _a !== void 0 ? _a : 7711;
             // TODO: Save port in local data
             var wsUri = `ws://localhost:${port}`;
             this._wsActive = true;

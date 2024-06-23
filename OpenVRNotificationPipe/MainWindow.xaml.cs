@@ -1,10 +1,13 @@
 ﻿using EasyFramework;
 using System;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Forms;
+using EasyOpenVR.Utils;
 using Brushes = System.Windows.Media.Brushes;
 using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
 using WindowState = System.Windows.WindowState;
@@ -14,13 +17,12 @@ namespace OpenVRNotificationPipe
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class MainWindow : Window
     {
         private readonly MainController _controller;
         private readonly Properties.Settings _settings = Properties.Settings.Default;
-        private readonly System.Windows.Forms.NotifyIcon _notifyIcon;
         private readonly GraphicsSingleton _graphics = GraphicsSingleton.Instance;
-        private static Mutex _mutex = null; // Used to detect other instances of the same application
 
         public MainWindow()
         {
@@ -42,46 +44,22 @@ namespace OpenVRNotificationPipe
             }
 
             // Prevent multiple instances
-            _mutex = new Mutex(true, Properties.Resources.AppName, out bool createdNew);
-            if (!createdNew)
-            {
-                System.Windows.MessageBox.Show(
-                System.Windows.Application.Current.MainWindow,
-                "This application is already running!",
-                Properties.Resources.AppName,
-                MessageBoxButton.OK,
-                MessageBoxImage.Information
-                );
-                System.Windows.Application.Current.Shutdown();
-            }
+            WindowUtils.CheckIfAlreadyRunning(Properties.Resources.AppName);
 
             // Tray icon
-            var icon = Properties.Resources.Icon.Clone() as System.Drawing.Icon;
-            _notifyIcon = new System.Windows.Forms.NotifyIcon();
-            _notifyIcon.MouseClick += NotifyIcon_Click;
-            
-            _notifyIcon.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip(new System.ComponentModel.Container());
-            _notifyIcon.ContextMenuStrip.SuspendLayout();
-            var openMenuItem = new System.Windows.Forms.ToolStripMenuItem("Open");
-            openMenuItem.Click += (sender, args) => NotifyIcon_Click(sender, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
-            var exitMenuItem = new System.Windows.Forms.ToolStripMenuItem("Exit");
-            exitMenuItem.Click += (sender, args) => System.Windows.Application.Current.Shutdown();
-            _notifyIcon.ContextMenuStrip.Items.Add(openMenuItem);
-            _notifyIcon.ContextMenuStrip.Items.Add(exitMenuItem);
-            _notifyIcon.ContextMenuStrip.Name = "NotifyIconContextMenu";
-            _notifyIcon.ContextMenuStrip.ResumeLayout(false);
-
-            _notifyIcon.Text = $"Click to show the {Properties.Resources.AppName} window";
-            _notifyIcon.Icon = icon;
-            _notifyIcon.Visible = true;
-
+            WindowUtils.CreateTrayIcon(
+                this, 
+                Properties.Resources.Icon.Clone() as System.Drawing.Icon,
+                Properties.Resources.AppName,
+                Properties.Resources.Version
+            );
             Title = Properties.Resources.AppName;
 
             LoadSettings();
 #if DEBUG
-            Label_Version.Content = $"{Properties.Resources.Version}d";
+            LabelVersion.Content = $"{Properties.Resources.Version}d";
 #else
-            Label_Version.Content = Properties.Resources.Version;
+            LabelVersion.Content = Properties.Resources.Version;
 #endif
             // Controller
             _controller = new MainController((status, state) => {
@@ -90,16 +68,16 @@ namespace OpenVRNotificationPipe
                     switch (status)
                     {
                         case SuperServer.ServerStatus.Connected:
-                            label_ServerStatus.Background = Brushes.OliveDrab;
-                            label_ServerStatus.Content = "Online";
+                            LabelServerStatus.Background = Brushes.OliveDrab;
+                            LabelServerStatus.Content = "Online";
                             break;
                         case SuperServer.ServerStatus.Disconnected:
-                            label_ServerStatus.Background = Brushes.Tomato;
-                            label_ServerStatus.Content = "Offline";
+                            LabelServerStatus.Background = Brushes.Tomato;
+                            LabelServerStatus.Content = "Offline";
                             break;
                         case SuperServer.ServerStatus.Error:
-                            label_ServerStatus.Background = Brushes.Gray;
-                            label_ServerStatus.Content = "Error";
+                            LabelServerStatus.Background = Brushes.Gray;
+                            LabelServerStatus.Content = "Error";
                             break;
                     }
                 });
@@ -108,17 +86,17 @@ namespace OpenVRNotificationPipe
                     Dispatcher.Invoke(() => {
                         if (status)
                         {
-                            label_OpenVRStatus.Background = Brushes.OliveDrab;
-                            label_OpenVRStatus.Content = "Connected";
+                            LabelOpenVrStatus.Background = Brushes.OliveDrab;
+                            LabelOpenVrStatus.Content = "Connected";
                         }
                         else
                         {
-                            label_OpenVRStatus.Background = Brushes.Tomato;
-                            label_OpenVRStatus.Content = "Disconnected";
+                            LabelOpenVrStatus.Background = Brushes.Tomato;
+                            LabelOpenVrStatus.Content = "Disconnected";
                             if (_settings.ExitWithSteam)
                             {
-                                _controller.Shutdown();
-                                if (_notifyIcon != null) _notifyIcon.Dispose();
+                                _controller?.Shutdown();
+                                WindowUtils.DestroyTrayIcon();
                                 System.Windows.Application.Current.Shutdown();
                             }
                         }
@@ -158,10 +136,10 @@ namespace OpenVRNotificationPipe
 
         private void LoadSettings()
         {
-            checkBox_MinimizeOnLaunch.IsChecked = _settings.LaunchMinimized;
-            checkBox_MinimizeToTray.IsChecked = _settings.Tray;
-            checkBox_ExitWithSteamVR.IsChecked = _settings.ExitWithSteam;
-            textBox_Port.Text = _settings.Port.ToString();
+            CheckBoxMinimizeOnLaunch.IsChecked = _settings.LaunchMinimized;
+            CheckBoxMinimizeToTray.IsChecked = _settings.Tray;
+            CheckBoxExitWithSteamVr.IsChecked = _settings.ExitWithSteam;
+            TextBoxPort.Text = _settings.Port.ToString();
         }
 
         #region interface
@@ -177,19 +155,19 @@ namespace OpenVRNotificationPipe
             {
                 _settings.Port = dlg.value;
                 _settings.Save();
-                textBox_Port.Text = _settings.Port.ToString();
+                TextBoxPort.Text = _settings.Port.ToString();
                 _controller.SetPort(_settings.Port);
             }
         }
 
         private void Button_Editor_Click(object sender, RoutedEventArgs e) {
-            Process.Start("editor.html");
+            MiscUtils.OpenUrl("editor.html");
         }
         
-        private void ClickedURL(object sender, RoutedEventArgs e)
+        private void ClickedUrl(object sender, RoutedEventArgs e)
         {
             var link = (Hyperlink)sender;
-            Process.Start(link.NavigateUri.ToString());
+            MiscUtils.OpenUrl(link.NavigateUri.ToString());
         }
         private bool CheckboxValue(RoutedEventArgs e)
         {
@@ -216,22 +194,9 @@ namespace OpenVRNotificationPipe
             _settings.Save();
         }
 
-        private void NotifyIcon_Click(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right) return;
-            WindowState = WindowState.Normal;
-            ShowInTaskbar = true;
-            Show();
-            Activate();
-        }
-
         private void Window_StateChanged(object sender, EventArgs e)
         {
-            switch (WindowState)
-            {
-                case WindowState.Minimized: ShowInTaskbar = !_settings.Tray; break; // Setting here for tray icon only
-                default: ShowInTaskbar = true; Show(); break;
-            }
+            WindowUtils.OnStateChange(this, !_settings.Tray);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -241,7 +206,7 @@ namespace OpenVRNotificationPipe
             if (Top >= wa.Y && Top < (b.Height - Height)) _settings.WindowTop = Top;
             if(Left >= wa.X && Left < (b.Width - Width)) _settings.WindowLeft = Left;
             _settings.Save();
-            if (_notifyIcon != null) _notifyIcon.Dispose();
+            WindowUtils.DestroyTrayIcon();
         }
         
         // Open GL/TK stuff

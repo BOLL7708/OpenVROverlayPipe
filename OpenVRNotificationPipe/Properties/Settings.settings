@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="Port" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">8077</Value>
+      <Value Profile="(Default)">7711</Value>
     </Setting>
     <Setting Name="LaunchMinimized" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>

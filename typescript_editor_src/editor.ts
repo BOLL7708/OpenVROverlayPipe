@@ -112,7 +112,7 @@ class Editor {
         if(!this._wsActive) {
             const url = new URL(window.location.href)
             const params = new URLSearchParams(url.search)
-            const port = params.get('port') ?? 8077
+            const port = params.get('port') ?? 7711
 
             // TODO: Save port in local data
 

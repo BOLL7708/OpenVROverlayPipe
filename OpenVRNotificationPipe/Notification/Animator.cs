@@ -9,7 +9,7 @@ using static EasyOpenVR.Utils.GeneralUtils;
 
 namespace OpenVRNotificationPipe.Notification
 {
-    class Animator
+    internal class Animator
     {
         private Texture _texture;
         private RenderTexture _renderTexture;
@@ -467,7 +467,7 @@ namespace OpenVRNotificationPipe.Notification
                     // _texture.Delete(); // TODO: Watch for possible instability here depending on what is going on timing-wise...
                     _texture = null;
                     OpenVR.Overlay.DestroyOverlay(_overlayHandle);
-                    Thread.CurrentThread.Abort();
+                    break;
                 }
 
                 var timeSpent = (int) Math.Round((double) (DateTime.Now.Ticks - timeStarted) / TimeSpan.TicksPerMillisecond);

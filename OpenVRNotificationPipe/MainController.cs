@@ -185,11 +185,11 @@ namespace OpenVRNotificationPipe
                 // Debug.WriteLine($"Payload was received: {payloadJson}");
                 if (payload?.customProperties.enabled == true)
                 {
-                    PostImageNotification(session.SessionID, payload);
+                    if(session != null) PostImageNotification(session.SessionID, payload);
                 }
                 else if (payload?.basicMessage.Length > 0)
                 {
-                    PostNotification(session, payload);
+                    if(session != null) PostNotification(session, payload);
                 }
                 else {
                     _ = _server.SendMessageToSingleOrAll(session, JsonConvert.SerializeObject(new Response(payload.customProperties.nonce, "Error", "Payload appears to be missing data.")));
