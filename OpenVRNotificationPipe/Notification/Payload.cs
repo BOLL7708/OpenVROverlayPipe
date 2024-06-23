@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EasyOpenVR.Utils;
+using static EasyOpenVR.Utils.EasingUtils;
 
 namespace OpenVRNotificationPipe
 {
@@ -54,7 +56,8 @@ namespace OpenVRNotificationPipe
             public bool enabled = false;
             public float triggerAngle = 65; // Triggering cone angle
             public float durationMs = 250; // Transition duration
-            public int tweenType = 5; // Tween type
+            public EasingType easeType = EasingType.Linear; // Easing type
+            public EasingMode easeMode = EasingMode.Out; // Easing mode
         }
 
         public class Animation
@@ -77,7 +80,8 @@ namespace OpenVRNotificationPipe
             public float pitchDeg = 0;
             public float rollDeg = 0;
             public int durationMs = 250;
-            public int tweenType = 5; // Tween type
+            public EasingType easeType = EasingType.Linear; // Easing type
+            public EasingMode easeMode = EasingMode.Out; // Easing mode
         }
 
         public class TextArea {

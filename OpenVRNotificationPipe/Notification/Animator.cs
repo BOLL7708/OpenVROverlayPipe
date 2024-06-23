@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.Threading;
 using System.Windows.Threading;
 using EasyOpenVR.Extensions;
+using EasyOpenVR.Utils;
 using Valve.VR;
+using static EasyOpenVR.Utils.EasingUtils;
 using static EasyOpenVR.Utils.GeneralUtils;
 
 namespace OpenVRNotificationPipe.Notification
@@ -112,7 +114,7 @@ namespace OpenVRNotificationPipe.Notification
             var originTransform = GetEmptyTransform();
             var targetTransform = GetEmptyTransform();
             var followLerp = 0.0;
-            var followTween = Tween.GetFunc(0);
+            var followTween = Get(EasingType.Linear, EasingMode.Out);
             var followIsLerping = false;         
 
             // General Animation
@@ -131,7 +133,7 @@ namespace OpenVRNotificationPipe.Notification
             var easeInLimit = 0;
             var stayLimit = 0;
             var easeOutLimit = 0;
-            var tween = Tween.GetFunc(0);
+            var tween = Get(EasingType.Linear, EasingMode.Out);
 
             // Cycling
             var animateYaw = new Cycler();
@@ -146,7 +148,7 @@ namespace OpenVRNotificationPipe.Notification
             while (true)
             {
                 timeStarted = DateTime.Now.Ticks;
-                bool skip = false;
+                var skip = false;
                 
                 if (_payload == null) // Get new payload
                 {
@@ -162,7 +164,7 @@ namespace OpenVRNotificationPipe.Notification
                     properties = _payload.customProperties;
 					useWorldDeviceTransform = properties.anchorType != 0 && properties.attachToAnchor && (properties.ignoreAnchorYaw || properties.ignoreAnchorPitch || properties.ignoreAnchorRoll);
                     follow = properties.follow;
-                    followTween = Tween.GetFunc(follow.tweenType);
+                    followTween = Get(follow.easeType, follow.easeMode);
                     var hmdHz = (int) Math.Round(_vr.GetFloatTrackedDeviceProperty(0, ETrackedDeviceProperty.Prop_DisplayFrequency_Float));
                     hz = properties.animationHz > 0 ? properties.animationHz : hmdHz;
                     msPerFrame = 1000 / hz;
@@ -311,7 +313,7 @@ namespace OpenVRNotificationPipe.Notification
                         transition = properties.transitions.Length > 0 
                                 ? properties.transitions[0] 
                                 : new Payload.Transition();
-                        tween = Tween.GetFunc(transition.tweenType);
+                        tween = EasingUtils.Get(transition.easeType, transition.easeMode);
                     }
 
                     if (animationCount == stayLimit)
@@ -319,7 +321,7 @@ namespace OpenVRNotificationPipe.Notification
                         if (properties.transitions.Length >= 2)
                         {
                             transition = properties.transitions[1];
-                            tween = Tween.GetFunc(transition.tweenType);
+                            tween = EasingUtils.Get(transition.easeType, transition.easeMode);
                         }
                     }
                     #endregion
@@ -334,7 +336,7 @@ namespace OpenVRNotificationPipe.Notification
                     {
                         transitionRatio = 1f - ((float)animationCount - stayLimit + 1) / easeOutCount; // +1 because we moved where we increment animationCount
                     }
-                    transitionRatio = tween(transitionRatio);
+                    transitionRatio = (float) tween(transitionRatio);
                     var ratioReversed = 1f - transitionRatio;
 
                     // Transform
@@ -381,7 +383,7 @@ namespace OpenVRNotificationPipe.Notification
                                 }
                                 else
                                 {
-                                    deviceTransform = originTransform.Lerp(targetTransform, followTween((float)followLerp));
+                                    deviceTransform = originTransform.Lerp(targetTransform, (float) followTween(followLerp));
                                 }
                             }
                         }
