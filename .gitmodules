@@ -1,3 +1,6 @@
 [submodule "EasyOpenVR"]
-	path = OpenVRNotificationPipe/EasyOpenVR
+	path = EasyOpenVR
 	url = https://github.com/BOLL7708/EasyOpenVR.git
+[submodule "EasyFramework"]
+	path = EasyFramework
+	url = https://github.com/BOLL7708/EasyFramework.git

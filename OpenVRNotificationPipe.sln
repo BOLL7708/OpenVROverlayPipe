@@ -5,6 +5,10 @@ VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenVRNotificationPipe", "OpenVRNotificationPipe\OpenVRNotificationPipe.csproj", "{DD4ED3A9-5BA4-4D3A-A5CF-575E857653DC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyFramework", "EasyFramework\EasyFramework.csproj", "{4C9067C8-6AFE-457A-A209-047CF07D6250}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyOpenVR", "EasyOpenVR\EasyOpenVR.csproj", "{B8C29203-1A05-4ED2-908C-34CCAECA5121}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,22 @@ Global
 		{DD4ED3A9-5BA4-4D3A-A5CF-575E857653DC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DD4ED3A9-5BA4-4D3A-A5CF-575E857653DC}.Release|x64.ActiveCfg = Release|x64
 		{DD4ED3A9-5BA4-4D3A-A5CF-575E857653DC}.Release|x64.Build.0 = Release|x64
+		{4C9067C8-6AFE-457A-A209-047CF07D6250}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C9067C8-6AFE-457A-A209-047CF07D6250}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C9067C8-6AFE-457A-A209-047CF07D6250}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4C9067C8-6AFE-457A-A209-047CF07D6250}.Debug|x64.Build.0 = Debug|Any CPU
+		{4C9067C8-6AFE-457A-A209-047CF07D6250}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C9067C8-6AFE-457A-A209-047CF07D6250}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C9067C8-6AFE-457A-A209-047CF07D6250}.Release|x64.ActiveCfg = Release|Any CPU
+		{4C9067C8-6AFE-457A-A209-047CF07D6250}.Release|x64.Build.0 = Release|Any CPU
+		{B8C29203-1A05-4ED2-908C-34CCAECA5121}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8C29203-1A05-4ED2-908C-34CCAECA5121}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8C29203-1A05-4ED2-908C-34CCAECA5121}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B8C29203-1A05-4ED2-908C-34CCAECA5121}.Debug|x64.Build.0 = Debug|Any CPU
+		{B8C29203-1A05-4ED2-908C-34CCAECA5121}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8C29203-1A05-4ED2-908C-34CCAECA5121}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8C29203-1A05-4ED2-908C-34CCAECA5121}.Release|x64.ActiveCfg = Release|Any CPU
+		{B8C29203-1A05-4ED2-908C-34CCAECA5121}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

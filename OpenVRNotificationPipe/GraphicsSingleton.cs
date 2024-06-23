@@ -1,43 +1,41 @@
-﻿using OpenTK.Graphics;
-using OpenTK.Wpf;
-using OpenTK_Animation_Testing;
+﻿using OpenTK_Animation_Testing;
 using OpenTK.Graphics.OpenGL;
 using System;
 
 namespace OpenVRNotificationPipe
 {
-    class GraphicsSingleton
+    internal class GraphicsSingleton
     {
-        private static GraphicsSingleton __instance = null;
+        private static GraphicsSingleton? _instance;
         private GraphicsSingleton() { }
         public static GraphicsSingleton Instance
         {
             get
             {
-                if (__instance == null) __instance = new GraphicsSingleton();
-                return __instance;
+                if (_instance == null) _instance = new GraphicsSingleton();
+                return _instance;
             }
         }
 
         #region OpenTK from Window
         // Rendering Variables
-        private Shader _shader3d;
+        private Shader? _shader3d;
         private const double FrameInterval = 0.01;
         private double _elapsedTime;
 
         private readonly float[] _vertices =
-        {
+        [
             // Position         Texture coordinates
             1.0f,  1.0f, 0.0f, 1.0f, 1.0f, // top right
             1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom right
             -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom left
             -1.0f,  1.0f, 0.0f, 0.0f, 1.0f  // top left
-        };
+        ];
         private readonly uint[] _indices =
-        {
+        [
             0, 1, 3,
             1, 2, 3
-        };
+        ];
 
         private int _elementBufferObject;
         private int _vertexArrayObject;
@@ -63,10 +61,10 @@ namespace OpenVRNotificationPipe
 
                 foreach (var overlay in Session.Overlays.Values)
                 {
-                    _shader3d.Use();
-                    _shader3d.SetInt("tex_index", overlay.Animator.GetFrame());
+                    _shader3d?.Use();
+                    _shader3d?.SetInt("tex_index", overlay.Animator.GetFrame());
 
-                    bool textureToDraw = overlay.Animator.OnRender(_elapsedTime);
+                    var textureToDraw = overlay.Animator.OnRender(_elapsedTime);
                     GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
                     GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
                     if (textureToDraw) GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
@@ -107,39 +105,5 @@ namespace OpenVRNotificationPipe
             GL.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
         }
         #endregion
-    }
-
-    class GraphicsCompanion
-    {
-        static internal void StartOpenTK(MainWindow mainWindow)
-        {
-            // OpenTK Initialization
-            var settings = new GLWpfControlSettings
-            {
-                RenderContinuously = true,
-                GraphicsContextFlags = GraphicsContextFlags.Offscreen | GraphicsContextFlags.Default,
-            };
-            mainWindow.OpenTKControl.Start(settings);
-        }
-
-        static internal void SetViewportDimensions(int screenWidth, int screenHeight, int width, int height)
-        {
-            // Calculate a width and height that fits the screen
-            var aspectRatio = (float)width / height;
-            var newWidth = screenWidth;
-            var newHeight = (int)(newWidth / aspectRatio);
-            if (newHeight > screenHeight)
-            {
-                newHeight = screenHeight;
-                newWidth = (int)(newHeight * aspectRatio);
-            }
-
-            // Center the image
-            var x = (int)(screenWidth - newWidth) / 2;
-            var y = (int)(screenHeight - newHeight) / 2;
-
-            // Set the viewport
-            GL.Viewport(x, y, newWidth, newHeight);
-        }
     }
 }

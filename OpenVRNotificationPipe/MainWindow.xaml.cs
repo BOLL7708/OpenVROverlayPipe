@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EasyFramework;
+using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Windows;
@@ -125,7 +126,7 @@ namespace OpenVRNotificationPipe
                 }
             );
 
-            GraphicsCompanion.StartOpenTK(this);
+            GraphicsCompanion.StartOpenTk(this);
             _controller.SetPort(_settings.Port);
 
             if (_settings.LaunchMinimized)

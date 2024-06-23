@@ -1,13 +1,13 @@
-﻿using OpenVRNotificationPipe.Notification;
-using SuperSocket.WebSocket;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
+using OpenVRNotificationPipe.Notification;
+using SuperSocket.WebSocket.Server;
 
 namespace OpenVRNotificationPipe
 {
-    class Session
+    internal static class Session
     {
-        public readonly static ConcurrentDictionary<string, WebSocketSession> Sessions = new ConcurrentDictionary<string, WebSocketSession>();
-        public readonly static ConcurrentDictionary<WebSocketSession, ulong> OverlayHandles = new ConcurrentDictionary<WebSocketSession, ulong>();
-        public readonly static ConcurrentDictionary<int, Overlay> Overlays = new ConcurrentDictionary<int, Overlay>();
+        public static readonly ConcurrentDictionary<string, WebSocketSession> Sessions = new ConcurrentDictionary<string, WebSocketSession>();
+        public static readonly ConcurrentDictionary<WebSocketSession, ulong> OverlayHandles = new ConcurrentDictionary<WebSocketSession, ulong>();
+        public static readonly ConcurrentDictionary<int, Overlay> Overlays = new ConcurrentDictionary<int, Overlay>();
     }
 }

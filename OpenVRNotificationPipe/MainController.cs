@@ -1,26 +1,30 @@
-﻿using BOLL7708;
+﻿using EasyOpenVR;
+using EasyFramework;
 using Newtonsoft.Json;
 using OpenVRNotificationPipe.Notification;
-using SuperSocket.WebSocket;
 using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using System.Windows.Threading;
+using EasyOpenVR.Utils;
+using SuperSocket.WebSocket.Server;
 using Valve.VR;
-using static BOLL7708.EasyOpenVRSingleton;
+using static EasyOpenVR.EasyOpenVRSingleton;
 
 namespace OpenVRNotificationPipe
 {
-    class MainController
+    [SupportedOSPlatform("windows7.0")]
+    internal class MainController
     {
         public static Dispatcher UiDispatcher { get; private set; }
         private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
         private readonly SuperServer _server = new SuperServer();
         private Action<bool> _openvrStatusAction;
-        private bool _openVRConnected = false;
+        private bool _openVrConnected = false;
         private bool _shouldShutDown = false;
 
         public MainController(Action<SuperServer.ServerStatus, int> serverStatus, Action<bool> openvrStatus)
@@ -40,7 +44,7 @@ namespace OpenVRNotificationPipe
             Thread.CurrentThread.IsBackground = true;
             while (true)
             {
-                if (_openVRConnected)
+                if (_openVrConnected)
                 {
                     if (!initComplete)
                     {
@@ -50,7 +54,7 @@ namespace OpenVRNotificationPipe
                         RegisterEvents();
                         _vr.SetDebugLogAction((message) =>
                         {
-                            _server.SendMessageToAll(JsonConvert.SerializeObject(new Response("", "Debug", message)));
+                            _ = _server.SendMessageToAll(JsonConvert.SerializeObject(new Response("", "Debug", message)));
                         });
                     }
                     else
@@ -61,28 +65,29 @@ namespace OpenVRNotificationPipe
                 }
                 else
                 {
-                    if (!_openVRConnected)
+                    if (!_openVrConnected)
                     {
                         Debug.WriteLine("Initializing OpenVR...");
-                        _openVRConnected = _vr.Init();
+                        _openVrConnected = _vr.Init();
                     }
                     Thread.Sleep(2000);
                 }
-                if (_shouldShutDown) {
-                    _shouldShutDown = false;
-                    initComplete = false;
-                    foreach(var overlay in Session.Overlays.Values) overlay.Deinit();
-                    _vr.AcknowledgeShutdown();
-                    Thread.Sleep(500); // Allow things to deinit properly
-                    _vr.Shutdown();
-                    _openvrStatusAction.Invoke(false);
-                }
-            }            
+
+                if (!_shouldShutDown) continue;
+                
+                _shouldShutDown = false;
+                initComplete = false;
+                foreach(var overlay in Session.Overlays.Values) overlay.Deinit();
+                _vr.AcknowledgeShutdown();
+                Thread.Sleep(500); // Allow things to deinit properly
+                _vr.Shutdown();
+                _openvrStatusAction.Invoke(false);
+            }
         }
 
         private void RegisterEvents() {
             _vr.RegisterEvent(EVREventType.VREvent_Quit, (data) => {
-                _openVRConnected = false;
+                _openVrConnected = false;
                 _shouldShutDown = true;
             });
         }
@@ -90,7 +95,7 @@ namespace OpenVRNotificationPipe
         private void PostNotification(WebSocketSession session, Payload payload)
         {
             // Overlay
-            Session.OverlayHandles.TryGetValue(session, out ulong overlayHandle);
+            Session.OverlayHandles.TryGetValue(session, out var overlayHandle);
             if (overlayHandle == 0L) {
                 if (Session.OverlayHandles.Count >= 32) Session.OverlayHandles.Clear(); // Max 32, restart!
                 overlayHandle = _vr.InitNotificationOverlay(payload.basicTitle);
@@ -100,10 +105,10 @@ namespace OpenVRNotificationPipe
             // Image
             Debug.WriteLine($"Overlay handle {overlayHandle} for '{payload.basicTitle}'");
             Debug.WriteLine($"Image Hash: {CreateMD5(payload.imageData)}");
-            NotificationBitmap_t bitmap = new NotificationBitmap_t();
+            var bitmap = new NotificationBitmap_t();
             try
             {
-                Bitmap bmp = null;
+                Bitmap? bmp = null;
                 if (payload.imageData?.Length > 0) {
                     var imageBytes = Convert.FromBase64String(payload.imageData);
                     bmp = new Bitmap(new MemoryStream(imageBytes));
@@ -121,21 +126,20 @@ namespace OpenVRNotificationPipe
             {
                 var message = $"Image Read Failure: {e.Message}";
                 Debug.WriteLine(message);
-                _server.SendMessage(session, JsonConvert.SerializeObject(new Response(payload.customProperties.nonce, "Error", message)));
+                _ = _server.SendMessageToSingle(session, JsonConvert.SerializeObject(new Response(payload.customProperties.nonce, "Error", message)));
             }
             // Broadcast
-            if(overlayHandle != 0)
-            {
-                GC.KeepAlive(bitmap);
-                _vr.EnqueueNotification(overlayHandle, payload.basicMessage, bitmap);
-            }
+            if (overlayHandle == 0) return;
+            
+            GC.KeepAlive(bitmap);
+            _vr.EnqueueNotification(overlayHandle, payload.basicMessage, bitmap);
         }
 
         private void PostImageNotification(string sessionId, Payload payload)
         {
             var channel = payload.customProperties.overlayChannel;
             Debug.WriteLine($"Posting image texture notification to channel {channel}!");
-            Overlay overlay;
+            Overlay? overlay;
             if(!Session.Overlays.ContainsKey(channel))
             {
                 overlay = new Overlay($"OpenVRNotificationPipe[{channel}]", channel);
@@ -151,24 +155,24 @@ namespace OpenVRNotificationPipe
             if (overlay != null && overlay.IsInitialized()) overlay.EnqueueNotification(sessionId, payload);
         }
 
-        private void OnOverlayDoneEvent(string[] args) {
-            if (args.Length == 3) {
-                var sessionId = args[0];
-                var nonce = args[1];
-                var error = args[2];
-                WebSocketSession session;
-                var sessionExists = Session.Sessions.TryGetValue(sessionId, out session);
-                if (sessionExists) _server.SendMessage(session, JsonConvert.SerializeObject(new Response(nonce, error.Length > 0 ? "Error" : "OK", error)));
-            }
+        private void OnOverlayDoneEvent(string[] args)
+        {
+            if (args.Length != 3) return;
+            
+            var sessionId = args[0];
+            var nonce = args[1];
+            var error = args[2];
+            var sessionExists = Session.Sessions.TryGetValue(sessionId, out var session);
+            if (sessionExists) _ = _server.SendMessageToSingleOrAll(session, JsonConvert.SerializeObject(new Response(nonce, error.Length > 0 ? "Error" : "OK", error)));
         }
         #endregion
 
         private void InitServer(Action<SuperServer.ServerStatus, int> serverStatus)
         {
             _server.StatusAction = serverStatus;
-            _server.MessageReceievedAction = (session, payloadJson) =>
+            _server.MessageReceivedAction = (session, payloadJson) =>
             {
-                if (!Session.Sessions.ContainsKey(session.SessionID)) {
+                if (session != null && !Session.Sessions.ContainsKey(session.SessionID)) {
                     Session.Sessions.TryAdd(session.SessionID, session);
                 }
                 var payload = new Payload();
@@ -176,34 +180,33 @@ namespace OpenVRNotificationPipe
                 catch (Exception e) {
                     var message = $"JSON Parsing Exception: {e.Message}";
                     Debug.WriteLine(message);
-                    _server.SendMessage(session, JsonConvert.SerializeObject(new Response(payload.customProperties.nonce, "Error", message)));
+                    _ = _server.SendMessageToSingleOrAll(session, JsonConvert.SerializeObject(new Response(payload.customProperties.nonce, "Error", message)));
                 }
                 // Debug.WriteLine($"Payload was received: {payloadJson}");
-                if (payload.customProperties.enabled)
+                if (payload?.customProperties.enabled == true)
                 {
                     PostImageNotification(session.SessionID, payload);
                 }
-                else if (payload.basicMessage?.Length > 0)
+                else if (payload?.basicMessage.Length > 0)
                 {
                     PostNotification(session, payload);
                 }
                 else {
-                    _server.SendMessage(session, JsonConvert.SerializeObject(new Response(payload.customProperties.nonce, "Error", "Payload appears to be missing data.")));
+                    _ = _server.SendMessageToSingleOrAll(session, JsonConvert.SerializeObject(new Response(payload.customProperties.nonce, "Error", "Payload appears to be missing data.")));
                 }
             };
         }
 
         public void SetPort(int port)
         {
-            _server.Start(port);
+            _ = _server.Start(port);
         }
 
         public void Shutdown()
         {
             _openvrStatusAction = (status) => { };
-            _server.ResetActions();
             _shouldShutDown = true;
-            _server.Stop();
+            _ = _server.Stop();
         }
 
         public static string CreateMD5(string input) // https://stackoverflow.com/a/24031467

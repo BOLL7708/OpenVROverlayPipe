@@ -1,4 +1,4 @@
-﻿using BOLL7708;
+﻿using EasyOpenVR;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Valve.VR;
+using static EasyOpenVR.Utils.GeneralUtils;
 
 namespace OpenVRNotificationPipe.Notification
 {
@@ -34,7 +35,7 @@ namespace OpenVRNotificationPipe.Notification
             if (_overlayHandle != 0) OpenVR.Overlay.DestroyOverlay(_overlayHandle);
             
             // Default positioning and size of overlay, this will all be changed when animated.
-            var transform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
+            var transform = GetEmptyTransform();
             var width = 1;
             _overlayHandle = _vr.CreateOverlay($"boll7708.openvrnotficationpipe.texture.{_channel}", _title, transform, width);
             _initSuccess = _overlayHandle != 0;

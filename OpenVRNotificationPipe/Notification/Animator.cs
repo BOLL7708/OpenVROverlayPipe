@@ -1,9 +1,11 @@
-﻿using BOLL7708;
+﻿using EasyOpenVR;
 using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Windows.Threading;
+using EasyOpenVR.Extensions;
 using Valve.VR;
+using static EasyOpenVR.Utils.GeneralUtils;
 
 namespace OpenVRNotificationPipe.Notification
 {
@@ -96,9 +98,9 @@ namespace OpenVRNotificationPipe.Notification
             Thread.CurrentThread.IsBackground = true;
             
             // General
-            var deviceTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
-            var notificationTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
-            var animationTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
+            var deviceTransform = GetEmptyTransform();
+            var notificationTransform = GetEmptyTransform();
+            var animationTransform = GetEmptyTransform();
             var width = 1f;
             var height = 1f;
             var properties = new Payload.CustomProperties();
@@ -107,8 +109,8 @@ namespace OpenVRNotificationPipe.Notification
 
             // Follow
             var follow = new Payload.Follow();
-            var originTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
-            var targetTransform = EasyOpenVRSingleton.Utils.GetEmptyTransform();
+            var originTransform = GetEmptyTransform();
+            var targetTransform = GetEmptyTransform();
             var followLerp = 0.0;
             var followTween = Tween.GetFunc(0);
             var followIsLerping = false;         
@@ -250,7 +252,7 @@ namespace OpenVRNotificationPipe.Notification
 
                     // Pose
                     deviceTransform = properties.anchorType == 0 
-                        ? EasyOpenVRSingleton.Utils.GetEmptyTransform()
+                        ? GetEmptyTransform()
                         : _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
                     if (!properties.attachToAnchor)
                     {
@@ -350,9 +352,9 @@ namespace OpenVRNotificationPipe.Notification
                         if(follow.enabled && follow.durationMs > 0 && properties.anchorType != 0 && !properties.attachToAnchor)
                         {
                             var currentPose = properties.anchorType == 0 
-                                ? EasyOpenVRSingleton.Utils.GetEmptyTransform() 
+                                ? GetEmptyTransform() 
                                 : _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
-                            var angleBetween = EasyOpenVRSingleton.Utils.AngleBetween(deviceTransform, currentPose);
+                            var angleBetween = AngleBetween(deviceTransform, currentPose);
                             if (angleBetween > follow.triggerAngle && !followIsLerping)
                             {
                                 followIsLerping = true;
@@ -387,7 +389,7 @@ namespace OpenVRNotificationPipe.Notification
 
                         // Build transform with origin, transitions and animations
                         animationTransform = (properties.attachToAnchor || properties.anchorType == 0)
-                            ? EasyOpenVRSingleton.Utils.GetEmptyTransform()
+                            ? GetEmptyTransform()
 							: deviceTransform;
 						
                         if (properties.anchorType == 0) {
@@ -485,7 +487,5 @@ namespace OpenVRNotificationPipe.Notification
             _payload = null;
             _shouldShutdown = true;
         }
-
-
     }
 }
