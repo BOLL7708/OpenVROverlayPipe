@@ -9,7 +9,7 @@ using static EasyOpenVR.Utils.EasingUtils;
 
 namespace OpenVRNotificationPipe
 {
-    class Payload
+    internal class Payload
     {
         // General
         public string imageData = "";
