@@ -98,23 +98,23 @@ namespace OpenVRNotificationPipe
             Session.OverlayHandles.TryGetValue(session, out var overlayHandle);
             if (overlayHandle == 0L) {
                 if (Session.OverlayHandles.Count >= 32) Session.OverlayHandles.Clear(); // Max 32, restart!
-                overlayHandle = _vr.InitNotificationOverlay(payload.basicTitle);
+                overlayHandle = _vr.InitNotificationOverlay(payload.BasicTitle);
                 Session.OverlayHandles.TryAdd(session, overlayHandle);
             }
 
             // Image
-            Debug.WriteLine($"Overlay handle {overlayHandle} for '{payload.basicTitle}'");
-            Debug.WriteLine($"Image Hash: {CreateMd5(payload.imageData)}");
+            Debug.WriteLine($"Overlay handle {overlayHandle} for '{payload.BasicTitle}'");
+            Debug.WriteLine($"Image Hash: {CreateMd5(payload.ImageData)}");
             var bitmap = new NotificationBitmap_t();
             try
             {
                 Bitmap? bmp = null;
-                if (payload.imageData.Length > 0) {
-                    var imageBytes = Convert.FromBase64String(payload.imageData);
+                if (payload.ImageData.Length > 0) {
+                    var imageBytes = Convert.FromBase64String(payload.ImageData);
                     bmp = new Bitmap(new MemoryStream(imageBytes));
-                } else if(payload.imagePath.Length > 0)
+                } else if(payload.ImagePath.Length > 0)
                 {
-                    bmp = new Bitmap(payload.imagePath);
+                    bmp = new Bitmap(payload.ImagePath);
                 }
                 if (bmp != null) {
                     Debug.WriteLine($"Bitmap size: {bmp.Size.ToString()}");
@@ -126,18 +126,18 @@ namespace OpenVRNotificationPipe
             {
                 var message = $"Image Read Failure: {e.Message}";
                 Debug.WriteLine(message);
-                _ = _server.SendMessageToSingle(session, JsonSerializer.Serialize(new Response(payload.customProperties.nonce, "Error", message), JsonOptions.Get()));
+                _ = _server.SendMessageToSingle(session, JsonSerializer.Serialize(new Response(payload.CustomProperties.Nonce, "Error", message), JsonOptions.Get()));
             }
             // Broadcast
             if (overlayHandle == 0) return;
             
             GC.KeepAlive(bitmap);
-            _vr.EnqueueNotification(overlayHandle, payload.basicMessage, bitmap);
+            _vr.EnqueueNotification(overlayHandle, payload.BasicMessage, bitmap);
         }
 
         private void PostImageNotification(string sessionId, Payload payload)
         {
-            var channel = payload.customProperties.overlayChannel;
+            var channel = payload.CustomProperties.OverlayChannel;
             Debug.WriteLine($"Posting image texture notification to channel {channel}!");
             Session.Overlays.TryGetValue(channel, out var overlay);
             if(overlay == null)
@@ -178,19 +178,19 @@ namespace OpenVRNotificationPipe
                 catch (Exception e) {
                     var message = $"JSON Parsing Exception: {e.Message}";
                     Debug.WriteLine(message);
-                    _ = _server.SendMessageToSingleOrAll(session, JsonSerializer.Serialize(new Response(payload?.customProperties.nonce ?? "", "Error", message), JsonOptions.Get()));
+                    _ = _server.SendMessageToSingleOrAll(session, JsonSerializer.Serialize(new Response(payload?.CustomProperties.Nonce ?? "", "Error", message), JsonOptions.Get()));
                 }
                 // Debug.WriteLine($"Payload was received: {payloadJson}");
-                if (payload?.customProperties.enabled == true)
+                if (payload?.CustomProperties.Enabled == true)
                 {
                     if(session != null) PostImageNotification(session.SessionID, payload);
                 }
-                else if (payload?.basicMessage.Length > 0)
+                else if (payload?.BasicMessage.Length > 0)
                 {
                     if(session != null) PostNotification(session, payload);
                 }
                 else {
-                    _ = _server.SendMessageToSingleOrAll(session, JsonSerializer.Serialize(new Response(payload?.customProperties.nonce ?? "", "Error", "Payload appears to be missing data."), JsonOptions.Get()));
+                    _ = _server.SendMessageToSingleOrAll(session, JsonSerializer.Serialize(new Response(payload?.CustomProperties.Nonce ?? "", "Error", "Payload appears to be missing data."), JsonOptions.Get()));
                 }
             };
         }

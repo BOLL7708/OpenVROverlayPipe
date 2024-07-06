@@ -1,15 +1,14 @@
-﻿using EasyFramework;
-using System;
-using System.Diagnostics;
+﻿using System;
+using System.ComponentModel;
+using System.Drawing;
 using System.Runtime.Versioning;
-using System.Threading;
 using System.Windows;
-using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Forms;
-using EasyOpenVR.Utils;
+using EasyFramework;
+using OpenVRNotificationPipe.Properties;
+using Application = System.Windows.Application;
 using Brushes = System.Windows.Media.Brushes;
-using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
 using WindowState = System.Windows.WindowState;
 
 namespace OpenVRNotificationPipe
@@ -21,21 +20,24 @@ namespace OpenVRNotificationPipe
     public partial class MainWindow : Window
     {
         private readonly MainController _controller;
-        private readonly Properties.Settings _settings = Properties.Settings.Default;
+        private readonly Settings _settings = Settings.Default;
         private readonly GraphicsSingleton _graphics = GraphicsSingleton.Instance;
 
         public MainWindow()
         {
             InitializeComponent();
+            
             if (!_settings.LaunchMinimized) {
                 // Position in last known location, unless negative, then center on screen.
-                var wa = Screen.PrimaryScreen.WorkingArea;
-                var b = Screen.PrimaryScreen.Bounds;
+                var wa = Screen.PrimaryScreen?.WorkingArea;
+                var b = Screen.PrimaryScreen?.Bounds;
                 if (
-                    _settings.WindowTop >= wa.Y
-                    && _settings.WindowLeft >= wa.X
-                    && _settings.WindowTop < (b.Height - Height)
-                    && _settings.WindowLeft < (b.Width - Width)
+                    wa != null 
+                    && b != null 
+                    && _settings.WindowTop >= wa?.Y
+                    && _settings.WindowLeft >= wa?.X
+                    && _settings.WindowTop < (b?.Height - Height)
+                    && _settings.WindowLeft < (b?.Width - Width)
                 ) {
                     Top = _settings.WindowTop; 
                     Left = _settings.WindowLeft; 
@@ -49,7 +51,7 @@ namespace OpenVRNotificationPipe
             // Tray icon
             WindowUtils.CreateTrayIcon(
                 this, 
-                Properties.Resources.Icon.Clone() as System.Drawing.Icon,
+                Properties.Resources.Icon.Clone() as Icon,
                 Properties.Resources.AppName,
                 Properties.Resources.Version
             );
@@ -62,7 +64,7 @@ namespace OpenVRNotificationPipe
             LabelVersion.Content = Properties.Resources.Version;
 #endif
             // Controller
-            _controller = new MainController((status, state) => {
+            _controller = new MainController((status, _) => {
                 Dispatcher.Invoke(() =>
                 {
                     switch (status)
@@ -97,7 +99,7 @@ namespace OpenVRNotificationPipe
                             {
                                 _controller?.Shutdown();
                                 WindowUtils.DestroyTrayIcon();
-                                System.Windows.Application.Current.Shutdown();
+                                Application.Current.Shutdown();
                             }
                         }
                     });
@@ -111,19 +113,21 @@ namespace OpenVRNotificationPipe
             {
                 Loaded += (sender, args) =>
                 {
-                    var wa = Screen.PrimaryScreen.WorkingArea;
-                    var b = Screen.PrimaryScreen.Bounds;
+                    var wa = Screen.PrimaryScreen?.WorkingArea;
+                    var b = Screen.PrimaryScreen?.Bounds;
                     if ( // If we have a valid stored location, use it
-                        _settings.WindowTop >= wa.Y
-                        && _settings.WindowLeft >= wa.X
-                        && _settings.WindowTop < (b.Height - Height)
-                        && _settings.WindowLeft < (b.Width - Width) 
+                        wa != null
+                        && b != null
+                        && _settings.WindowTop >= wa?.Y
+                        && _settings.WindowLeft >= wa?.X
+                        && _settings.WindowTop < (b?.Height - Height)
+                        && _settings.WindowLeft < (b?.Width - Width) 
                     ) {
                         Top = _settings.WindowTop;
                         Left = _settings.WindowLeft;
-                    } else { // Otherwise center on screen
-                        Top = wa.Y + (wa.Height / 2 - Height / 2);
-                        Left = wa.X + (wa.Width / 2 - Width / 2);
+                    } else if(wa != null) { // Otherwise center on screen
+                        Top = (wa?.Y ?? 0) + ((wa?.Height ?? 0.0) / 2 - Height / 2);
+                        Left = (wa?.X ?? 0) + ((wa?.Width ?? 0.0) / 2 - Width / 2);
                     }
                     
                     WindowState = WindowState.Minimized;
@@ -199,12 +203,12 @@ namespace OpenVRNotificationPipe
             WindowUtils.OnStateChange(this, !_settings.Tray);
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object sender, CancelEventArgs e)
         {
-            var wa = Screen.PrimaryScreen.WorkingArea;
-            var b = Screen.PrimaryScreen.Bounds;
-            if (Top >= wa.Y && Top < (b.Height - Height)) _settings.WindowTop = Top;
-            if(Left >= wa.X && Left < (b.Width - Width)) _settings.WindowLeft = Left;
+            var wa = Screen.PrimaryScreen?.WorkingArea;
+            var b = Screen.PrimaryScreen?.Bounds;
+            if (Top >= wa?.Y && Top < (b?.Height - Height)) _settings.WindowTop = Top;
+            if(Left >= wa?.X && Left < (b?.Width - Width)) _settings.WindowLeft = Left;
             _settings.Save();
             WindowUtils.DestroyTrayIcon();
         }

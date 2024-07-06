@@ -63,11 +63,11 @@ namespace OpenVRNotificationPipe.Notification
             Reset();
         }
 
-        public Cycler(Payload.Animation anim)
+        public Cycler(Payload.AnimationObject anim)
         {
-            _amplitude = anim.amplitude;
-            _frequency = anim.frequency;
-            _func = Cycle.GetFunc(anim.flipWaveform, anim.waveform, anim.phase);
+            _amplitude = anim.Amplitude;
+            _frequency = anim.Frequency;
+            _func = Cycle.GetFunc(anim.FlipWaveform, anim.Waveform, anim.Phase);
         }
 
         public float GetRatio(float value) {

@@ -28,7 +28,7 @@ namespace OpenVRNotificationPipe.Notification
             _frameTimes = frameTimes;
         }
         
-        public static Texture LoadImageFile(string path, IEnumerable<Payload.TextArea> textAreas = null)
+        public static Texture LoadImageFile(string path, IEnumerable<Payload.TextAreaObject> textAreas = null)
         {
             Bitmap image;
             try
@@ -43,12 +43,12 @@ namespace OpenVRNotificationPipe.Notification
             return LoadImage(image, textAreas);
         }
         
-        public static Texture LoadImageBase64(string bytes, IEnumerable<Payload.TextArea> textAreas = null)
+        public static Texture LoadImageBase64(string bytes, IEnumerable<Payload.TextAreaObject> textAreas = null)
         {
             return LoadImageBytes(Convert.FromBase64String(bytes), textAreas);
         }
         
-        public static Texture LoadImageBytes(byte[] bytes, IEnumerable<Payload.TextArea> textAreas = null)
+        public static Texture LoadImageBytes(byte[] bytes, IEnumerable<Payload.TextAreaObject> textAreas = null)
         {
             Bitmap image;
             try
@@ -63,7 +63,7 @@ namespace OpenVRNotificationPipe.Notification
             return LoadImage(image, textAreas);
         }
         
-        public static Texture LoadImage(Bitmap image, IEnumerable<Payload.TextArea> textAreas = null)
+        public static Texture LoadImage(Bitmap image, IEnumerable<Payload.TextAreaObject> textAreas = null)
         {
             int frameCount = image.FrameDimensionsList.Any(d => d == FrameDimension.Time.Guid)
                 ? image.GetFrameCount(FrameDimension.Time)

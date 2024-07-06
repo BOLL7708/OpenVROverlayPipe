@@ -11,17 +11,17 @@ namespace OpenVRNotificationPipe.Extensions
 {
     static class BitmapExtensions
     {
-        public static Bitmap DrawTextAreas(this Bitmap bmp, IEnumerable<TextArea> textAreas)
+        public static Bitmap DrawTextAreas(this Bitmap bmp, IEnumerable<TextAreaObject> textAreas)
         {
             foreach (var ta in textAreas)
             {
                 // https://stackoverflow.com/a/32012246/2076423
                 var g = Graphics.FromImage(bmp);
                 RectangleF rectf = new RectangleF(
-                    Math.Min(Math.Max(0, ta.xPositionPx), bmp.Width),
-                    Math.Min(Math.Max(0, ta.yPositionPx), bmp.Height),
-                    Math.Min(ta.widthPx, bmp.Width),
-                    Math.Min(ta.heightPx, bmp.Height)
+                    Math.Min(Math.Max(0, ta.XPositionPx), bmp.Width),
+                    Math.Min(Math.Max(0, ta.YPositionPx), bmp.Height),
+                    Math.Min(ta.WidthPx, bmp.Width),
+                    Math.Min(ta.HeightPx, bmp.Height)
                 );
                 g.SmoothingMode = SmoothingMode.AntiAlias;
                 g.InterpolationMode = InterpolationMode.HighQualityBicubic;
@@ -30,18 +30,18 @@ namespace OpenVRNotificationPipe.Extensions
                 StringFormat format = new StringFormat()
                 {
                     Alignment = (StringAlignment) Math.Min((int) StringAlignment.Far,
-                        Math.Max(ta.horizontalAlignment, (int) StringAlignment.Near)),
+                        Math.Max(ta.HorizontalAlignment, (int) StringAlignment.Near)),
                     LineAlignment = (StringAlignment) Math.Min((int) StringAlignment.Far,
-                        Math.Max(ta.verticalAlignment, (int) StringAlignment.Near)),
+                        Math.Max(ta.VerticalAlignment, (int) StringAlignment.Near)),
                     Trimming = StringTrimming.EllipsisWord
                     // FormatFlags = StringFormatFlags.DirectionVertical
                 };
                 Debug.WriteLine(
-                    $"Gravity: {ta.horizontalAlignment}:{format.Alignment}, Alignment: {ta.verticalAlignment}:{format.LineAlignment}");
+                    $"Gravity: {ta.HorizontalAlignment}:{format.Alignment}, Alignment: {ta.VerticalAlignment}:{format.LineAlignment}");
                 var color = Color.White;
                 try
                 {
-                    color = ColorTranslator.FromHtml(ta.fontColor);
+                    color = ColorTranslator.FromHtml(ta.FontColor);
                 }
                 catch (Exception e)
                 {
@@ -51,8 +51,8 @@ namespace OpenVRNotificationPipe.Extensions
                 if (color.A == 0) color = Color.White; // Empty string parses out to transparent black (0,0,0,0)
                 var brush = new SolidBrush(color);
                 g.DrawString(
-                    ta.text,
-                    new Font(ta.fontFamily, ta.fontSizePt),
+                    ta.Text,
+                    new Font(ta.FontFamily, ta.FontSizePt),
                     brush,
                     rectf,
                     format
