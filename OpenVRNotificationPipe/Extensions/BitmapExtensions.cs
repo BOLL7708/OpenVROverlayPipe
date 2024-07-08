@@ -5,10 +5,13 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.IO;
+using System.Runtime.Versioning;
+using OpenVRNotificationPipe.Notification;
 using static OpenVRNotificationPipe.Payload;
 
 namespace OpenVRNotificationPipe.Extensions
 {
+    [SupportedOSPlatform("windows7.0")]
     static class BitmapExtensions
     {
         public static Bitmap DrawTextAreas(this Bitmap bmp, IEnumerable<TextAreaObject> textAreas)
@@ -17,7 +20,7 @@ namespace OpenVRNotificationPipe.Extensions
             {
                 // https://stackoverflow.com/a/32012246/2076423
                 var g = Graphics.FromImage(bmp);
-                RectangleF rectf = new RectangleF(
+                var rectf = new RectangleF(
                     Math.Min(Math.Max(0, ta.XPositionPx), bmp.Width),
                     Math.Min(Math.Max(0, ta.YPositionPx), bmp.Height),
                     Math.Min(ta.WidthPx, bmp.Width),
@@ -27,12 +30,22 @@ namespace OpenVRNotificationPipe.Extensions
                 g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 g.PixelOffsetMode = PixelOffsetMode.HighQuality;
                 g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-                StringFormat format = new StringFormat()
+                var format = new StringFormat()
                 {
-                    Alignment = (StringAlignment) Math.Min((int) StringAlignment.Far,
-                        Math.Max(ta.HorizontalAlignment, (int) StringAlignment.Near)),
-                    LineAlignment = (StringAlignment) Math.Min((int) StringAlignment.Far,
-                        Math.Max(ta.VerticalAlignment, (int) StringAlignment.Near)),
+                    Alignment = ta.HorizontalAlignment switch
+                    {
+                        TextHorizontalAlignmentEnum.Left => StringAlignment.Near,
+                        TextHorizontalAlignmentEnum.Center => StringAlignment.Center,
+                        TextHorizontalAlignmentEnum.Right => StringAlignment.Far,
+                        _ => StringAlignment.Near
+                    },
+                    LineAlignment = ta.VerticalAlignment switch
+                    {
+                        TextVerticalAlignmentEnum.Top => StringAlignment.Near,
+                        TextVerticalAlignmentEnum.Center => StringAlignment.Center,
+                        TextVerticalAlignmentEnum.Bottom => StringAlignment.Far,
+                        _ => StringAlignment.Near
+                    },
                     Trimming = StringTrimming.EllipsisWord
                     // FormatFlags = StringFormatFlags.DirectionVertical
                 };
@@ -63,12 +76,12 @@ namespace OpenVRNotificationPipe.Extensions
             return bmp;
         }
         
-        public static Bitmap FromBase64(string base64)
+        public static Bitmap? FromBase64(string base64)
         {
             return FromBytes(Convert.FromBase64String(base64));
         }
         
-        public static Bitmap FromBytes(byte[] bytes)
+        public static Bitmap? FromBytes(byte[] bytes)
         {
             try
             {

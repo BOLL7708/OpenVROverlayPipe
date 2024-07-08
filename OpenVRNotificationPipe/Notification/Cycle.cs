@@ -1,57 +1,57 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OpenVRNotificationPipe.Notification
 {
-    class Cycle
+    internal static class Cycle
     {
-        static public Func<float, float> GetFunc(bool flip, int waveType, int phaseType)
+        public static Func<float, float> GetFunc(bool flip, AnimationWaveformEnum waveType, AnimationPhaseEnum phaseType)
         {
-            var phaseFunc = (phaseType < phaseFuncs.Length && phaseType >= 0)
-                ? phaseFuncs[phaseType]
-                : phaseFuncs[0];
-            var waveFunc = (waveType < waveFuncs.Length && waveType >= 0)
-                ? waveFuncs[waveType]
-                : waveFuncs[0];
+            var phaseFunc = GetPhaseFunc(phaseType);
+            var waveFunc = GetWaveformFunc(waveType);
             return value => {
                 var result = waveFunc(phaseFunc(value));
                 return flip ? -result : result;
             };
         }
 
-        // Phase types
-        static readonly private Func<float, float> Linear = value => value;
-        static readonly private Func<float, float> Sine = value => (float)Math.Sin((value * Math.PI) / 2);
-        static readonly private Func<float, float> Cosine = value => (float)Math.Cos((value * Math.PI) / 2);
-        static readonly private Func<float, float> NegativeSine = value => (float)-Math.Sin((value * Math.PI) / 2);
-        static readonly private Func<float, float> NegativeCosine = value => (float)-Math.Cos((value * Math.PI) / 2);
-        static readonly private Func<float, float>[] phaseFuncs = {
-            Linear,
-            Sine,
-            Cosine,
-            NegativeSine,
-            NegativeCosine
-        };
+        // region Phase types
+        private static readonly Func<float, float> Linear = value => value;
+        private static readonly Func<float, float> Sine = value => (float)Math.Sin((value * Math.PI) / 2);
+        private static readonly Func<float, float> Cosine = value => (float)Math.Cos((value * Math.PI) / 2);
+        private static readonly Func<float, float> NegativeSine = value => (float)-Math.Sin((value * Math.PI) / 2);
+        private static readonly Func<float, float> NegativeCosine = value => (float)-Math.Cos((value * Math.PI) / 2);
 
-        // Wave types
-        static readonly private Func<float, float> PhaseBased = value => value;
+        private static Func<float,float> GetPhaseFunc(AnimationPhaseEnum type)
+        {
+            return type switch
+            {
+                AnimationPhaseEnum.Sine => Sine,
+                AnimationPhaseEnum.Cosine => Cosine,
+                AnimationPhaseEnum.NegativeSine => NegativeSine,
+                AnimationPhaseEnum.NegativeCosine => NegativeCosine,
+                _ => Linear
+            };
+        }
+        // endregion
+
+        // region Wave types
+        private static readonly Func<float, float> PhaseBased = value => value;
         
         // TODO: Work in progress
-        static readonly private Func<float, float> Square = value => value;
-        static readonly private Func<float, float> Triangular = value => value;
-        static readonly private Func<float, float> Sawtooth = value => value;
-        static readonly private Func<float, float> SawtoothReversed = value => value;
+        private static readonly Func<float, float> Square = value => value;
+        private static readonly Func<float, float> Triangular = value => value;
+        private static readonly Func<float, float> Sawtooth = value => value;
+        private static readonly Func<float, float> SawtoothReversed = value => value;
 
-        static readonly private Func<float, float>[] waveFuncs = {
-            PhaseBased,
-            // SquareWave,
-            // TriangularWave,
-            // SawtoothWave,
-            // SawtoothReversedWave
-        };
+        private static Func<float, float> GetWaveformFunc(AnimationWaveformEnum type)
+        {
+            return type switch
+            {
+                AnimationWaveformEnum.PhaseBased => PhaseBased,
+                _ => PhaseBased
+            };
+        }
+        // endregion
     }
 
     class Cycler { 

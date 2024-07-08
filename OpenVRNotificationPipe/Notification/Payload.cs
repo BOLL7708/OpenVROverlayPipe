@@ -1,4 +1,5 @@
-﻿using static EasyOpenVR.Utils.EasingUtils;
+﻿using OpenVRNotificationPipe.Notification;
+using static EasyOpenVR.Utils.EasingUtils;
 
 namespace OpenVRNotificationPipe
 {
@@ -9,7 +10,7 @@ namespace OpenVRNotificationPipe
         public string ImagePath = "";
 
         // Standard notification
-        public string BasicTitle = "OpenVRNotificationPipe";
+        public string BasicTitle = "OpenVROverlayPipe";
         public string BasicMessage = "";
 
         // Custom notification
@@ -18,7 +19,7 @@ namespace OpenVRNotificationPipe
         public class CustomPropertiesObject {
             public bool Enabled = false;
             public string Nonce = "";
-            public int AnchorType = 1; // 0: World, 1: Head, 2: Left Hand, 3: Right Hand
+            public AnchorTypeEnum AnchorType = AnchorTypeEnum.Head;
             public bool AttachToAnchor = false; // Fixes the overlay to the anchor
             public bool IgnoreAnchorYaw = false;
             public bool IgnoreAnchorPitch = false;
@@ -40,7 +41,8 @@ namespace OpenVRNotificationPipe
 
             public FollowObject Follow = new();
             public AnimationObject[] Animations = new AnimationObject[0];
-            public TransitionObject[] Transitions = new TransitionObject[0];
+            public TransitionObject? TransitionIn = null;
+            public TransitionObject? TransitionOut = null;
             public TextAreaObject[] TextAreas = new TextAreaObject[0];
         }
 
@@ -55,11 +57,11 @@ namespace OpenVRNotificationPipe
 
         public class AnimationObject
         {
-            public int Property = 0; // 0: None (disabled), 1: Yaw, 2: Pitch, 3: Roll, 4: Z, 5: Y, 6: X, 7: Scale, 8: Opacity
+            public AnimationPropertyEnum Property = AnimationPropertyEnum.None;
             public float Amplitude = 1;
             public float Frequency = 1;
-            public int Phase = 0; // 0: Sine, 1: Cosine, 2: Negative Sine, 3: Negative Cosine
-            public int Waveform = 0; // 0: PhaseBased
+            public AnimationPhaseEnum Phase = AnimationPhaseEnum.Sine;
+            public AnimationWaveformEnum Waveform = AnimationWaveformEnum.PhaseBased;
             public bool FlipWaveform = false;
         }
 
@@ -86,8 +88,8 @@ namespace OpenVRNotificationPipe
             public int FontSizePt = 10;
             public string FontFamily = "";
             public string FontColor = "";
-            public int HorizontalAlignment = 0; // 0: Left, 1: Center, 2: Right
-            public int VerticalAlignment = 0; // 0: Left, 1: Center, 2: Right
+            public TextHorizontalAlignmentEnum HorizontalAlignment = TextHorizontalAlignmentEnum.Left;
+            public TextVerticalAlignmentEnum VerticalAlignment = TextVerticalAlignmentEnum.Top;
         }
     }
 }

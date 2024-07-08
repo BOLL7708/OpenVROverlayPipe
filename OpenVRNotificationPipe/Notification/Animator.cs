@@ -175,14 +175,14 @@ namespace OpenVRNotificationPipe.Notification
                     // Set anchor
                     switch (properties.AnchorType)
                     {
-                        case 1:
+                        case AnchorTypeEnum.Head:
                             var anchorIndexArr = _vr.GetIndexesForTrackedDeviceClass(ETrackedDeviceClass.HMD);
                             if (anchorIndexArr.Length > 0) anchorIndex = anchorIndexArr[0];
                             break;
-                        case 2:
+                        case AnchorTypeEnum.LeftHand:
                             anchorIndex = _vr.GetIndexForControllerRole(ETrackedControllerRole.LeftHand);
                             break;
-                        case 3:
+                        case AnchorTypeEnum.RightHand:
                             anchorIndex = _vr.GetIndexForControllerRole(ETrackedControllerRole.RightHand);
                             break;
                     }
@@ -237,19 +237,9 @@ namespace OpenVRNotificationPipe.Notification
                     // Debug.WriteLine($"Texture width: {size.v0}, height: {size.v1}");
 
                     // Animation limits
-                    easeInCount = (
-                        properties.Transitions.Length > 0 
-                            ? properties.Transitions[0].DurationMs 
-                            : 100
-                        ) / msPerFrame;
+                    easeInCount = (properties.TransitionIn?.DurationMs ?? 100) / msPerFrame;
                     stayCount = properties.DurationMs / msPerFrame;
-                    easeOutCount = (
-                        properties.Transitions.Length >= 2 
-                            ? properties.Transitions[1].DurationMs 
-                            : properties.Transitions.Length > 0 
-                                ? properties.Transitions[0].DurationMs 
-                                : 100
-                        ) / msPerFrame;
+                    easeOutCount = (properties.TransitionOut?.DurationMs ?? 100) / msPerFrame;
                     easeInLimit = easeInCount;
                     stayLimit = easeInLimit + stayCount;
                     easeOutLimit = stayLimit + easeOutCount;
@@ -283,15 +273,15 @@ namespace OpenVRNotificationPipe.Notification
                     if (properties.Animations.Length > 0) {
                         foreach(var anim in properties.Animations) {
                             switch (anim.Property) {
-                                case 0: break;
-                                case 1: animateYaw = new Cycler(anim); break;
-                                case 2: animatePitch = new Cycler(anim); break;
-                                case 3: animateRoll = new Cycler(anim); break;
-                                case 4: animateZ = new Cycler(anim); break;
-                                case 5: animateY = new Cycler(anim); break;
-                                case 6: animateX = new Cycler(anim); break;
-                                case 7: animateScale = new Cycler(anim); break;
-                                case 8: animateOpacity = new Cycler(anim); break;
+                                case AnimationPropertyEnum.None: break;
+                                case AnimationPropertyEnum.Yaw: animateYaw = new Cycler(anim); break;
+                                case AnimationPropertyEnum.Pitch: animatePitch = new Cycler(anim); break;
+                                case AnimationPropertyEnum.Roll: animateRoll = new Cycler(anim); break;
+                                case AnimationPropertyEnum.PositionZ: animateZ = new Cycler(anim); break;
+                                case AnimationPropertyEnum.PositionY: animateY = new Cycler(anim); break;
+                                case AnimationPropertyEnum.PositionX: animateX = new Cycler(anim); break;
+                                case AnimationPropertyEnum.Scale: animateScale = new Cycler(anim); break;
+                                case AnimationPropertyEnum.Opacity: animateOpacity = new Cycler(anim); break;
                             }
                         }
                     }
@@ -313,19 +303,14 @@ namespace OpenVRNotificationPipe.Notification
                     #region stage inits
                     if (animationCount == 0) 
                     { // Init EaseIn
-                        transition = properties?.Transitions.Length > 0 
-                                ? properties.Transitions[0] 
-                                : new Payload.TransitionObject();
+                        transition = properties?.TransitionIn ?? new Payload.TransitionObject();
                         tween = EasingUtils.Get(transition.EaseType, transition.EaseMode);
                     }
 
                     if (animationCount == stayLimit)
                     { // Init EaseOut
-                        if (properties?.Transitions.Length >= 2)
-                        {
-                            transition = properties.Transitions[1];
-                            tween = EasingUtils.Get(transition.EaseType, transition.EaseMode);
-                        }
+                        transition = properties?.TransitionOut ?? new Payload.TransitionObject();
+                        tween = EasingUtils.Get(transition.EaseType, transition.EaseMode);
                     }
                     #endregion
 
