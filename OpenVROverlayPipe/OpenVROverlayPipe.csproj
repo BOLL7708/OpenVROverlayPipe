@@ -42,4 +42,9 @@
     <ProjectReference Include="..\EasyOpenVR\EasyOpenVR.csproj" />
     <ProjectReference Include="..\EasyFramework\EasyFramework.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="app.vrmanifest">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
