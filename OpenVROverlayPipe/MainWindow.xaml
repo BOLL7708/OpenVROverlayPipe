@@ -3,52 +3,74 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:OpenVROverlayPipe"
         xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
         mc:Ignorable="d"
-        Title="MainWindow" Height="250" Width="360" StateChanged="Window_StateChanged" Icon="resources/logo.ico" Closing="Window_Closing" Top="-10000" Left="-10000">
+        Title="MainWindow" Height="250" Width="360" StateChanged="Window_StateChanged" Icon="resources/logo.ico"
+        Closing="Window_Closing" Top="-10000" Left="-10000">
     <StackPanel Orientation="Vertical" Margin="10">
-        <GroupBox Header="Status &amp; Help"  Background="WhiteSmoke">
+        <GroupBox Header="Status &amp; Help" Background="WhiteSmoke">
 
             <StackPanel Orientation="Vertical">
                 <Grid>
-                    <StackPanel Orientation="Vertical">
-                        <StackPanel Orientation="Horizontal" Margin="5">
-                            <Label Content="OpenVR status:"/>
-                            <Label x:Name="LabelOpenVrStatus" Content="Status" Foreground="White" Background="Gray"/>
+                    <StackPanel Orientation="Horizontal">
+                        <StackPanel Orientation="Vertical">
+                            <StackPanel Orientation="Horizontal" Margin="5">
+                                <Label Content="OpenVR status:" />
+                                <Label x:Name="LabelOpenVrStatus" Content="Status" Foreground="White" Background="Gray" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="5 0 5 5">
+                                <Label Content="Server status:" />
+                                <Label x:Name="LabelServerStatus" Content="Status" Foreground="White" Background="Gray" />
+                            </StackPanel>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="5 0 5 5">
-                            <Label Content="Server status:"/>
-                            <Label x:Name="LabelServerStatus" Content="Status" Foreground="White" Background="Gray"/>
+                        <StackPanel Orientation="Vertical">
+                            <StackPanel Orientation="Horizontal" Margin="5">
+                                <Label Content="Connected clients:" />
+                                <Label x:Name="LabelConnectedClients" Content="0" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="5 0 5 5">
+                                <Label Content="Handled requests:" />
+                                <Label x:Name="LabelHandledRequests" Content="0" />
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                    <Button x:Name="ButtonEditor" Click="Button_Editor_Click" Margin="10" Padding="10" Content="Notification Editor" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 </Grid>
                 <StackPanel Orientation="Horizontal" Margin="5 0 5 5">
-                    <TextBlock x:Name="TextBlockHelp" HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Top" Margin="10 0 10 0">
-                            <Hyperlink NavigateUri="https://github.com/BOLL7708/OpenVROverlayPipe" Click="ClickedUrl">Read Help</Hyperlink>
+                    <TextBlock x:Name="TextBlockHelp" HorizontalAlignment="Left" TextWrapping="Wrap"
+                               VerticalAlignment="Top" Margin="10 0 10 0">
+                        <Hyperlink NavigateUri="https://github.com/BOLL7708/OpenVROverlayPipe" Click="ClickedUrl">Read Help</Hyperlink>
                     </TextBlock>
-                    <TextBlock x:Name="TextBlockIssue" HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Top" Margin="0 0 10 0">
-                            <Hyperlink NavigateUri="https://github.com/BOLL7708/OpenVROverlayPipe/issues" Click="ClickedUrl">Report Issue</Hyperlink>
+                    <TextBlock x:Name="TextBlockIssue" HorizontalAlignment="Left" TextWrapping="Wrap"
+                               VerticalAlignment="Top" Margin="0 0 10 0">
+                        <Hyperlink NavigateUri="https://github.com/BOLL7708/OpenVROverlayPipe/issues"
+                                   Click="ClickedUrl">
+                            Report Issue
+                        </Hyperlink>
                     </TextBlock>
-                    <TextBlock x:Name="TextBlockCommunity" HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Top" Margin="0 0 10 0">
-                            <Hyperlink NavigateUri="https://discord.gg/Cdt4xjqV35" Click="ClickedUrl">Join Discord</Hyperlink>
+                    <TextBlock x:Name="TextBlockCommunity" HorizontalAlignment="Left" TextWrapping="Wrap"
+                               VerticalAlignment="Top" Margin="0 0 10 0">
+                        <Hyperlink NavigateUri="https://discord.gg/Cdt4xjqV35" Click="ClickedUrl">Join Discord</Hyperlink>
                     </TextBlock>
-                    <Label x:Name="LabelVersion" Content="version" Padding="0"/>
+                    <Label x:Name="LabelVersion" Content="version" Padding="0" />
                 </StackPanel>
             </StackPanel>
         </GroupBox>
         <GroupBox Header="Settings" Background="AliceBlue">
             <StackPanel Orientation="Vertical">
                 <StackPanel Orientation="Horizontal" Margin="5">
-                    <CheckBox x:Name="CheckBoxMinimizeOnLaunch" Content="Launch minimized " Checked="CheckBox_MinimizeOnLaunch_Checked" Unchecked="CheckBox_MinimizeOnLaunch_Checked"/>
-                    <CheckBox x:Name="CheckBoxMinimizeToTray" Content="to tray, " Checked="CheckBox_MinimizeToTray_Checked" Unchecked="CheckBox_MinimizeToTray_Checked"/>
-                    <CheckBox x:Name="CheckBoxExitWithSteamVr" Content="exit with SteamVR" Checked="CheckBox_ExitWithSteamVR_Checked" Unchecked="CheckBox_ExitWithSteamVR_Checked"/>
+                    <CheckBox x:Name="CheckBoxMinimizeOnLaunch" Content="Launch minimized "
+                              Checked="CheckBox_MinimizeOnLaunch_Checked" Unchecked="CheckBox_MinimizeOnLaunch_Checked" />
+                    <CheckBox x:Name="CheckBoxMinimizeToTray" Content="to tray, "
+                              Checked="CheckBox_MinimizeToTray_Checked" Unchecked="CheckBox_MinimizeToTray_Checked" />
+                    <CheckBox x:Name="CheckBoxExitWithSteamVr" Content="exit with SteamVR"
+                              Checked="CheckBox_ExitWithSteamVR_Checked" Unchecked="CheckBox_ExitWithSteamVR_Checked" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="5 0 5 5">
-                    <Label Content="Server port:"/>
-                    <TextBox x:Name="TextBoxPort" TextWrapping="Wrap" Text="TextBox" IsEnabled="False" VerticalContentAlignment="Center"/>
-                    <Button x:Name="ButtonEdit" Content="Edit" Click="Button_Edit_Click" Margin="5 0 0 0" Padding="10 0 10 0"/>
+                    <Label Content="Server port:" />
+                    <TextBox x:Name="TextBoxPort" TextWrapping="Wrap" Text="TextBox" IsEnabled="False"
+                             VerticalContentAlignment="Center" />
+                    <Button x:Name="ButtonEdit" Content="Edit" Click="Button_Edit_Click" Margin="5 0 0 0"
+                            Padding="10 0 10 0" />
                 </StackPanel>
             </StackPanel>
         </GroupBox>
@@ -58,6 +80,6 @@
             Height="1"
             x:Name="OpenTKControl"
             Render="OpenTKControl_OnRender"
-            Ready="OpenTKControl_OnReady"/>
+            Ready="OpenTKControl_OnReady" />
     </StackPanel>
 </Window>

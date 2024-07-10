@@ -64,7 +64,7 @@ namespace OpenVROverlayPipe
             LabelVersion.Content = Properties.Resources.Version;
 #endif
             // Controller
-            _controller = new MainController((status, _) => {
+            _controller = new MainController((status, value) => {
                 Dispatcher.Invoke(() =>
                 {
                     switch (status)
@@ -81,6 +81,12 @@ namespace OpenVROverlayPipe
                             LabelServerStatus.Background = Brushes.Gray;
                             LabelServerStatus.Content = "Error";
                             break;
+                        case SuperServer.ServerStatus.ReceivedCount:
+                            LabelHandledRequests.Content = value;
+                            break;
+                        case SuperServer.ServerStatus.SessionCount:
+                            LabelConnectedClients.Content = value;
+                            break;                            
                     }
                 });
             },

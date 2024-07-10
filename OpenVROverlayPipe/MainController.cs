@@ -27,7 +27,10 @@ namespace OpenVROverlayPipe
         private bool _openVrConnected;
         private bool _shouldShutDown;
 
-        public MainController(Action<SuperServer.ServerStatus, int> serverStatus, Action<bool> openvrStatus)
+        public MainController(
+            Action<SuperServer.ServerStatus, int> serverStatus, 
+            Action<bool> openvrStatus
+        )
         {
             UiDispatcher = Dispatcher.CurrentDispatcher;
             _openvrStatusAction = openvrStatus;
@@ -150,7 +153,8 @@ namespace OpenVROverlayPipe
                     OnOverlayDoneEvent(args);
                 };
                 Session.Overlays.TryAdd(channel, overlay);
-            } else if (overlay.IsInitialized()) overlay.EnqueueNotification(sessionId, payload);
+            } 
+            if (overlay.IsInitialized()) overlay.EnqueueNotification(sessionId, payload);
         }
 
         private void OnOverlayDoneEvent(string[] args)
