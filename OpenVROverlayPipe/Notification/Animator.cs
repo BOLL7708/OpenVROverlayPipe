@@ -80,7 +80,7 @@ namespace OpenVROverlayPipe.Notification
             // Assign texture
             var error = OpenVR.Overlay.SetOverlayTexture(_overlayHandle, ref _vrTexture);
             if (error != EVROverlayError.None) {
-                _responseAtError?.Invoke(_sessionId, _payload?.CustomProperties.Nonce ?? "", Enum.GetName(typeof(EVROverlayError), error));
+                _responseAtError?.Invoke(_sessionId, _payload?.Nonce ?? "", Enum.GetName(typeof(EVROverlayError), error));
             }
         }
 
@@ -200,7 +200,7 @@ namespace OpenVROverlayPipe.Notification
                         if (_texture is null)
                         {
                             Debug.WriteLine("Failed to load texture");
-                            _responseAtError?.Invoke(_sessionId, _payload.CustomProperties.Nonce, "Failed to load image into texture");
+                            _responseAtError?.Invoke(_sessionId, _payload.Nonce, "Failed to load image into texture");
                             stage = AnimationStage.Idle;
                             properties = null;
                             animationCount = 0;
@@ -441,7 +441,7 @@ namespace OpenVROverlayPipe.Notification
                         Debug.WriteLine("DONE!");
                         _vr.SetOverlayVisibility(_overlayHandle, false);
                         stage = AnimationStage.Idle;
-                        _responseAtCompletion?.Invoke(_sessionId, properties?.Nonce ?? "");
+                        _responseAtCompletion?.Invoke(_sessionId, _payload?.Nonce ?? "");
                         properties = null;
                         animationCount = 0;
                         _elapsedTime = 0;

@@ -7,7 +7,7 @@ using System.Drawing.Text;
 using System.IO;
 using System.Runtime.Versioning;
 using OpenVROverlayPipe.Notification;
-using static OpenVROverlayPipe.Payload;
+using static OpenVROverlayPipe.Notification.Payload;
 
 namespace OpenVROverlayPipe.Extensions
 {

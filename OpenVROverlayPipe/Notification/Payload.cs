@@ -1,14 +1,14 @@
-﻿using OpenVROverlayPipe.Notification;
-using static EasyOpenVR.Utils.EasingUtils;
+﻿using static EasyOpenVR.Utils.EasingUtils;
 
-namespace OpenVROverlayPipe
+namespace OpenVROverlayPipe.Notification
 {
     internal class Payload
     {
         // General
         public string ImageData = "";
         public string ImagePath = "";
-
+        public string Nonce = "";
+        
         // Standard notification
         public string BasicTitle = "OpenVROverlayPipe";
         public string BasicMessage = "";
@@ -18,7 +18,6 @@ namespace OpenVROverlayPipe
 
         public class CustomPropertiesObject {
             public bool Enabled = false;
-            public string Nonce = "";
             public AnchorTypeEnum AnchorType = AnchorTypeEnum.Head;
             public bool AttachToAnchor = false; // Fixes the overlay to the anchor
             public bool IgnoreAnchorYaw = false;
