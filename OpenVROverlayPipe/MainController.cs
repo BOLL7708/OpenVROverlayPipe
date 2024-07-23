@@ -52,7 +52,7 @@ namespace OpenVROverlayPipe
                     if (!initComplete)
                     {
                         initComplete = true;
-                        _vr.AddApplicationManifest("./app.vrmanifest", "boll7708.openvrnotificationpipe", true);
+                        _vr.AddApplicationManifest("./app.vrmanifest", "boll7708.openvroverlaypipe", true);
                         _openvrStatusAction.Invoke(true);
                         RegisterEvents();
                         _vr.SetDebugLogAction((message) =>
