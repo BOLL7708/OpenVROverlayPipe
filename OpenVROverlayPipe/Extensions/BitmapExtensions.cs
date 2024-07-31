@@ -6,15 +6,15 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.IO;
 using System.Runtime.Versioning;
+using OpenVROverlayPipe.Input;
 using OpenVROverlayPipe.Notification;
-using static OpenVROverlayPipe.Notification.Payload;
 
 namespace OpenVROverlayPipe.Extensions
 {
     [SupportedOSPlatform("windows7.0")]
     static class BitmapExtensions
     {
-        public static Bitmap DrawTextAreas(this Bitmap bmp, IEnumerable<Payload.TextAreaObject> textAreas)
+        public static Bitmap DrawTextAreas(this Bitmap bmp, IEnumerable<DataOverlay.TextAreaObject> textAreas)
         {
             foreach (var ta in textAreas)
             {

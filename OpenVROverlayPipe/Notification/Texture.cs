@@ -5,11 +5,14 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.Versioning;
 using OpenTK.Graphics.OpenGL;
 using OpenVROverlayPipe.Extensions;
+using OpenVROverlayPipe.Input;
 
 namespace OpenVROverlayPipe.Notification
 {
+    [SupportedOSPlatform("windows7.0")]
     internal class Texture : IDisposable
     {
         private bool _disposed = false;
@@ -28,7 +31,7 @@ namespace OpenVROverlayPipe.Notification
             _frameTimes = frameTimes;
         }
         
-        public static Texture LoadImageFile(string path, IEnumerable<Payload.TextAreaObject> textAreas = null)
+        public static Texture LoadImageFile(string path, IEnumerable<DataOverlay.TextAreaObject> textAreas = null)
         {
             Bitmap image;
             try
@@ -43,12 +46,12 @@ namespace OpenVROverlayPipe.Notification
             return LoadImage(image, textAreas);
         }
         
-        public static Texture LoadImageBase64(string bytes, IEnumerable<Payload.TextAreaObject> textAreas = null)
+        public static Texture LoadImageBase64(string bytes, IEnumerable<DataOverlay.TextAreaObject> textAreas = null)
         {
             return LoadImageBytes(Convert.FromBase64String(bytes), textAreas);
         }
         
-        public static Texture LoadImageBytes(byte[] bytes, IEnumerable<Payload.TextAreaObject> textAreas = null)
+        public static Texture LoadImageBytes(byte[] bytes, IEnumerable<DataOverlay.TextAreaObject> textAreas = null)
         {
             Bitmap image;
             try
@@ -63,7 +66,7 @@ namespace OpenVROverlayPipe.Notification
             return LoadImage(image, textAreas);
         }
         
-        public static Texture LoadImage(Bitmap image, IEnumerable<Payload.TextAreaObject> textAreas = null)
+        public static Texture LoadImage(Bitmap image, IEnumerable<DataOverlay.TextAreaObject> textAreas = null)
         {
             int frameCount = image.FrameDimensionsList.Any(d => d == FrameDimension.Time.Guid)
                 ? image.GetFrameCount(FrameDimension.Time)

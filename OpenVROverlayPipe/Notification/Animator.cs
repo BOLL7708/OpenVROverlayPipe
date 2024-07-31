@@ -6,6 +6,7 @@ using System.Threading;
 using System.Windows.Threading;
 using EasyOpenVR.Extensions;
 using EasyOpenVR.Utils;
+using OpenVROverlayPipe.Input;
 using Valve.VR;
 using static EasyOpenVR.Utils.EasingUtils;
 using static EasyOpenVR.Utils.GeneralUtils;
@@ -21,10 +22,11 @@ namespace OpenVROverlayPipe.Notification
         private Texture_t _vrTexture;
         private readonly ulong _overlayHandle;
         private readonly EasyOpenVRSingleton _vr = EasyOpenVRSingleton.Instance;
-        private Action? _requestForNewPayload;
+        private Action? _requestForNewData;
         private Action<string, string>? _responseAtCompletion;
         private Action<string, string, string?>? _responseAtError;
-        private volatile Payload? _payload;
+        private volatile DataOverlay? _data;
+        private volatile string? _nonce;
         private volatile bool _shouldShutdown;
         private double _elapsedTime;
         private string _sessionId = "";
@@ -37,7 +39,7 @@ namespace OpenVROverlayPipe.Notification
         )
         {
             _overlayHandle = overlayHandle;
-            _requestForNewPayload = requestForNewAnimation;
+            _requestForNewData = requestForNewAnimation;
             _responseAtCompletion = responseAtCompletion;
             _responseAtError = responseAtError;
 
@@ -80,7 +82,7 @@ namespace OpenVROverlayPipe.Notification
             // Assign texture
             var error = OpenVR.Overlay.SetOverlayTexture(_overlayHandle, ref _vrTexture);
             if (error != EVROverlayError.None) {
-                _responseAtError?.Invoke(_sessionId, _payload?.Nonce ?? "", Enum.GetName(typeof(EVROverlayError), error));
+                _responseAtError?.Invoke(_sessionId, _nonce ?? "", Enum.GetName(typeof(EVROverlayError), error));
             }
         }
 
@@ -108,12 +110,12 @@ namespace OpenVROverlayPipe.Notification
             var animationTransform = GetEmptyTransform();
             var width = 1f;
             var height = 1f;
-            var properties = new Payload.CustomPropertiesObject();
+            var properties = new DataOverlay();
             var anchorIndex = uint.MaxValue;
 			var useWorldDeviceTransform = false;
 
             // Follow
-            var follow = new Payload.FollowObject();
+            DataOverlay.FollowObject? follow = null;
             var originTransform = GetEmptyTransform();
             var targetTransform = GetEmptyTransform();
             var followLerp = 0.0;
@@ -129,7 +131,7 @@ namespace OpenVROverlayPipe.Notification
             float animationSeconds;
 
             // Easing
-            var transition = new Payload.TransitionObject();
+            DataOverlay.TransitionObject? transition = null;
             var easeInCount = 0;
             var stayCount = 0;
             var easeOutCount = 0;
@@ -153,9 +155,9 @@ namespace OpenVROverlayPipe.Notification
                 timeStarted = DateTime.Now.Ticks;
                 var skip = false;
                 
-                if (_payload == null) // Get new payload
+                if (_data == null) // Get new payload
                 {
-                    _requestForNewPayload?.Invoke();
+                    _requestForNewData?.Invoke();
                     skip = true;
                     Thread.Sleep(100);
                 }
@@ -164,10 +166,10 @@ namespace OpenVROverlayPipe.Notification
                     #region init 
                     // Initialize things that stay the same during the whole animation
                     stage = AnimationStage.LoadingImage;
-                    properties = _payload.CustomProperties;
+                    properties = _data;
 					useWorldDeviceTransform = properties.AnchorType != 0 && properties.AttachToAnchor && (properties.IgnoreAnchorYaw || properties.IgnoreAnchorPitch || properties.IgnoreAnchorRoll);
                     follow = properties.Follow;
-                    followTween = Get(follow.EaseType, follow.EaseMode);
+                    followTween = Get(follow?.EaseType ?? EasingType.Linear, follow?.EaseMode ?? EasingMode.InOut);
                     var hmdHz = (int) Math.Round(_vr.GetFloatTrackedDeviceProperty(0, ETrackedDeviceProperty.Prop_DisplayFrequency_Float));
                     hz = properties.AnimationHz > 0 ? properties.AnimationHz : hmdHz;
                     msPerFrame = 1000 / hz;
@@ -189,23 +191,23 @@ namespace OpenVROverlayPipe.Notification
 
                     bool LoadImage()
                     {
-                        Debug.WriteLine($"Creating texture on UI thread with {_payload.CustomProperties.TextAreas.Length} text areas");
+                        Debug.WriteLine($"Creating texture on UI thread with {_data.TextAreas.Length} text areas");
                         if (_texture is not null)
                         {
                             _texture = null;
                         }
-                        _texture = _payload.ImageData?.Length > 0
-                            ? Texture.LoadImageBase64(_payload.ImageData, _payload.CustomProperties.TextAreas)
-                            : Texture.LoadImageFile(_payload.ImagePath);
+                        _texture = _data.ImageData?.Length > 0
+                            ? Texture.LoadImageBase64(_data.ImageData, _data.TextAreas)
+                            : Texture.LoadImageFile(_data.ImagePath);
                         if (_texture is null)
                         {
                             Debug.WriteLine("Failed to load texture");
-                            _responseAtError?.Invoke(_sessionId, _payload.Nonce, "Failed to load image into texture");
+                            _responseAtError?.Invoke(_sessionId, _nonce ?? "", "Failed to load image into texture");
                             stage = AnimationStage.Idle;
                             properties = null;
                             animationCount = 0;
                             _elapsedTime = 0;
-                            _payload = null;
+                            _data = null;
                             return false;
                         }
                         else
@@ -293,7 +295,7 @@ namespace OpenVROverlayPipe.Notification
                     // Animation stage
                     if (animationCount < easeInLimit) stage = AnimationStage.EasingIn;
                     else if (animationCount >= stayLimit) stage = AnimationStage.EasingOut;
-                    else stage = follow.Enabled 
+                    else stage = follow != null 
                             || properties?.Animations.Length > 0 
                             || useWorldDeviceTransform
                             ? AnimationStage.Animating 
@@ -303,13 +305,13 @@ namespace OpenVROverlayPipe.Notification
                     #region stage inits
                     if (animationCount == 0) 
                     { // Init EaseIn
-                        transition = properties?.TransitionIn ?? new Payload.TransitionObject();
+                        transition = properties?.TransitionIn ?? new DataOverlay.TransitionObject();
                         tween = EasingUtils.Get(transition.EaseType, transition.EaseMode);
                     }
 
                     if (animationCount == stayLimit)
                     { // Init EaseOut
-                        transition = properties?.TransitionOut ?? new Payload.TransitionObject();
+                        transition = properties?.TransitionOut ?? new DataOverlay.TransitionObject();
                         tween = EasingUtils.Get(transition.EaseType, transition.EaseMode);
                     }
                     #endregion
@@ -336,7 +338,7 @@ namespace OpenVROverlayPipe.Notification
 
                         #region Follow
                         // Follow
-                        if(follow is { Enabled: true, DurationMs: > 0 } && properties.AnchorType != 0 && !properties.AttachToAnchor)
+                        if(follow is { DurationMs: > 0 } && properties.AnchorType != AnchorTypeEnum.World && !properties.AttachToAnchor)
                         {
                             var currentPose = properties.AnchorType == 0 
                                 ? GetEmptyTransform() 
@@ -441,11 +443,11 @@ namespace OpenVROverlayPipe.Notification
                         Debug.WriteLine("DONE!");
                         _vr.SetOverlayVisibility(_overlayHandle, false);
                         stage = AnimationStage.Idle;
-                        _responseAtCompletion?.Invoke(_sessionId, _payload?.Nonce ?? "");
+                        _responseAtCompletion?.Invoke(_sessionId, _nonce ?? "");
                         properties = null;
                         animationCount = 0;
                         _elapsedTime = 0;
-                        _payload = null;
+                        _data = null;
                         _texture = null;
                     }
                 }
@@ -462,16 +464,17 @@ namespace OpenVROverlayPipe.Notification
             }
         }
 
-        public void ProvideNewPayload(string sessionId, Payload payload) {
+        public void ProvideNewData(string sessionId, DataOverlay? data, string? nonce) {
             _sessionId = sessionId;
-            _payload = payload;
+            _data = data;
+            _nonce = nonce;
         }
 
         public void Shutdown() {
-            _requestForNewPayload = null;
+            _requestForNewData = null;
             _responseAtCompletion = null;
             _responseAtError = null;
-            _payload = null;
+            _data = null;
             _shouldShutdown = true;
         }
     }

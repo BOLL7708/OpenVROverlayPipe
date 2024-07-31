@@ -93,5 +93,17 @@ namespace OpenVROverlayPipe.Properties {
                 this["WindowLeft"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string PasswordHash {
+            get {
+                return ((string)(this["PasswordHash"]));
+            }
+            set {
+                this["PasswordHash"] = value;
+            }
+        }
     }
 }

@@ -71,11 +71,11 @@ namespace OpenVROverlayPipe
                     {
                         case SuperServer.ServerStatus.Connected:
                             LabelServerStatus.Background = Brushes.OliveDrab;
-                            LabelServerStatus.Content = "Online";
+                            LabelServerStatus.Content = "Available";
                             break;
                         case SuperServer.ServerStatus.Disconnected:
                             LabelServerStatus.Background = Brushes.Tomato;
-                            LabelServerStatus.Content = "Offline";
+                            LabelServerStatus.Content = "Unavailable";
                             break;
                         case SuperServer.ServerStatus.Error:
                             LabelServerStatus.Background = Brushes.Gray;
@@ -153,7 +153,7 @@ namespace OpenVROverlayPipe
         }
 
         #region interface
-        private void Button_Edit_Click(object sender, RoutedEventArgs e)
+        private void Button_SetPort_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new InputDialog(_settings.Port, "Port:")
             {
@@ -169,9 +169,13 @@ namespace OpenVROverlayPipe
                 _controller.SetPort(_settings.Port);
             }
         }
-
-        private void Button_Editor_Click(object sender, RoutedEventArgs e) {
-            MiscUtils.OpenUrl("editor.html");
+        private void Button_SetPassword_Click(object sender, RoutedEventArgs e)
+        {
+            SingleInputDialog dlg = new(this, "", "Password");
+            dlg.ShowDialog();
+            var value = dlg.DialogResult == true ? dlg.Value : "";
+            _settings.PasswordHash = value.Length == 0 ? "" : MiscUtils.HashPassword(value);
+            _settings.Save();
         }
         
         private void ClickedUrl(object sender, RoutedEventArgs e)

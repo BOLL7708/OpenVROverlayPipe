@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using EasyOpenVR;
+using OpenVROverlayPipe.Input;
 using Valve.VR;
 using static EasyOpenVR.Utils.GeneralUtils;
 
@@ -50,7 +51,7 @@ namespace OpenVROverlayPipe.Notification
                     _overlayHandle, 
                     () => {
                         var item = DequeueNotification();
-                        if (item != null) Animator?.ProvideNewPayload(item.sessionId, item.payload);
+                        if (item != null) Animator?.ProvideNewData(item.SessionId, item.Overlay, item.Nonce);
                     }, 
                     (sessionId, nonce) => {
                         Debug.WriteLine($"Nonce value at completion: {nonce}");
@@ -71,8 +72,8 @@ namespace OpenVROverlayPipe.Notification
             return _initSuccess;
         }
 
-        public void EnqueueNotification(string sessionId, Payload payload) {
-            _notifications.Enqueue(new QueueItem(sessionId, payload));
+        public void EnqueueNotification(string sessionId, DataOverlay data, string? nonce) {
+            _notifications.Enqueue(new QueueItem(sessionId, data, nonce));
         }
 
         private QueueItem? DequeueNotification() {

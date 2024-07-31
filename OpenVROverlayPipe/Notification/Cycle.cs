@@ -1,4 +1,5 @@
 ﻿using System;
+using OpenVROverlayPipe.Input;
 
 namespace OpenVROverlayPipe.Notification
 {
@@ -63,7 +64,7 @@ namespace OpenVROverlayPipe.Notification
             Reset();
         }
 
-        public Cycler(Payload.AnimationObject anim)
+        public Cycler(DataOverlay.AnimationObject anim)
         {
             _amplitude = anim.Amplitude;
             _frequency = anim.Frequency;

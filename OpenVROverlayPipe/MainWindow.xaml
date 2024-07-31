@@ -69,7 +69,9 @@
                     <Label Content="Server port:" />
                     <TextBox x:Name="TextBoxPort" TextWrapping="Wrap" Text="TextBox" IsEnabled="False"
                              VerticalContentAlignment="Center" />
-                    <Button x:Name="ButtonEdit" Content="Edit" Click="Button_Edit_Click" Margin="5 0 0 0"
+                    <Button x:Name="ButtonSetPort" Content="Set port" Click="Button_SetPort_Click" Margin="5 0 0 0"
+                            Padding="10 0 10 0" />
+                    <Button x:Name="ButtonSetPassword" Content="Set password" Click="Button_SetPassword_Click" Margin="5 0 0 0"
                             Padding="10 0 10 0" />
                 </StackPanel>
             </StackPanel>
