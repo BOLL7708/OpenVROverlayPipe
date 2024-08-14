@@ -19,7 +19,8 @@ namespace OpenVROverlayPipe.Notification
         private readonly int _channel;
         private bool _initSuccess;
         private readonly ConcurrentQueue<QueueItem?> _notifications = new();
-        public EventHandler<string[]>? DoneEvent;
+        public EventHandler<OverlayDone>? DoneEvent;
+        public EventHandler<OverlayEvent>? OverlayEvent;
 
         public Overlay(string title, int channel) {
             _title = title;
@@ -55,10 +56,14 @@ namespace OpenVROverlayPipe.Notification
                     }, 
                     (sessionId, nonce) => {
                         Debug.WriteLine($"Nonce value at completion: {nonce}");
-                        DoneEvent?.Invoke(this, new string[] { sessionId, nonce, "" });
+                        DoneEvent?.Invoke(this, new OverlayDone(sessionId, nonce, _channel, ""));
                     },
                     (sessionId, nonce, error) => {
-                        DoneEvent?.Invoke(this, new string[] { sessionId, nonce, error });
+                        DoneEvent?.Invoke(this, new OverlayDone(sessionId, nonce, _channel, error ?? ""));
+                    },
+                    (sessionId, nonce, vrEvent) =>
+                    {
+                        OverlayEvent?.Invoke(this, new OverlayEvent(sessionId, nonce, _channel, vrEvent));
                     }
                 );
             });
@@ -80,5 +85,21 @@ namespace OpenVROverlayPipe.Notification
             var success = _notifications.TryDequeue(out var item);
             return success ? item : null;
         }
+    }
+
+    internal class OverlayDone(string sessionId, string nonce, int channel, string error)
+    {
+        public string SessionId = sessionId;
+        public string Nonce = nonce;
+        public int Channel = channel;
+        public string Error = error;
+    }
+
+    internal class OverlayEvent(string sessionId, string nonce, int channel, VREvent_t vrEvent)
+    {
+        public string SessionId = sessionId;
+        public string Nonce = nonce;
+        public int Channel = channel;
+        public VREvent_t Event = vrEvent;
     }
 }

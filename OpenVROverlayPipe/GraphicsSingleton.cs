@@ -1,9 +1,11 @@
 ﻿using OpenTK.Graphics.OpenGL;
 using System;
+using System.Runtime.Versioning;
 using OpenVROverlayPipe.Notification;
 
 namespace OpenVROverlayPipe
 {
+    [SupportedOSPlatform("windows7.0")]
     internal class GraphicsSingleton
     {
         private static GraphicsSingleton? _instance;

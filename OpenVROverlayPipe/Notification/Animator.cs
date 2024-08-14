@@ -25,23 +25,27 @@ namespace OpenVROverlayPipe.Notification
         private Action? _requestForNewData;
         private Action<string, string>? _responseAtCompletion;
         private Action<string, string, string?>? _responseAtError;
+        private Action<string, string, VREvent_t>? _overlayEvent;
         private volatile DataOverlay? _data;
         private volatile string? _nonce;
         private volatile bool _shouldShutdown;
         private double _elapsedTime;
         private string _sessionId = "";
+        private bool _isUsingInput = false;
 
         public Animator(
             ulong overlayHandle, 
             Action requestForNewAnimation, 
             Action<string, string> responseAtCompletion, 
-            Action<string, string, string?> responseAtError
+            Action<string, string, string?> responseAtError,
+            Action<string, string, VREvent_t> overlayEvent
         )
         {
             _overlayHandle = overlayHandle;
             _requestForNewData = requestForNewAnimation;
             _responseAtCompletion = responseAtCompletion;
             _responseAtError = responseAtError;
+            _overlayEvent = overlayEvent;
 
             var thread = new Thread(Worker);
             if (!thread.IsAlive) thread.Start();
@@ -167,12 +171,26 @@ namespace OpenVROverlayPipe.Notification
                     // Initialize things that stay the same during the whole animation
                     stage = AnimationStage.LoadingImage;
                     properties = _data;
+                    _isUsingInput = properties.Input?.IsUsed() == true;
 					useWorldDeviceTransform = properties.AnchorType != 0 && properties.AttachToAnchor && (properties.IgnoreAnchorYaw || properties.IgnoreAnchorPitch || properties.IgnoreAnchorRoll);
                     follow = properties.Follow;
                     followTween = Get(follow?.EaseType ?? EasingType.Linear, follow?.EaseMode ?? EasingMode.InOut);
                     var hmdHz = (int) Math.Round(_vr.GetFloatTrackedDeviceProperty(0, ETrackedDeviceProperty.Prop_DisplayFrequency_Float));
                     hz = properties.AnimationHz > 0 ? properties.AnimationHz : hmdHz;
                     msPerFrame = 1000 / hz;
+                    
+                    // Input
+                    OpenVR.Overlay.SetOverlayInputMethod(
+                        _overlayHandle,
+                        properties.Input?.Mouse == true
+                            ? VROverlayInputMethod.Mouse
+                            : VROverlayInputMethod.None
+                    );
+                    OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.SendVRDiscreteScrollEvents, properties.Input?.DiscreteScroll == true);
+                    OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.SendVRSmoothScrollEvents, properties.Input?.SmoothScroll == true);
+                    OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.SendVRTouchpadEvents, properties.Input?.Touchpad == true);
+                    OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.MakeOverlaysInteractiveIfVisible, _isUsingInput);
+                    OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.VisibleInDashboard, false);
 
                     // Set anchor
                     switch (properties.AnchorType)
@@ -288,6 +306,14 @@ namespace OpenVROverlayPipe.Notification
                         }
                     }
                     #endregion
+                }
+                else if(_isUsingInput)
+                {
+                    var overlayEvents = _vr.GetNewOverlayEvents(_overlayHandle);
+                    foreach (var overlayEvent in overlayEvents)
+                    {
+                        _overlayEvent?.Invoke(_sessionId, _nonce ?? "", overlayEvent);
+                    }
                 }
 
                 if (!skip && stage != AnimationStage.Idle && stage != AnimationStage.LoadingImage) // Animate
@@ -474,6 +500,7 @@ namespace OpenVROverlayPipe.Notification
             _requestForNewData = null;
             _responseAtCompletion = null;
             _responseAtError = null;
+            _overlayEvent = null;
             _data = null;
             _shouldShutdown = true;
         }

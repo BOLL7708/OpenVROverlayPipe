@@ -110,14 +110,13 @@ namespace OpenVROverlayPipe
         {
             JsonUtils.JsonDataParseResult<T> dataResult = JsonUtils.ParseData<T>(inputMessage.Data?.GetRawText());
             var data = dataResult.Data;
-            if (data == null)
-            {
-                var errorMessage = $"Input was invalid, see Data as a reference. Error: {dataResult.Message}";
-                _ = _server.SendMessageToSingle(
-                    session,
-                    JsonSerializer.Serialize(OutputMessage.CreateError(errorMessage, inputMessage, dataResult.Empty), JsonUtils.GetOptions())
-                );
-            }
+            if (data != null) return data;
+            
+            var errorMessage = $"Input was invalid, see Data as a reference. Error: {dataResult.Message}";
+            _ = _server.SendMessageToSingle(
+                session,
+                JsonSerializer.Serialize(OutputMessage.CreateError(errorMessage, inputMessage, dataResult.Empty), JsonUtils.GetOptions())
+            );
             return data;
         }
 
@@ -136,7 +135,7 @@ namespace OpenVROverlayPipe
 
             // Image
             Debug.WriteLine($"Overlay handle {overlayHandle} for '{data.Title}'");
-            Debug.WriteLine($"Image Hash: {CreateMd5(data.ImageData)}");
+            Debug.WriteLine($"Image Hash: {MiscUtils.HashMd5(data.ImageData)}");
             var bitmap = new NotificationBitmap_t();
             try
             {
@@ -194,27 +193,76 @@ namespace OpenVROverlayPipe
                 overlay = new Overlay($"OpenVROverlayPipe[{channel}]", channel);
                 if (!overlay.IsInitialized()) return;
                 
-                overlay.DoneEvent += (_, args) =>
+                overlay.DoneEvent += (_, doneEvent) =>
                 {
-                    OnOverlayDoneEvent(args);
+                    OnOverlayDoneEvent(doneEvent);
+                };
+                overlay.OverlayEvent += (_, overlayEvent) =>
+                {
+                    OnOverlayEvent(overlayEvent);
                 };
                 Session.Overlays.TryAdd(channel, overlay);
             } 
             if (overlay.IsInitialized()) overlay.EnqueueNotification(sessionId, data, nonce);
         }
 
-        private void OnOverlayDoneEvent(string[] args)
+        private void OnOverlayDoneEvent(OverlayDone doneEvent)
         {
-            if (args.Length != 3) return;
-            
-            var sessionId = args[0];
-            var nonce = args[1];
-            var error = args[2];
-            var sessionExists = Session.Sessions.TryGetValue(sessionId, out var session);
+            var sessionExists = Session.Sessions.TryGetValue(doneEvent.SessionId, out var session);
             if (sessionExists) _ = _server.SendMessageToSingleOrAll(session, JsonSerializer.Serialize(
-                error.Length > 0 
-                    ? OutputMessage.CreateError(error, null, nonce, InputMessageKeyEnum.EnqueueOverlay)
-                    : OutputMessage.CreateResult("OK", null, nonce, InputMessageKeyEnum.EnqueueOverlay), JsonUtils.GetOptions())
+                doneEvent.Error.Length > 0 
+                    ? OutputMessage.CreateError(doneEvent.Error, null, doneEvent.Nonce, doneEvent.Channel, InputMessageKeyEnum.EnqueueOverlay)
+                    : OutputMessage.CreateResult("OK", null, doneEvent.Nonce, doneEvent.Channel, InputMessageKeyEnum.EnqueueOverlay), JsonUtils.GetOptions())
+            );
+        }
+
+        private void OnOverlayEvent(OverlayEvent overlayEvent)
+        {
+            var sessionExists = Session.Sessions.TryGetValue(overlayEvent.SessionId, out var session);
+            if (!sessionExists) return;
+
+            var typeEnum = (EVREventType)overlayEvent.Event.eventType;
+            var mouse = overlayEvent.Event.data.mouse;
+            var scroll = overlayEvent.Event.data.scroll;
+            var touchpad = overlayEvent.Event.data.touchPadMove;
+            dynamic? data;
+            switch(typeEnum)
+            {
+                case EVREventType.VREvent_MouseMove:
+                    data = new OutputDataPosition(mouse.x, mouse.y);
+                    break;
+                case EVREventType.VREvent_MouseButtonDown:
+                case EVREventType.VREvent_MouseButtonUp:
+                    var buttonEnum = (EVRMouseButton)mouse.button;
+                    data = new OutputDataButton(buttonEnum);
+                    break;
+                case EVREventType.VREvent_ScrollSmooth:
+                    data = new OutputDataPosition(scroll.xdelta, scroll.ydelta);
+                    break;
+                case EVREventType.VREvent_ScrollDiscrete:
+                    data = new OutputDataPosition(scroll.xdelta, scroll.ydelta);
+                    break;
+                case EVREventType.VREvent_TouchPadMove:
+                    data = new OutputDataPosition(touchpad.fValueXRaw, touchpad.fValueYRaw);
+                    break;
+                default:
+                    data = null;
+                    break;
+            }
+            if (data == null) return;
+            
+            var eventName = Enum.GetName(typeof(EVREventType), typeEnum);
+            if (eventName == null) return;
+
+            _ = _server.SendMessageToSingleOrAll(session, JsonSerializer.Serialize(
+                    OutputMessage.CreateResult(
+                        eventName.Replace("VREvent_", ""),
+                        data,
+                        overlayEvent.Nonce,
+                        overlayEvent.Channel,
+                        InputMessageKeyEnum.OverlayEvent
+                    ), JsonUtils.GetOptions()
+                )
             );
         }
         #endregion
@@ -274,11 +322,9 @@ namespace OpenVROverlayPipe
                     case InputMessageKeyEnum.None:
                         break;
                     case InputMessageKeyEnum.EnqueueNotification:
-                        // TODO: Need to instantiate DATA with CONSTRUCTOR in DATA OBJECTS check OPENVR2WS
                         if(session != null) PostNotification(session, inputMessage);
                         break;
                     case InputMessageKeyEnum.EnqueueOverlay:
-                        // TODO: Need to instantiate DATA with CONSTRUCTOR in DATA OBJECTS check OPENVR2WS
                         if(session != null) PostImageNotification(session, inputMessage);
                         break;
                     case InputMessageKeyEnum.DismissOverlay:
@@ -314,21 +360,6 @@ namespace OpenVROverlayPipe
             _openvrStatusAction = (_) => { };
             _shouldShutDown = true;
             _ = _server.Stop();
-        }
-
-        private static string CreateMd5(string input) // https://stackoverflow.com/a/24031467
-        {
-            // Use input string to calculate MD5 hash
-            var inputBytes = Encoding.ASCII.GetBytes(input);
-            var hashBytes = MD5.HashData(inputBytes);
-
-            // Convert the byte array to hexadecimal string
-            var sb = new StringBuilder();
-            foreach (var t in hashBytes)
-            {
-                sb.Append(t.ToString("X2"));
-            }
-            return sb.ToString();
         }
     }
 }

@@ -9,25 +9,26 @@ internal class OutputMessage
     public string Message = "";
     public dynamic? Data = null;
     public string? Nonce = null;
+    public int? Channel = null;
 
-    public static OutputMessage CreateError(string message, dynamic? shape = null, string? nonce = null, InputMessageKeyEnum key = InputMessageKeyEnum.None)
+    public static OutputMessage CreateError(string message, dynamic? shape = null, string? nonce = null, int? channel = null, InputMessageKeyEnum key = InputMessageKeyEnum.None)
     {
-        return Create(OutputMessageTypeEnum.Error, key, message, shape, nonce);
+        return Create(OutputMessageTypeEnum.Error, key, message, shape, nonce, channel);
     }
 
-    public static OutputMessage CreateError(string message, InputMessage inputMessage, dynamic? shape = null)
+    public static OutputMessage CreateError(string message, InputMessage inputMessage, dynamic? shape = null, int? channel = null)
     {
-        return CreateError(message, shape, inputMessage.Nonce, inputMessage.Key);
+        return CreateError(message, shape, inputMessage.Nonce, channel, inputMessage.Key);
     }
 
-    public static OutputMessage CreateMessage(string message, string? nonce = null, InputMessageKeyEnum key = InputMessageKeyEnum.None)
+    public static OutputMessage CreateMessage(string message, string? nonce = null, int? channel = null, InputMessageKeyEnum key = InputMessageKeyEnum.None)
     {
-        return Create(OutputMessageTypeEnum.Message, key, message, null, nonce);
+        return Create(OutputMessageTypeEnum.Message, key, message, null, nonce, channel);
     }
 
-    public static OutputMessage CreateResult(string message, dynamic? value = null, string? nonce = null, InputMessageKeyEnum key = InputMessageKeyEnum.None)
+    public static OutputMessage CreateResult(string message, dynamic? value = null, string? nonce = null, int? channel = null, InputMessageKeyEnum key = InputMessageKeyEnum.None)
     {
-        return Create(OutputMessageTypeEnum.Result, key, message, value, nonce);
+        return Create(OutputMessageTypeEnum.Result, key, message, value, nonce, channel);
     }
 
     public static OutputMessage Create(
@@ -35,7 +36,8 @@ internal class OutputMessage
         InputMessageKeyEnum key,
         string message,
         dynamic? data = null,
-        string? nonce = null
+        string? nonce = null,
+        int? channel = null
     )
     {
         return new OutputMessage
@@ -44,7 +46,8 @@ internal class OutputMessage
             Key = key,
             Message = message,
             Data = data,
-            Nonce = nonce
+            Nonce = nonce,
+            Channel = channel
         };
     }
 }

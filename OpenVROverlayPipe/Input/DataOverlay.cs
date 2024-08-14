@@ -28,11 +28,25 @@ public class DataOverlay
     public float PitchDeg = 0;
     public float RollDeg = 0;
 
+    public InputObject? Input = null;
     public FollowObject? Follow = null;
     public TransitionObject? TransitionIn = null;
     public TransitionObject? TransitionOut = null;
     public AnimationObject[] Animations = [];
     public TextAreaObject[] TextAreas = [];
+
+    public class InputObject
+    {
+        public bool Mouse = false;
+        public bool SmoothScroll = false;
+        public bool DiscreteScroll = false;
+        public bool Touchpad = false;
+
+        public bool IsUsed()
+        {
+            return Mouse || SmoothScroll || DiscreteScroll || Touchpad;
+        }
+    }
     
     public class FollowObject
     {
