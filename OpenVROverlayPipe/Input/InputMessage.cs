@@ -1,5 +1,8 @@
+using TypeGen.Core.TypeAnnotations;
+
 namespace OpenVROverlayPipe.Input;
 
+[ExportTsInterface]
 internal class InputMessage
 {
     public InputMessageKeyEnum Key = InputMessageKeyEnum.None;

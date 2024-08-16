@@ -1,0 +1,14 @@
+{
+  "outputPath": "../Types/src",
+  "propertyNameConverters": [
+    "PascalCaseToCamelCase"
+  ],
+  "generationSpecs": [
+    "TypeGenSpec"
+  ],
+  "generateFromAssemblies": true,
+  "clearOutputDirectory": true,
+  "csNullableTranslation": "null",
+  "singleQuotes": true,
+  "explicitPublicAccessor": true
+}

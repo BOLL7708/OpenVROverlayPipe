@@ -1,8 +1,10 @@
 using OpenVROverlayPipe.Notification;
+using TypeGen.Core.TypeAnnotations;
 using static EasyOpenVR.Utils.EasingUtils;
 
 namespace OpenVROverlayPipe.Input;
 
+[ExportTsInterface]
 public class DataOverlay
 {
     public string ImageData = "";

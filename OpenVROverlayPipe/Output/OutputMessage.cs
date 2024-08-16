@@ -1,7 +1,9 @@
 using OpenVROverlayPipe.Input;
+using TypeGen.Core.TypeAnnotations;
 
 namespace OpenVROverlayPipe.Output;
 
+[ExportTsInterface]
 internal class OutputMessage
 {
     public OutputMessageTypeEnum Type = OutputMessageTypeEnum.Undefined;

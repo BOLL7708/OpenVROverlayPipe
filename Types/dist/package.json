@@ -1,0 +1,25 @@
+{
+  "name": "openvroverlaypipe-types",
+  "version": "4.1.1",
+  "description": "TypeScript type definitions for the input and output of OpenVROverlayPipe.",
+  "type": "module",
+  "types": "types/index.d.ts",
+  "main": "types/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BOLL7708/OpenVROverlayPipe.git"
+  },
+  "keywords": [
+    "OpenVROverlayPipe",
+    "Types",
+    "Definitions",
+    "TypeScript",
+    "OpenVR"
+  ],
+  "author": "BOLL7708",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/BOLL7708/OpenVROverlayPipe/issues"
+  },
+  "homepage": "https://github.com/BOLL7708/OpenVROverlayPipe#readme"
+}
