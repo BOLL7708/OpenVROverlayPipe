@@ -1,6 +1,6 @@
 {
   "name": "openvroverlaypipe-types",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "description": "TypeScript type definitions for the input and output of OpenVROverlayPipe.",
   "type": "module",
   "types": "types/index.d.ts",
