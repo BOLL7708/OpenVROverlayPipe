@@ -1,8 +1,8 @@
-# OpenVRNotificationPipe
-WebSocket server that lets you submit a payload that results in a SteamVR or custom notification, download the latest release [here](https://github.com/BOLL7708/OpenVRNotificationPipe/releases).
+# OpenVROverlayPipe
+WebSocket server that lets you submit a payload that results in a SteamVR overlay or notification, download the latest release [here](https://github.com/BOLL7708/OpenVROverlayPipe/releases).
 
 ## What does it do?
-Through WebSockets you can display notifications inside SteamVR, either using the built in SteamVR notifications or custom image-based notifications with many options for transitions and placement.
+Through WebSockets you can display notifications inside SteamVR, either using the standard SteamVR notifications or custom image-based notifications with many options for transitions and placement.
 
 [![Short video demonstration](https://img.youtube.com/vi/gSqyOYsiymw/0.jpg)](https://www.youtube.com/watch?v=gSqyOYsiymw)
 
@@ -10,9 +10,7 @@ Through WebSockets you can display notifications inside SteamVR, either using th
 Run SteamVR, then run this application, if both the OpenVR and Server status are green you are good to go. To see an example of what it does, and how to do those things, click the `example` link in the interface to open a self contained webpage that connects to this application and lets you try it out.
 
 ## Compatible applications
-If you made something that is publicly available that use this pipe application, it can be listed here.
-* [Streaming Widget](https://github.com/BOLL7708/streaming_widget): Streaming browser source made specifically for OBS, Twitch, SteamVR and a range of other solutions.
-* [Twitch Logger](https://github.com/jeppevinkel/twitch-logger): Logs Twitch chat to disk and can pipe them to Discord and VR.
+If you made something that is publicly available that use this pipe application, it can be added to the [wiki](https://github.com/BOLL7708/OpenVROverlayPipe/wiki/Solutions-that-use-OpenVROverlayPipe) upon request. It was put in the wiki so that it can be updated without affecting the main repository.
 
 ## Minimal WebSockets Client
 To send things to this application you need a WebSockets client, you can easily do this directly in a browser by opening a static page, below is example code you can use to quickly send a standard notification. If you have set a different server port you need to update that in the server URI in this example.
@@ -24,7 +22,7 @@ To send things to this application you need a WebSockets client, you can easily 
         <p><button onclick="submit();">Send</button></p>
     </body>
     <script>
-        const _socket = new WebSocket("ws://localhost:8077");
+        const _socket = new WebSocket("ws://localhost:7711");
         _socket.onopen = (e) => {console.log("Connected!");};
         function submit() {
             const title = document.querySelector('#title').value;

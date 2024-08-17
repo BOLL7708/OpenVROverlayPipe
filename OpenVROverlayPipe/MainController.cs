@@ -1,10 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Runtime.Versioning;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Windows.Threading;
@@ -120,9 +119,9 @@ namespace OpenVROverlayPipe
             return data;
         }
 
-        private void PostNotification(WebSocketSession session, InputMessage inputMessage)
+        private void EnqueueNotification(WebSocketSession session, InputMessage inputMessage)
         {
-            var data = ParseData<DataNotification>(inputMessage, session);
+            var data = ParseData<InputDataNotification>(inputMessage, session);
             if (data == null) return;
             
             // Overlay
@@ -178,9 +177,9 @@ namespace OpenVROverlayPipe
                 );
         }
 
-        private void PostImageNotification(WebSocketSession session, InputMessage inputMessage)
+        private void EnqueueOverlay(WebSocketSession session, InputMessage inputMessage)
         {
-            var data = ParseData<DataOverlay>(inputMessage, session);
+            var data = ParseData<InputDataOverlay>(inputMessage, session);
             if (data == null) return;
             
             var sessionId = session.SessionID;
@@ -190,7 +189,8 @@ namespace OpenVROverlayPipe
             Session.Overlays.TryGetValue(channel, out var overlay);
             if(overlay == null)
             {
-                overlay = new Overlay($"OpenVROverlayPipe[{channel}]", channel);
+                var title = data.OverlayTitle.Length > 0 ? data.OverlayTitle : $"OpenVROverlayPipe[{channel}]";
+                overlay = new Overlay(title, channel);
                 if (!overlay.IsInitialized()) return;
                 
                 overlay.DoneEvent += (_, doneEvent) =>
@@ -265,6 +265,73 @@ namespace OpenVROverlayPipe
                 )
             );
         }
+
+        private void UpdateOverlay(WebSocketSession session, InputMessage inputMessage)
+        {
+        }
+        
+        private void DismissOverlay(WebSocketSession session, InputMessage inputMessage)
+        {
+        }
+        
+        private void DismissChannels(WebSocketSession session, InputMessage inputMessage)
+        {
+            var data = ParseData<InputDataChannelDismiss>(inputMessage, session);
+            if (data == null) return;
+
+            var totalCount = Session.Overlays.Count;
+            var foundCount = 0;
+            var dismissedCount = 0;
+            foreach (var channel in data.Channels)
+            {
+                Session.Overlays.TryGetValue(channel, out var overlay);
+                if (overlay == null) continue;
+                
+                foundCount++;
+                var removed = Session.Overlays.Remove(channel, out var deletedOverlay);
+                deletedOverlay?.Deinitialize();
+                if (removed) dismissedCount++;
+            }
+            
+            var nonce = inputMessage.Nonce;
+            var outputData = new OutputDataDismissChannels
+            {
+                CountTotal = totalCount,
+                CountFound = foundCount,
+                CountDismissed = dismissedCount 
+            };
+            _ = _server.SendMessageToSingleOrAll(
+                session,
+                JsonSerializer.Serialize(
+                    OutputMessage.CreateResult("OK", outputData, nonce, null, InputMessageKeyEnum.ListChannels),
+                    JsonUtils.GetOptions()
+                )
+            );
+        }
+
+        private void ListChannels(WebSocketSession session, InputMessage inputMessage)
+        {
+            var nonce = inputMessage.Nonce;
+            var channels = new Dictionary<int, string>(); 
+            var channelsArray = Session.Overlays.ToArray();
+            foreach (var channel in channelsArray)
+            {
+                channels.Add(channel.Key, channel.Value.GetTitle());
+            }
+            var outputData = new OutputDataListChannels
+            {
+                Count = channels.Count,
+                Channels = channels
+            };
+            _ = _server.SendMessageToSingleOrAll(
+                session,
+                JsonSerializer.Serialize(
+                    OutputMessage.CreateResult("OK", outputData, nonce, null, InputMessageKeyEnum.ListChannels),
+                    JsonUtils.GetOptions()
+                )
+            );
+        }
+
         #endregion
 
         private void InitServer(Action<SuperServer.ServerStatus, int> serverStatus)
@@ -276,6 +343,7 @@ namespace OpenVROverlayPipe
                     Session.Sessions.TryAdd(session.SessionID, session);
                 }
 
+                // Parse message
                 var inputMessage = new InputMessage();
                 try
                 {
@@ -299,6 +367,7 @@ namespace OpenVROverlayPipe
                 }
                 if (inputMessage == null) return;
 
+                // Check optional password
                 var storedHash = Settings.Default.PasswordHash;
                 if (storedHash is { Length: > 0 } && !storedHash.Equals(inputMessage.Password))
                 {
@@ -316,22 +385,44 @@ namespace OpenVROverlayPipe
                     return;
                 }
                 
-                // Debug.WriteLine($"Payload was received: {payloadJson}");
+                if (session == null)
+                {
+                    Debug.WriteLine("Session was null, will not act on message.");
+                    _ = _server.SendMessageToSingleOrAll(
+                        session,
+                        JsonSerializer.Serialize(
+                            OutputMessage.CreateError(
+                                "Message received and parsed but session was null so will not act on message, this is sent to all connected sessions.",
+                                inputMessage
+                            ),
+                            JsonUtils.GetOptions()
+                        )
+                    );
+                    return;
+                }
+                
+                // Act on message
                 switch (inputMessage.Key)
                 {
                     case InputMessageKeyEnum.None:
                         break;
                     case InputMessageKeyEnum.EnqueueNotification:
-                        if(session != null) PostNotification(session, inputMessage);
+                        EnqueueNotification(session, inputMessage);
                         break;
                     case InputMessageKeyEnum.EnqueueOverlay:
-                        if(session != null) PostImageNotification(session, inputMessage);
+                        EnqueueOverlay(session, inputMessage);
+                        break;
+                    case InputMessageKeyEnum.UpdateOverlay:
+                        UpdateOverlay(session, inputMessage);
                         break;
                     case InputMessageKeyEnum.DismissOverlay:
+                        DismissOverlay(session, inputMessage);
                         break;
                     case InputMessageKeyEnum.ListChannels:
+                        ListChannels(session, inputMessage); 
                         break;
-                    case InputMessageKeyEnum.DismissChannel:
+                    case InputMessageKeyEnum.DismissChannels:
+                        DismissChannels(session, inputMessage);
                         break;
                     default:
                         _ = _server.SendMessageToSingleOrAll(

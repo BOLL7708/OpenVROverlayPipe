@@ -5,7 +5,7 @@ using static EasyOpenVR.Utils.EasingUtils;
 namespace OpenVROverlayPipe.Input;
 
 [ExportTsInterface]
-public class DataOverlay
+public class InputDataOverlay
 {
     public string ImageData = "";
     public string ImagePath = "";
@@ -17,6 +17,7 @@ public class DataOverlay
     public bool IgnoreAnchorRoll = false;
 
     public int OverlayChannel = 0;
+    public string OverlayTitle = ""; // Used as reference when listing channels.
     public int AnimationHz = -1;
     public int DurationMs = 5000;
     public float OpacityPer = 1;

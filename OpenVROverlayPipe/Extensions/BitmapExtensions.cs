@@ -14,7 +14,7 @@ namespace OpenVROverlayPipe.Extensions
     [SupportedOSPlatform("windows7.0")]
     static class BitmapExtensions
     {
-        public static Bitmap DrawTextAreas(this Bitmap bmp, IEnumerable<DataOverlay.TextAreaObject> textAreas)
+        public static Bitmap DrawTextAreas(this Bitmap bmp, IEnumerable<InputDataOverlay.TextAreaObject> textAreas)
         {
             foreach (var ta in textAreas)
             {

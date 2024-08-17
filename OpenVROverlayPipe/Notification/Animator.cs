@@ -26,7 +26,7 @@ namespace OpenVROverlayPipe.Notification
         private Action<string, string>? _responseAtCompletion;
         private Action<string, string, string?>? _responseAtError;
         private Action<string, string, VREvent_t>? _overlayEvent;
-        private volatile DataOverlay? _data;
+        private volatile InputDataOverlay? _data;
         private volatile string? _nonce;
         private volatile bool _shouldShutdown;
         private double _elapsedTime;
@@ -114,12 +114,12 @@ namespace OpenVROverlayPipe.Notification
             var animationTransform = GetEmptyTransform();
             var width = 1f;
             var height = 1f;
-            var properties = new DataOverlay();
+            var properties = new InputDataOverlay();
             var anchorIndex = uint.MaxValue;
 			var useWorldDeviceTransform = false;
 
             // Follow
-            DataOverlay.FollowObject? follow = null;
+            InputDataOverlay.FollowObject? follow = null;
             var originTransform = GetEmptyTransform();
             var targetTransform = GetEmptyTransform();
             var followLerp = 0.0;
@@ -135,7 +135,7 @@ namespace OpenVROverlayPipe.Notification
             float animationSeconds;
 
             // Easing
-            DataOverlay.TransitionObject? transition = null;
+            InputDataOverlay.TransitionObject? transition = null;
             var easeInCount = 0;
             var stayCount = 0;
             var easeOutCount = 0;
@@ -331,13 +331,13 @@ namespace OpenVROverlayPipe.Notification
                     #region stage inits
                     if (animationCount == 0) 
                     { // Init EaseIn
-                        transition = properties?.TransitionIn ?? new DataOverlay.TransitionObject();
+                        transition = properties?.TransitionIn ?? new InputDataOverlay.TransitionObject();
                         tween = EasingUtils.Get(transition.EaseType, transition.EaseMode);
                     }
 
                     if (animationCount == stayLimit)
                     { // Init EaseOut
-                        transition = properties?.TransitionOut ?? new DataOverlay.TransitionObject();
+                        transition = properties?.TransitionOut ?? new InputDataOverlay.TransitionObject();
                         tween = EasingUtils.Get(transition.EaseType, transition.EaseMode);
                     }
                     #endregion
@@ -490,7 +490,7 @@ namespace OpenVROverlayPipe.Notification
             }
         }
 
-        public void ProvideNewData(string sessionId, DataOverlay? data, string? nonce) {
+        public void ProvideNewData(string sessionId, InputDataOverlay? data, string? nonce) {
             _sessionId = sessionId;
             _data = data;
             _nonce = nonce;

@@ -28,6 +28,10 @@ namespace OpenVROverlayPipe.Notification
             Reinitialize();
         }
 
+        public string GetTitle()
+        {
+            return this._title;
+        }
 
         private void Reinitialize() {
             if (!_vr.IsInitialized()) return;
@@ -77,8 +81,8 @@ namespace OpenVROverlayPipe.Notification
             return _initSuccess;
         }
 
-        public void EnqueueNotification(string sessionId, DataOverlay data, string? nonce) {
-            _notifications.Enqueue(new QueueItem(sessionId, data, nonce));
+        public void EnqueueNotification(string sessionId, InputDataOverlay inputData, string? nonce) {
+            _notifications.Enqueue(new QueueItem(sessionId, inputData, nonce));
         }
 
         private QueueItem? DequeueNotification() {

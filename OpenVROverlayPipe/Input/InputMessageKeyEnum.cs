@@ -5,8 +5,9 @@ public enum InputMessageKeyEnum
     None,
     EnqueueNotification,
     EnqueueOverlay,
+    UpdateOverlay,
     DismissOverlay,
     ListChannels,
-    DismissChannel,
+    DismissChannels,
     OverlayEvent
 }

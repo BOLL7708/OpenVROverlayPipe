@@ -5,18 +5,18 @@ namespace OpenVROverlayPipe.Notification
     class QueueItem
     {
         public string SessionId = "";
-        public DataNotification? Notification = null;
-        public DataOverlay? Overlay = null;
+        public InputDataNotification? Notification = null;
+        public InputDataOverlay? Overlay = null;
         public string? Nonce = null;
 
-        public QueueItem(string sessionId, DataNotification data, string? nonce) {
+        public QueueItem(string sessionId, InputDataNotification inputData, string? nonce) {
             SessionId = sessionId;
-            Notification = data;
+            Notification = inputData;
             Nonce = nonce;
         }
-        public QueueItem(string sessionId, DataOverlay data, string? nonce) {
+        public QueueItem(string sessionId, InputDataOverlay inputData, string? nonce) {
             SessionId = sessionId;
-            Overlay = data;
+            Overlay = inputData;
             Nonce = nonce;
         }
     }

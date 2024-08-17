@@ -64,7 +64,7 @@ namespace OpenVROverlayPipe.Notification
             Reset();
         }
 
-        public Cycler(DataOverlay.AnimationObject anim)
+        public Cycler(InputDataOverlay.AnimationObject anim)
         {
             _amplitude = anim.Amplitude;
             _frequency = anim.Frequency;
