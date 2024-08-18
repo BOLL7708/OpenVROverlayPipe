@@ -268,6 +268,32 @@ namespace OpenVROverlayPipe
 
         private void UpdateOverlay(WebSocketSession session, InputMessage inputMessage)
         {
+            var data = ParseData<InputDataOverlayUpdate>(inputMessage, session);
+            if (data == null)
+            {
+                Debug.WriteLine("Failed to parse incoming data...");
+                return;
+            }
+            
+            var nonce = inputMessage.Nonce;
+            var channel = data.OverlayChannel;
+            Session.Overlays.TryGetValue(channel, out var overlay);
+            var updated = false;
+            if (overlay?.IsInitialized() == true)
+            {
+                updated = overlay.SetTextureData(data.ImageData, data.ImagePath);
+            }
+            _ = _server.SendMessageToSingleOrAll(session, JsonSerializer.Serialize(
+                    updated ? OutputMessage.CreateResult(
+                        "OK",
+                        null,
+                        nonce,
+                        channel,
+                        InputMessageKeyEnum.UpdateOverlay
+                    ) : OutputMessage.CreateError()
+                    , JsonUtils.GetOptions()
+                )
+            );
         }
         
         private void DismissOverlay(WebSocketSession session, InputMessage inputMessage)

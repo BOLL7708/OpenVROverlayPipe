@@ -30,7 +30,7 @@ namespace OpenVROverlayPipe.Notification
 
         public string GetTitle()
         {
-            return this._title;
+            return _title;
         }
 
         private void Reinitialize() {
@@ -88,6 +88,11 @@ namespace OpenVROverlayPipe.Notification
         private QueueItem? DequeueNotification() {
             var success = _notifications.TryDequeue(out var item);
             return success ? item : null;
+        }
+
+        public bool SetTextureData(string imageData, string imagePath)
+        {
+            return Animator?.LoadTexture(imageData, imagePath) ?? false;
         }
     }
 

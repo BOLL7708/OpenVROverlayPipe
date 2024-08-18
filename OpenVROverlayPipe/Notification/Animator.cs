@@ -95,6 +95,44 @@ namespace OpenVROverlayPipe.Notification
             return _texture?.GetFrame(_elapsedTime) ?? 0;
         }
 
+        public bool LoadTexture(string? imageData, string? imagePath)
+        {
+            bool LoadImage()
+            {
+                Debug.WriteLine($"Creating texture on UI thread with {_data?.TextAreas.Length} text areas");
+                if (_texture is not null)
+                {
+                    _texture = null;
+                }
+
+                _texture = imageData is { Length: > 0 }
+                    ? Texture.LoadImageBase64(imageData, _data?.TextAreas ?? [])
+                    : Texture.LoadImageFile(imagePath ?? "");
+                if (_texture is null)
+                {
+                    Debug.WriteLine("Failed to load texture");
+                    _responseAtError?.Invoke(_sessionId, _nonce ?? "", "Failed to load image into texture");
+                    return false;
+                }
+                return true;
+            }
+
+            // Size of overlay
+            var loadedImage = false;
+            if (UiDispatcher != null && Dispatcher.CurrentDispatcher != UiDispatcher)
+            {
+                Debug.WriteLine("Running animator on Dispatcher.");
+                UiDispatcher.Invoke(() => { loadedImage = LoadImage(); });
+            }
+            else
+            {
+                Debug.WriteLine("Running animator on GUI thread already.");
+                loadedImage = LoadImage();
+            }
+
+            return loadedImage;
+        }
+
         private enum AnimationStage {
             Idle,
             EasingIn,
@@ -206,50 +244,35 @@ namespace OpenVROverlayPipe.Notification
                             anchorIndex = _vr.GetIndexForControllerRole(ETrackedControllerRole.RightHand);
                             break;
                     }
-
-                    bool LoadImage()
-                    {
-                        Debug.WriteLine($"Creating texture on UI thread with {_data.TextAreas.Length} text areas");
-                        if (_texture is not null)
-                        {
-                            _texture = null;
-                        }
-                        _texture = _data.ImageData?.Length > 0
-                            ? Texture.LoadImageBase64(_data.ImageData, _data.TextAreas)
-                            : Texture.LoadImageFile(_data.ImagePath);
-                        if (_texture is null)
-                        {
-                            Debug.WriteLine("Failed to load texture");
-                            _responseAtError?.Invoke(_sessionId, _nonce ?? "", "Failed to load image into texture");
-                            stage = AnimationStage.Idle;
-                            properties = null;
-                            animationCount = 0;
-                            _elapsedTime = 0;
-                            _data = null;
-                            return false;
-                        }
-                        else
-                        {
-                            stage = AnimationStage.Animating;
-                            Debug.WriteLine($"[{_texture.TextureId}]: {_texture.TextureDepth}");
-                            Debug.WriteLine($"Texture created on UI thread, {_texture.Width}x{_texture.Height}");
-                            return true;
-                        }
-                    }
-
+                    
                     // Size of overlay
-                    var loadedImage = false;
+                    var loadedTexture = false;
                     if (UiDispatcher != null && Dispatcher.CurrentDispatcher != UiDispatcher)
                     {
                         Debug.WriteLine("Running animator on Dispatcher.");
-                        UiDispatcher.Invoke(() => { loadedImage = LoadImage(); });
+                        UiDispatcher.Invoke(() => { loadedTexture = LoadTexture(_data.ImageData, _data.ImagePath); });
                     }
                     else
                     {
                         Debug.WriteLine("Running animator on GUI thread already.");
-                        loadedImage = LoadImage();
+                        loadedTexture = LoadTexture(_data.ImageData, _data.ImagePath);
                     }
-                    if (!loadedImage) continue;
+
+                    if (loadedTexture)
+                    {
+                        stage = AnimationStage.Animating;
+                        Debug.WriteLine($"[{_texture.TextureId}]: {_texture.TextureDepth}");
+                        Debug.WriteLine($"Texture created on UI thread, {_texture.Width}x{_texture.Height}");
+                    }
+                    else
+                    {
+                        stage = AnimationStage.Idle;
+                        properties = null;
+                        animationCount = 0;
+                        _elapsedTime = 0;
+                        _data = null;
+                        continue;
+                    }
 
                     // var size = _texture.Load(_payload.imageData, properties.textAreas);
                     width = properties.WidthM;
@@ -258,7 +281,7 @@ namespace OpenVROverlayPipe.Notification
 
                     // Animation limits
                     easeInCount = (properties.TransitionIn?.DurationMs ?? 100) / msPerFrame;
-                    stayCount = properties.DurationMs / msPerFrame;
+                    stayCount = properties.DurationMs / msPerFrame; // TODO: Perpetual on <0?
                     easeOutCount = (properties.TransitionOut?.DurationMs ?? 100) / msPerFrame;
                     easeInLimit = easeInCount;
                     stayLimit = easeInLimit + stayCount;

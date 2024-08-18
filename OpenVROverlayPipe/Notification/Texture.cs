@@ -31,7 +31,7 @@ namespace OpenVROverlayPipe.Notification
             _frameTimes = frameTimes;
         }
         
-        public static Texture LoadImageFile(string path, IEnumerable<InputDataOverlay.TextAreaObject> textAreas = null)
+        public static Texture? LoadImageFile(string path, IEnumerable<InputDataOverlay.TextAreaObject> textAreas = null)
         {
             Bitmap image;
             try
@@ -46,12 +46,12 @@ namespace OpenVROverlayPipe.Notification
             return LoadImage(image, textAreas);
         }
         
-        public static Texture LoadImageBase64(string bytes, IEnumerable<InputDataOverlay.TextAreaObject> textAreas = null)
+        public static Texture? LoadImageBase64(string bytes, IEnumerable<InputDataOverlay.TextAreaObject> textAreas = null)
         {
             return LoadImageBytes(Convert.FromBase64String(bytes), textAreas);
         }
         
-        public static Texture LoadImageBytes(byte[] bytes, IEnumerable<InputDataOverlay.TextAreaObject> textAreas = null)
+        public static Texture? LoadImageBytes(byte[] bytes, IEnumerable<InputDataOverlay.TextAreaObject> textAreas = null)
         {
             Bitmap image;
             try
@@ -66,7 +66,7 @@ namespace OpenVROverlayPipe.Notification
             return LoadImage(image, textAreas);
         }
         
-        public static Texture LoadImage(Bitmap image, IEnumerable<InputDataOverlay.TextAreaObject> textAreas = null)
+        public static Texture? LoadImage(Bitmap image, IEnumerable<InputDataOverlay.TextAreaObject> textAreas = null)
         {
             int frameCount = image.FrameDimensionsList.Any(d => d == FrameDimension.Time.Guid)
                 ? image.GetFrameCount(FrameDimension.Time)
