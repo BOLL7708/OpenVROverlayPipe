@@ -20,6 +20,7 @@ public class InputDataOverlay
     public string OverlayTitle = ""; // Used as reference when listing channels.
     public int AnimationHz = -1;
     public int DurationMs = 5000;
+    public bool Perpetual = false;
     public float OpacityPer = 1;
 
     public float WidthM = 1;

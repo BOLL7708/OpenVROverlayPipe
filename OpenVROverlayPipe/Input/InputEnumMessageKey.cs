@@ -1,6 +1,6 @@
 namespace OpenVROverlayPipe.Input;
 
-public enum InputMessageKeyEnum
+public enum InputEnumMessageKey
 {
     None,
     EnqueueNotification,
@@ -8,6 +8,5 @@ public enum InputMessageKeyEnum
     UpdateOverlay,
     DismissOverlay,
     ListChannels,
-    DismissChannels,
-    OverlayEvent
+    DismissChannels
 }

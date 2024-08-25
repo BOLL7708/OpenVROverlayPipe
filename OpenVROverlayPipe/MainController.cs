@@ -61,8 +61,8 @@ namespace OpenVROverlayPipe
                         {
                             _ = _server.SendMessageToAll(JsonSerializer.Serialize(
                                     OutputMessage.Create(
-                                        OutputMessageTypeEnum.Debug,
-                                        InputMessageKeyEnum.None,
+                                        OutputEnumMessageType.Debug,
+                                        InputEnumMessageKey.None,
                                         message
                                     ),
                                     JsonUtils.GetOptions()
@@ -170,11 +170,11 @@ namespace OpenVROverlayPipe
                 session, 
                 JsonSerializer.Serialize(
                     ok 
-                        ? OutputMessage.CreateError("Unable to enqueue overlay.", inputMessage) 
-                        : OutputMessage.CreateResult($"OK, enqueued notification with id: {id}"), 
-                        JsonUtils.GetOptions()
-                    )
-                );
+                        ? OutputMessage.CreateOK($"Enqueued notification with id: {id}", null, inputMessage.Nonce, null, InputEnumMessageKey.EnqueueNotification) 
+                        : OutputMessage.CreateError("Unable to enqueue overlay.", inputMessage),
+                    JsonUtils.GetOptions()
+                )
+            );
         }
 
         private void EnqueueOverlay(WebSocketSession session, InputMessage inputMessage)
@@ -202,8 +202,23 @@ namespace OpenVROverlayPipe
                     OnOverlayEvent(overlayEvent);
                 };
                 Session.Overlays.TryAdd(channel, overlay);
-            } 
-            if (overlay.IsInitialized()) overlay.EnqueueNotification(sessionId, data, nonce);
+            }
+
+            var ok = false;
+            if (overlay.IsInitialized())
+            {
+                overlay.EnqueueNotification(sessionId, data, nonce);
+                ok = true;
+            }
+            _ = _server.SendMessageToSingle(
+                session, 
+                JsonSerializer.Serialize(
+                    ok 
+                        ? OutputMessage.CreateOK($"Enqueued overlay.", null, inputMessage.Nonce, null, InputEnumMessageKey.EnqueueOverlay) 
+                        : OutputMessage.CreateError("Unable to initialize and enqueue overlay.", inputMessage),
+                    JsonUtils.GetOptions()
+                )
+            );
         }
 
         private void OnOverlayDoneEvent(OverlayDone doneEvent)
@@ -211,8 +226,8 @@ namespace OpenVROverlayPipe
             var sessionExists = Session.Sessions.TryGetValue(doneEvent.SessionId, out var session);
             if (sessionExists) _ = _server.SendMessageToSingleOrAll(session, JsonSerializer.Serialize(
                 doneEvent.Error.Length > 0 
-                    ? OutputMessage.CreateError(doneEvent.Error, null, doneEvent.Nonce, doneEvent.Channel, InputMessageKeyEnum.EnqueueOverlay)
-                    : OutputMessage.CreateResult("OK", null, doneEvent.Nonce, doneEvent.Channel, InputMessageKeyEnum.EnqueueOverlay), JsonUtils.GetOptions())
+                    ? OutputMessage.CreateError(doneEvent.Error, null, doneEvent.Nonce, doneEvent.Channel, InputEnumMessageKey.EnqueueOverlay)
+                    : OutputMessage.CreateOK("Overlay sequence finished.", null, doneEvent.Nonce, doneEvent.Channel, InputEnumMessageKey.EnqueueOverlay), JsonUtils.GetOptions())
             );
         }
 
@@ -225,25 +240,33 @@ namespace OpenVROverlayPipe
             var mouse = overlayEvent.Event.data.mouse;
             var scroll = overlayEvent.Event.data.scroll;
             var touchpad = overlayEvent.Event.data.touchPadMove;
+            var type = OutputEnumMessageType.Undefined;
             dynamic? data;
             switch(typeEnum)
             {
                 case EVREventType.VREvent_MouseMove:
                     data = new OutputDataPosition(mouse.x, mouse.y);
+                    type = OutputEnumMessageType.MouseMove;
                     break;
                 case EVREventType.VREvent_MouseButtonDown:
+                    data = new OutputDataMouseButton((EVRMouseButton)mouse.button, OutputEnumMouseButtonDirection.Down, mouse.x, mouse.y);
+                    type = OutputEnumMessageType.MouseClick;
+                    break;
                 case EVREventType.VREvent_MouseButtonUp:
-                    var buttonEnum = (EVRMouseButton)mouse.button;
-                    data = new OutputDataButton(buttonEnum);
+                    data = new OutputDataMouseButton((EVRMouseButton)mouse.button, OutputEnumMouseButtonDirection.Up, mouse.x, mouse.y);
+                    type = OutputEnumMessageType.MouseClick;
                     break;
                 case EVREventType.VREvent_ScrollSmooth:
                     data = new OutputDataPosition(scroll.xdelta, scroll.ydelta);
+                    type = OutputEnumMessageType.ScrollSmooth;
                     break;
                 case EVREventType.VREvent_ScrollDiscrete:
                     data = new OutputDataPosition(scroll.xdelta, scroll.ydelta);
+                    type = OutputEnumMessageType.ScrollDiscrete;
                     break;
                 case EVREventType.VREvent_TouchPadMove:
                     data = new OutputDataPosition(touchpad.fValueXRaw, touchpad.fValueYRaw);
+                    type = OutputEnumMessageType.TouchPadMove;
                     break;
                 default:
                     data = null;
@@ -255,12 +278,13 @@ namespace OpenVROverlayPipe
             if (eventName == null) return;
 
             _ = _server.SendMessageToSingleOrAll(session, JsonSerializer.Serialize(
-                    OutputMessage.CreateResult(
-                        eventName.Replace("VREvent_", ""),
+                    OutputMessage.Create(
+                        type,
+                        InputEnumMessageKey.None,
+                        "Propagating overlay event.",
                         data,
                         overlayEvent.Nonce,
-                        overlayEvent.Channel,
-                        InputMessageKeyEnum.OverlayEvent
+                        overlayEvent.Channel
                     ), JsonUtils.GetOptions()
                 )
             );
@@ -284,13 +308,13 @@ namespace OpenVROverlayPipe
                 updated = overlay.SetTextureData(data.ImageData, data.ImagePath);
             }
             _ = _server.SendMessageToSingleOrAll(session, JsonSerializer.Serialize(
-                    updated ? OutputMessage.CreateResult(
-                        "OK",
+                    updated ? OutputMessage.CreateOK(
+                        "Overlay was updated.",
                         null,
                         nonce,
                         channel,
-                        InputMessageKeyEnum.UpdateOverlay
-                    ) : OutputMessage.CreateError()
+                        InputEnumMessageKey.UpdateOverlay
+                    ) : OutputMessage.CreateError("Unable to update overlay.", inputMessage)
                     , JsonUtils.GetOptions()
                 )
             );
@@ -298,6 +322,24 @@ namespace OpenVROverlayPipe
         
         private void DismissOverlay(WebSocketSession session, InputMessage inputMessage)
         {
+            var data = ParseData<InputDataOverlayDismiss>(inputMessage, session);
+            if (data == null) return;
+
+            var channel = data.Channel;
+            Session.Overlays.TryGetValue(channel, out var overlay);
+            if (overlay == null) return;
+            
+            overlay.Animator?.DismissCurrent();
+            
+            _ = _server.SendMessageToSingle(
+                session, 
+                JsonSerializer.Serialize(
+                    overlay.Animator != null 
+                        ? OutputMessage.CreateOK($"Dismissed overlay.", null, inputMessage.Nonce, null, InputEnumMessageKey.DismissOverlay) 
+                        : OutputMessage.CreateError("Unable to dismiss overlay.", inputMessage),
+                    JsonUtils.GetOptions()
+                )
+            );
         }
         
         private void DismissChannels(WebSocketSession session, InputMessage inputMessage)
@@ -329,7 +371,7 @@ namespace OpenVROverlayPipe
             _ = _server.SendMessageToSingleOrAll(
                 session,
                 JsonSerializer.Serialize(
-                    OutputMessage.CreateResult("OK", outputData, nonce, null, InputMessageKeyEnum.ListChannels),
+                    OutputMessage.CreateOK("Dismissed channel(s).", outputData, nonce, null, InputEnumMessageKey.DismissChannels),
                     JsonUtils.GetOptions()
                 )
             );
@@ -352,7 +394,7 @@ namespace OpenVROverlayPipe
             _ = _server.SendMessageToSingleOrAll(
                 session,
                 JsonSerializer.Serialize(
-                    OutputMessage.CreateResult("OK", outputData, nonce, null, InputMessageKeyEnum.ListChannels),
+                    OutputMessage.CreateOK("Retrieved list of channels.", outputData, nonce, null, InputEnumMessageKey.ListChannels),
                     JsonUtils.GetOptions()
                 )
             );
@@ -427,27 +469,29 @@ namespace OpenVROverlayPipe
                     return;
                 }
                 
+                Debug.WriteLine($"Got valid message: {Enum.GetName(typeof(InputEnumMessageKey), inputMessage.Key)}");
+                
                 // Act on message
                 switch (inputMessage.Key)
                 {
-                    case InputMessageKeyEnum.None:
+                    case InputEnumMessageKey.None:
                         break;
-                    case InputMessageKeyEnum.EnqueueNotification:
+                    case InputEnumMessageKey.EnqueueNotification:
                         EnqueueNotification(session, inputMessage);
                         break;
-                    case InputMessageKeyEnum.EnqueueOverlay:
+                    case InputEnumMessageKey.EnqueueOverlay:
                         EnqueueOverlay(session, inputMessage);
                         break;
-                    case InputMessageKeyEnum.UpdateOverlay:
+                    case InputEnumMessageKey.UpdateOverlay:
                         UpdateOverlay(session, inputMessage);
                         break;
-                    case InputMessageKeyEnum.DismissOverlay:
+                    case InputEnumMessageKey.DismissOverlay:
                         DismissOverlay(session, inputMessage);
                         break;
-                    case InputMessageKeyEnum.ListChannels:
+                    case InputEnumMessageKey.ListChannels:
                         ListChannels(session, inputMessage); 
                         break;
-                    case InputMessageKeyEnum.DismissChannels:
+                    case InputEnumMessageKey.DismissChannels:
                         DismissChannels(session, inputMessage);
                         break;
                     default:

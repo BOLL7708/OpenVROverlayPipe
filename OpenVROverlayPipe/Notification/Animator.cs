@@ -1,11 +1,10 @@
-﻿using EasyOpenVR;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Windows.Threading;
+using EasyOpenVR;
 using EasyOpenVR.Extensions;
-using EasyOpenVR.Utils;
 using OpenVROverlayPipe.Input;
 using Valve.VR;
 using static EasyOpenVR.Utils.EasingUtils;
@@ -31,7 +30,14 @@ namespace OpenVROverlayPipe.Notification
         private volatile bool _shouldShutdown;
         private double _elapsedTime;
         private string _sessionId = "";
-        private bool _isUsingInput = false;
+        private bool _isUsingInput;
+        
+        private volatile AnimationStage _stage = AnimationStage.Idle;
+        private volatile bool _isPerpetual;
+        private volatile int _stayLimit;
+        private volatile int _easeOutCount;
+        private volatile int _easeOutLimit;
+        private volatile int _animationCount;
 
         public Animator(
             ulong overlayHandle, 
@@ -133,6 +139,14 @@ namespace OpenVROverlayPipe.Notification
             return loadedImage;
         }
 
+        public void DismissCurrent()
+        {
+            _stayLimit = _animationCount;
+            _easeOutLimit = _animationCount + _easeOutCount;
+            _stage = AnimationStage.EasingOut;
+            _isPerpetual = false;
+        }
+        
         private enum AnimationStage {
             Idle,
             EasingIn,
@@ -148,10 +162,8 @@ namespace OpenVROverlayPipe.Notification
             
             // General
             var deviceTransform = GetEmptyTransform();
-            var notificationTransform = GetEmptyTransform();
             var animationTransform = GetEmptyTransform();
             var width = 1f;
-            var height = 1f;
             var properties = new InputDataOverlay();
             var anchorIndex = uint.MaxValue;
 			var useWorldDeviceTransform = false;
@@ -165,21 +177,16 @@ namespace OpenVROverlayPipe.Notification
             var followIsLerping = false;         
 
             // General Animation
-            var stage = AnimationStage.Idle;
             var hz = 60; // This default should never really be used as it reads Hz from headset.
             var msPerFrame = 1000 / hz;
             long timeStarted;
-            var animationCount = 0;
             float animationSeconds;
 
             // Easing
             InputDataOverlay.TransitionObject? transition = null;
             var easeInCount = 0;
             var stayCount = 0;
-            var easeOutCount = 0;
             var easeInLimit = 0;
-            var stayLimit = 0;
-            var easeOutLimit = 0;
             var tween = Get(EasingType.Linear, EasingMode.Out);
 
             // Cycling
@@ -203,13 +210,16 @@ namespace OpenVROverlayPipe.Notification
                     skip = true;
                     Thread.Sleep(100);
                 }
-                else if (stage == AnimationStage.Idle)
+                else if (_stage == AnimationStage.Idle)
                 {
                     #region init 
                     // Initialize things that stay the same during the whole animation
-                    stage = AnimationStage.LoadingImage;
+                    _stage = AnimationStage.LoadingImage;
                     properties = _data;
+                    if (_data == null) continue;
+                        
                     _isUsingInput = properties.Input?.IsUsed() == true;
+                    _isPerpetual = properties.Perpetual;
 					useWorldDeviceTransform = properties.AnchorType != 0 && properties.AttachToAnchor && (properties.IgnoreAnchorYaw || properties.IgnoreAnchorPitch || properties.IgnoreAnchorRoll);
                     follow = properties.Follow;
                     followTween = Get(follow?.EaseType ?? EasingType.Linear, follow?.EaseMode ?? EasingMode.InOut);
@@ -260,15 +270,18 @@ namespace OpenVROverlayPipe.Notification
 
                     if (loadedTexture)
                     {
-                        stage = AnimationStage.Animating;
-                        Debug.WriteLine($"[{_texture.TextureId}]: {_texture.TextureDepth}");
-                        Debug.WriteLine($"Texture created on UI thread, {_texture.Width}x{_texture.Height}");
+                        _stage = AnimationStage.Animating;
+                        if (_texture != null)
+                        {
+                            Debug.WriteLine($"[{_texture.TextureId}]: {_texture.TextureDepth}");
+                            Debug.WriteLine($"Texture created on UI thread, {_texture.Width}x{_texture.Height}");
+                        }
                     }
                     else
                     {
-                        stage = AnimationStage.Idle;
+                        _stage = AnimationStage.Idle;
                         properties = null;
-                        animationCount = 0;
+                        _animationCount = 0;
                         _elapsedTime = 0;
                         _data = null;
                         continue;
@@ -281,11 +294,11 @@ namespace OpenVROverlayPipe.Notification
 
                     // Animation limits
                     easeInCount = (properties.TransitionIn?.DurationMs ?? 100) / msPerFrame;
-                    stayCount = properties.DurationMs / msPerFrame; // TODO: Perpetual on <0?
-                    easeOutCount = (properties.TransitionOut?.DurationMs ?? 100) / msPerFrame;
+                    stayCount = properties.DurationMs / msPerFrame;
+                    _easeOutCount = (properties.TransitionOut?.DurationMs ?? 100) / msPerFrame;
                     easeInLimit = easeInCount;
-                    stayLimit = easeInLimit + stayCount;
-                    easeOutLimit = stayLimit + easeOutCount;
+                    _stayLimit = _isPerpetual ? int.MaxValue : easeInLimit + stayCount;
+                    _easeOutLimit = _isPerpetual ? int.MaxValue : _stayLimit + _easeOutCount;
                     // Debug.WriteLine($"{easeInCount}, {stayCount}, {easeOutCount} - {easeInLimit}, {stayLimit}, {easeOutLimit}");
 
                     // Pose
@@ -339,55 +352,55 @@ namespace OpenVROverlayPipe.Notification
                     }
                 }
 
-                if (!skip && stage != AnimationStage.Idle && stage != AnimationStage.LoadingImage) // Animate
+                if (!skip && _stage != AnimationStage.Idle && _stage != AnimationStage.LoadingImage) // Animate
                 {
                     // Animation stage
-                    if (animationCount < easeInLimit) stage = AnimationStage.EasingIn;
-                    else if (animationCount >= stayLimit) stage = AnimationStage.EasingOut;
-                    else stage = follow != null 
+                    if (_animationCount < easeInLimit) _stage = AnimationStage.EasingIn;
+                    else if (_animationCount >= _stayLimit) _stage = AnimationStage.EasingOut;
+                    else _stage = follow != null 
                             || properties?.Animations.Length > 0 
                             || useWorldDeviceTransform
                             ? AnimationStage.Animating 
                             : AnimationStage.Staying;
-                    animationSeconds = (float) animationCount / (float) hz;
+                    animationSeconds = (float) _animationCount / (float) hz;
 
                     #region stage inits
-                    if (animationCount == 0) 
+                    if (_animationCount == 0) 
                     { // Init EaseIn
                         transition = properties?.TransitionIn ?? new InputDataOverlay.TransitionObject();
-                        tween = EasingUtils.Get(transition.EaseType, transition.EaseMode);
+                        tween = Get(transition.EaseType, transition.EaseMode);
                     }
 
-                    if (animationCount == stayLimit)
+                    if (_animationCount == _stayLimit)
                     { // Init EaseOut
                         transition = properties?.TransitionOut ?? new InputDataOverlay.TransitionObject();
-                        tween = EasingUtils.Get(transition.EaseType, transition.EaseMode);
+                        tween = Get(transition.EaseType, transition.EaseMode);
                     }
                     #endregion
 
                     // Setup and normalized progression ratio
-                    var transitionRatio = stage switch
+                    var transitionRatio = _stage switch
                     {
-                        AnimationStage.EasingIn => ((float)animationCount / easeInCount),
-                        AnimationStage.EasingOut => 1f - ((float)animationCount - stayLimit + 1) / easeOutCount,
+                        AnimationStage.EasingIn => ((float)_animationCount / easeInCount),
+                        AnimationStage.EasingOut => 1f - ((float)_animationCount - _stayLimit + 1) / _easeOutCount,
                         _ => 1f
                     };
                     transitionRatio = (float) tween(transitionRatio);
                     var ratioReversed = 1f - transitionRatio;
 
                     // Transform
-                    if (stage != AnimationStage.Staying || animationCount == easeInLimit) { // Only performs animation on first frame of Staying stage.
+                    if (_stage != AnimationStage.Staying || _animationCount == easeInLimit) { // Only performs animation on first frame of Staying stage.
                         // Debug.WriteLine($"{animationCount} - {Enum.GetName(typeof(AnimationStage), stage)} - {Math.Round(ratio*100)/100}");
-                        var translate = new HmdVector3_t()
+                        var translate = properties != null  && transition != null ? new HmdVector3_t()
                         { 
                             v0 = properties.XDistanceM + (transition.XDistanceM * ratioReversed) + animateX.GetRatio(animationSeconds),
                             v1 = properties.YDistanceM + (transition.YDistanceM * ratioReversed) + animateY.GetRatio(animationSeconds),
                             v2 = -properties.ZDistanceM - (transition.ZDistanceM * ratioReversed) - animateZ.GetRatio(animationSeconds)
-                        };
+                        } : new HmdVector3_t();
 
                         #region Follow
                         // Follow
-                        if(follow is { DurationMs: > 0 } && properties.AnchorType != AnchorTypeEnum.World && !properties.AttachToAnchor)
+                        if(follow is { DurationMs: > 0 } && properties != null && properties.AnchorType != AnchorTypeEnum.World && !properties.AttachToAnchor)
                         {
                             var currentPose = properties.AnchorType == 0 
                                 ? GetEmptyTransform() 
@@ -426,75 +439,79 @@ namespace OpenVROverlayPipe.Notification
                         #endregion
 
                         // Build transform with origin, transitions and animations
-                        animationTransform = (properties.AttachToAnchor || properties.AnchorType == 0)
+                        animationTransform = (properties?.AttachToAnchor == true || properties?.AnchorType == AnchorTypeEnum.World)
                             ? GetEmptyTransform()
 							: deviceTransform;
-						
-                        if (properties.AnchorType == 0) {
-                            // World related, so all rotations are local to the overlay
-                            animationTransform = animationTransform
-                                .Translate(translate)
-                                .RotateY(-properties.YawDeg + transition.YawDeg * ratioReversed + animateYaw.GetRatio(animationSeconds))
-                                .RotateX(properties.PitchDeg + transition.PitchDeg * ratioReversed + animatePitch.GetRatio(animationSeconds))
-                                .RotateZ(properties.RollDeg + transition.RollDeg * ratioReversed + animateRoll.GetRatio(animationSeconds));
-                        } else if (useWorldDeviceTransform) {
-                            // Device related but using world coordinates, local overlay rotation and allows for rotation cancellation
-                            var anchorTransform = _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
-                            var hmdAnchorEuler = anchorTransform.EulerAngles();
-                            if (properties.IgnoreAnchorYaw) hmdAnchorEuler.v1 = 0;
-                            if (properties.IgnoreAnchorPitch) hmdAnchorEuler.v0 = 0;
-                            if (properties.IgnoreAnchorRoll) hmdAnchorEuler.v2 = 0;
-                            animationTransform = anchorTransform.FromEuler(hmdAnchorEuler)
-                                .Translate(translate)
-                                .RotateY(-properties.YawDeg + transition.YawDeg * ratioReversed + animateYaw.GetRatio(animationSeconds))
-                                .RotateX(properties.PitchDeg + transition.PitchDeg * ratioReversed + animatePitch.GetRatio(animationSeconds))
-                                .RotateZ(properties.RollDeg + transition.RollDeg * ratioReversed + animateRoll.GetRatio(animationSeconds));
-                        } else {
-                            // Device related, so all rotations are at the origin of the device
-                            animationTransform = animationTransform
-                                // Properties
-                                .RotateY(-properties.YawDeg)
-                                .RotateX(properties.PitchDeg)
-                                .RotateZ(properties.RollDeg)
-                                .Translate(translate)
-                                // Transitions
-                                .RotateY(transition.YawDeg * ratioReversed + animateYaw.GetRatio(animationSeconds))
-                                .RotateX(transition.PitchDeg * ratioReversed + animatePitch.GetRatio(animationSeconds))
-                                .RotateZ(transition.RollDeg * ratioReversed + animateRoll.GetRatio(animationSeconds));
+                        if (properties != null && transition != null)
+                        {
+                            if (properties.AnchorType == 0) {
+                                // World related, so all rotations are local to the overlay
+                                animationTransform = animationTransform
+                                    .Translate(translate)
+                                    .RotateY(-properties.YawDeg + transition.YawDeg * ratioReversed + animateYaw.GetRatio(animationSeconds))
+                                    .RotateX(properties.PitchDeg + transition.PitchDeg * ratioReversed + animatePitch.GetRatio(animationSeconds))
+                                    .RotateZ(properties.RollDeg + transition.RollDeg * ratioReversed + animateRoll.GetRatio(animationSeconds));
+                            } else if (useWorldDeviceTransform) {
+                                // Device related but using world coordinates, local overlay rotation and allows for rotation cancellation
+                                var anchorTransform = _vr.GetDeviceToAbsoluteTrackingPose()[anchorIndex == uint.MaxValue ? 0 : anchorIndex].mDeviceToAbsoluteTracking;
+                                var hmdAnchorEuler = anchorTransform.EulerAngles();
+                                if (properties.IgnoreAnchorYaw) hmdAnchorEuler.v1 = 0;
+                                if (properties.IgnoreAnchorPitch) hmdAnchorEuler.v0 = 0;
+                                if (properties.IgnoreAnchorRoll) hmdAnchorEuler.v2 = 0;
+                                animationTransform = anchorTransform.FromEuler(hmdAnchorEuler)
+                                    .Translate(translate)
+                                    .RotateY(-properties.YawDeg + transition.YawDeg * ratioReversed + animateYaw.GetRatio(animationSeconds))
+                                    .RotateX(properties.PitchDeg + transition.PitchDeg * ratioReversed + animatePitch.GetRatio(animationSeconds))
+                                    .RotateZ(properties.RollDeg + transition.RollDeg * ratioReversed + animateRoll.GetRatio(animationSeconds));
+                            } else {
+                                // Device related, so all rotations are at the origin of the device
+                                animationTransform = animationTransform
+                                    // Properties
+                                    .RotateY(-properties.YawDeg)
+                                    .RotateX(properties.PitchDeg)
+                                    .RotateZ(properties.RollDeg)
+                                    .Translate(translate)
+                                    // Transitions
+                                    .RotateY(transition.YawDeg * ratioReversed + animateYaw.GetRatio(animationSeconds))
+                                    .RotateX(transition.PitchDeg * ratioReversed + animatePitch.GetRatio(animationSeconds))
+                                    .RotateZ(transition.RollDeg * ratioReversed + animateRoll.GetRatio(animationSeconds));
+                            }
+                            _vr.SetOverlayTransform(
+                                _overlayHandle, 
+                                animationTransform, 
+                                (properties.AttachToAnchor && !useWorldDeviceTransform)
+                                    ? anchorIndex 
+                                    : uint.MaxValue
+                            );
+                            var transitionOpacityRatio = (transition.OpacityPer + (transitionRatio * (1f - transition.OpacityPer)));
+                            _vr.SetOverlayAlpha(_overlayHandle,
+                                    // the transition part becomes 0-1, times the property that sets the maximum, and we just add the animation value.
+                                    (transitionOpacityRatio) * properties.OpacityPer + animateOpacity.GetRatio(animationSeconds)
+                            );
+                            var transitionWidthRatio = (transition.ScalePer + (transitionRatio * (1f - transition.ScalePer)));
+                            _vr.SetOverlayWidth(_overlayHandle,
+                                Math.Max(0, width * transitionWidthRatio + (animateScale.GetRatio(animationSeconds) * width))
+                            );
                         }
-
-                        _vr.SetOverlayTransform(
-                            _overlayHandle, 
-                            animationTransform, 
-                            (properties.AttachToAnchor && !useWorldDeviceTransform)
-                                ? anchorIndex 
-                                : uint.MaxValue
-                        );
-                        var transitionOpacityRatio = (transition.OpacityPer + (transitionRatio * (1f - transition.OpacityPer)));
-                        _vr.SetOverlayAlpha(_overlayHandle,
-                                // the transition part becomes 0-1, times the property that sets the maximum, and we just add the animation value.
-                                (transitionOpacityRatio) * properties.OpacityPer + animateOpacity.GetRatio(animationSeconds)
-                        );
-                        var transitionWidthRatio = (transition.ScalePer + (transitionRatio * (1f - transition.ScalePer)));
-                        _vr.SetOverlayWidth(_overlayHandle,
-                            Math.Max(0, width * transitionWidthRatio + (animateScale.GetRatio(animationSeconds) * width))
-                        );
                     }
 
                     // Do not make overlay visible until we have applied all the movements etc, only needs to happen the first frame.
-                    if (animationCount == 0) _vr.SetOverlayVisibility(_overlayHandle, true);
-                    animationCount++;
+                    if (_animationCount == 0) _vr.SetOverlayVisibility(_overlayHandle, true);
+                    Interlocked.Increment(ref _animationCount);
 
                     // We're done
-                    if (animationCount >= easeOutLimit) stage = AnimationStage.Finished;
+                    if (!_isPerpetual && _animationCount >= _easeOutLimit)
+                    {
+                        _stage = AnimationStage.Finished;
+                    }
 
-                    if (stage == AnimationStage.Finished) {
+                    if (_stage == AnimationStage.Finished) {
                         Debug.WriteLine("DONE!");
                         _vr.SetOverlayVisibility(_overlayHandle, false);
-                        stage = AnimationStage.Idle;
+                        _stage = AnimationStage.Idle;
                         _responseAtCompletion?.Invoke(_sessionId, _nonce ?? "");
                         properties = null;
-                        animationCount = 0;
+                        _animationCount = 0;
                         _elapsedTime = 0;
                         _data = null;
                         _texture = null;
