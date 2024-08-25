@@ -108,6 +108,7 @@ namespace OpenVROverlayPipe.Notification
                 Debug.WriteLine($"Creating texture on UI thread with {_data?.TextAreas.Length} text areas");
                 if (_texture is not null)
                 {
+                    _texture.Dispose();
                     _texture = null;
                 }
 
