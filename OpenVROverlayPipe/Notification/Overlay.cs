@@ -18,7 +18,7 @@ namespace OpenVROverlayPipe.Notification
         private readonly string _title;
         private readonly int _channel;
         private bool _initSuccess;
-        private readonly ConcurrentQueue<QueueItem?> _notifications = new();
+        private readonly ConcurrentQueue<QueueItem?> _overlayQueue = new();
         public EventHandler<OverlayDone>? DoneEvent;
         public EventHandler<OverlayEvent>? OverlayEvent;
 
@@ -41,7 +41,7 @@ namespace OpenVROverlayPipe.Notification
             
             // Default positioning and size of overlay, this will all be changed when animated.
             var transform = GetEmptyTransform();
-            _overlayHandle = _vr.CreateOverlay($"boll7708.openvrnotficationpipe.texture.{_channel}", _title, transform);
+            _overlayHandle = _vr.CreateOverlay($"boll7708.openvroverlaypipe.texture.{_channel}", _title, transform);
             _initSuccess = _overlayHandle != 0;
 
             if (!_initSuccess) return;
@@ -55,7 +55,7 @@ namespace OpenVROverlayPipe.Notification
                 Animator = new Animator(
                     _overlayHandle, 
                     () => {
-                        var item = DequeueNotification();
+                        var item = DequeueOverlay();
                         if (item != null) Animator?.ProvideNewData(item.SessionId, item.Overlay, item.Nonce);
                     }, 
                     (sessionId, nonce) => {
@@ -81,12 +81,12 @@ namespace OpenVROverlayPipe.Notification
             return _initSuccess;
         }
 
-        public void EnqueueNotification(string sessionId, InputDataOverlay inputData, string? nonce) {
-            _notifications.Enqueue(new QueueItem(sessionId, inputData, nonce));
+        public void EnqueueOverlay(string sessionId, InputDataOverlay inputData, string? nonce) {
+            _overlayQueue.Enqueue(new QueueItem(sessionId, inputData, nonce));
         }
 
-        private QueueItem? DequeueNotification() {
-            var success = _notifications.TryDequeue(out var item);
+        private QueueItem? DequeueOverlay() {
+            var success = _overlayQueue.TryDequeue(out var item);
             return success ? item : null;
         }
 

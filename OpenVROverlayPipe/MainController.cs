@@ -207,7 +207,7 @@ namespace OpenVROverlayPipe
             var ok = false;
             if (overlay.IsInitialized())
             {
-                overlay.EnqueueNotification(sessionId, data, nonce);
+                overlay.EnqueueOverlay(sessionId, data, nonce);
                 ok = true;
             }
             _ = _server.SendMessageToSingle(
