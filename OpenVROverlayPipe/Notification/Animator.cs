@@ -62,8 +62,8 @@ namespace OpenVROverlayPipe.Notification
         {
             if (_renderTexture == null)
             {
-                // _texture = new Texture(_overlayHandle);
-                _renderTexture = new RenderTexture(1024, 1024);
+                // Create GL texture
+                _renderTexture = new RenderTexture(_data?.OverlayWidth ?? 1024, _data?.OverlayHeight ?? 1024);
             
                 // Create SteamVR texture
                 _vrTexture = new Texture_t
@@ -238,7 +238,7 @@ namespace OpenVROverlayPipe.Notification
                     OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.SendVRDiscreteScrollEvents, properties.Input?.DiscreteScroll == true);
                     OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.SendVRSmoothScrollEvents, properties.Input?.SmoothScroll == true);
                     OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.SendVRTouchpadEvents, properties.Input?.Touchpad == true);
-                    OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.MakeOverlaysInteractiveIfVisible, _isUsingInput);
+                    OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.MakeOverlaysInteractiveIfVisible, properties.Input?.AlwaysActive == true);
                     OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.VisibleInDashboard, false);
 
                     // Set anchor
@@ -537,7 +537,9 @@ namespace OpenVROverlayPipe.Notification
             _nonce = nonce;
         }
 
-        public void Shutdown() {
+        public void Shutdown()
+        {
+            OpenVR.Overlay.ClearOverlayTexture(_overlayHandle);
             _requestForNewData = null;
             _responseAtCompletion = null;
             _responseAtError = null;
