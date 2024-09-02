@@ -60,10 +60,14 @@ namespace OpenVROverlayPipe.Notification
 
         public bool OnRender(double deltaTime)
         {
+            var defaultData = new InputDataOverlay();
             if (_renderTexture == null)
             {
                 // Create GL texture
-                _renderTexture = new RenderTexture(_data?.OverlayWidth ?? 1024, _data?.OverlayHeight ?? 1024);
+                var widthMultiplier = _data?.SideBySide3D == true ? 2 : 1;
+                var width = (_data?.OverlayWidthPx ?? defaultData.OverlayWidthPx) * widthMultiplier;
+                var height = _data?.OverlayHeightPx ?? defaultData.OverlayHeightPx;
+                _renderTexture = new RenderTexture(width, height);
             
                 // Create SteamVR texture
                 _vrTexture = new Texture_t
@@ -113,7 +117,7 @@ namespace OpenVROverlayPipe.Notification
                 }
 
                 _texture = imageData is { Length: > 0 }
-                    ? Texture.LoadImageBase64(imageData, _data?.TextAreas ?? [])
+                    ? Texture.LoadImageBase64(imageData, _data)
                     : Texture.LoadImageFile(imagePath ?? "");
                 if (_texture is null)
                 {
@@ -227,6 +231,7 @@ namespace OpenVROverlayPipe.Notification
                     var hmdHz = (int) Math.Round(_vr.GetFloatTrackedDeviceProperty(0, ETrackedDeviceProperty.Prop_DisplayFrequency_Float));
                     hz = properties.AnimationHz > 0 ? properties.AnimationHz : hmdHz;
                     msPerFrame = 1000 / hz;
+                    OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.SideBySide_Parallel, properties.SideBySide3D);
                     
                     // Input
                     OpenVR.Overlay.SetOverlayInputMethod(
@@ -239,7 +244,11 @@ namespace OpenVROverlayPipe.Notification
                     OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.SendVRSmoothScrollEvents, properties.Input?.SmoothScroll == true);
                     OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.SendVRTouchpadEvents, properties.Input?.Touchpad == true);
                     OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.MakeOverlaysInteractiveIfVisible, properties.Input?.AlwaysActive == true);
+                    OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.HideLaserIntersection, properties.Input?.MousePointer == false);
+                    
+                    OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.MultiCursor , true);
                     OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.VisibleInDashboard, false);
+                    OpenVR.Overlay.SetOverlayFlag(_overlayHandle, VROverlayFlags.NoDashboardTab, true);
 
                     // Set anchor
                     switch (properties.AnchorType)

@@ -9,6 +9,7 @@ public class InputDataOverlay
 {
     public string ImageData = "";
     public string ImagePath = "";
+    public bool SideBySide3D = false;
     
     public AnchorTypeEnum AnchorType = AnchorTypeEnum.Head;
     public bool AttachToAnchor = false; // Fixes the overlay to the anchor
@@ -18,8 +19,8 @@ public class InputDataOverlay
 
     public int OverlayChannel = 0;
     public string OverlayTitle = ""; // Used as reference when listing channels, set once.
-    public int OverlayWidth = 1024; // Texture size, set once.
-    public int OverlayHeight = 1024;
+    public int OverlayWidthPx = 1024; // Texture size, set once.
+    public int OverlayHeightPx = 1024;
     public int AnimationHz = -1;
     public int DurationMs = 5000;
     public bool Perpetual = false;
@@ -45,6 +46,7 @@ public class InputDataOverlay
     {
         public bool AlwaysActive = false;
         public bool Mouse = false;
+        public bool MousePointer = true;
         public bool SmoothScroll = false;
         public bool DiscreteScroll = false;
         public bool Touchpad = false;

@@ -245,27 +245,27 @@ namespace OpenVROverlayPipe
             switch(typeEnum)
             {
                 case EVREventType.VREvent_MouseMove:
-                    data = new OutputDataPosition(mouse.x, mouse.y);
+                    data = new OutputDataPosition(mouse.cursorIndex, mouse.x, mouse.y);
                     type = OutputEnumMessageType.MouseMove;
                     break;
                 case EVREventType.VREvent_MouseButtonDown:
-                    data = new OutputDataMouseButton((EVRMouseButton)mouse.button, OutputEnumMouseButtonDirection.Down, mouse.x, mouse.y);
+                    data = new OutputDataMouseButton((EVRMouseButton)mouse.button, OutputEnumMouseButtonDirection.Down, mouse.cursorIndex, mouse.x, mouse.y);
                     type = OutputEnumMessageType.MouseClick;
                     break;
                 case EVREventType.VREvent_MouseButtonUp:
-                    data = new OutputDataMouseButton((EVRMouseButton)mouse.button, OutputEnumMouseButtonDirection.Up, mouse.x, mouse.y);
+                    data = new OutputDataMouseButton((EVRMouseButton)mouse.button, OutputEnumMouseButtonDirection.Up, mouse.cursorIndex, mouse.x, mouse.y);
                     type = OutputEnumMessageType.MouseClick;
                     break;
                 case EVREventType.VREvent_ScrollSmooth:
-                    data = new OutputDataPosition(scroll.xdelta, scroll.ydelta);
+                    data = new OutputDataPosition(mouse.cursorIndex, scroll.xdelta, scroll.ydelta);
                     type = OutputEnumMessageType.ScrollSmooth;
                     break;
                 case EVREventType.VREvent_ScrollDiscrete:
-                    data = new OutputDataPosition(scroll.xdelta, scroll.ydelta);
+                    data = new OutputDataPosition(mouse.cursorIndex, scroll.xdelta, scroll.ydelta);
                     type = OutputEnumMessageType.ScrollDiscrete;
                     break;
                 case EVREventType.VREvent_TouchPadMove:
-                    data = new OutputDataPosition(touchpad.fValueXRaw, touchpad.fValueYRaw);
+                    data = new OutputDataPosition(mouse.cursorIndex, touchpad.fValueXRaw, touchpad.fValueYRaw);
                     type = OutputEnumMessageType.TouchPadMove;
                     break;
                 default:

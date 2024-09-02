@@ -14,18 +14,21 @@ namespace OpenVROverlayPipe.Extensions
     [SupportedOSPlatform("windows7.0")]
     static class BitmapExtensions
     {
-        public static Bitmap DrawTextAreas(this Bitmap bmp, IEnumerable<InputDataOverlay.TextAreaObject> textAreas)
+        public static Bitmap DrawTextAreas(this Bitmap bmp, IEnumerable<InputDataOverlay.TextAreaObject> textAreas, bool stereo3D)
         {
             foreach (var ta in textAreas)
             {
                 // https://stackoverflow.com/a/32012246/2076423
                 var g = Graphics.FromImage(bmp);
-                var rectf = new RectangleF(
+                var rectangleF = new RectangleF(
                     Math.Min(Math.Max(0, ta.XPositionPx), bmp.Width),
                     Math.Min(Math.Max(0, ta.YPositionPx), bmp.Height),
-                    Math.Min(ta.WidthPx, bmp.Width),
+                    Math.Min(ta.WidthPx, bmp.Height),
                     Math.Min(ta.HeightPx, bmp.Height)
                 );
+                var rectangleF2 = new RectangleF(rectangleF.ToVector4());
+                if (stereo3D) rectangleF2.X += (int) (bmp.Width / 2.0);
+                
                 g.SmoothingMode = SmoothingMode.AntiAlias;
                 g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 g.PixelOffsetMode = PixelOffsetMode.HighQuality;
@@ -49,8 +52,7 @@ namespace OpenVROverlayPipe.Extensions
                     Trimming = StringTrimming.EllipsisWord
                     // FormatFlags = StringFormatFlags.DirectionVertical
                 };
-                Debug.WriteLine(
-                    $"Gravity: {ta.HorizontalAlignment}:{format.Alignment}, Alignment: {ta.VerticalAlignment}:{format.LineAlignment}");
+                Debug.WriteLine($"Gravity: {ta.HorizontalAlignment}:{format.Alignment}, Alignment: {ta.VerticalAlignment}:{format.LineAlignment}");
                 var color = Color.White;
                 try
                 {
@@ -63,11 +65,19 @@ namespace OpenVROverlayPipe.Extensions
 
                 if (color.A == 0) color = Color.White; // Empty string parses out to transparent black (0,0,0,0)
                 var brush = new SolidBrush(color);
+                var font = new Font(ta.FontFamily, ta.FontSizePt);
                 g.DrawString(
                     ta.Text,
-                    new Font(ta.FontFamily, ta.FontSizePt),
+                    font,
                     brush,
-                    rectf,
+                    rectangleF,
+                    format
+                );
+                if(stereo3D) g.DrawString(
+                    ta.Text,
+                    font,
+                    brush,
+                    rectangleF2,
                     format
                 );
                 g.Flush();
