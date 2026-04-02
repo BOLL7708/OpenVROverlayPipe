@@ -63,6 +63,7 @@ namespace OpenVROverlayPipe
 
                 foreach (var overlay in Session.Overlays.Values)
                 {
+                    if (overlay == null || overlay.Animator == null) continue;
                     _shader3d?.Use();
                     _shader3d?.SetInt("tex_index", overlay.Animator.GetFrame());
 
@@ -79,6 +80,7 @@ namespace OpenVROverlayPipe
 
             foreach (var overlay in Session.Overlays.Values)
             {
+                if (overlay == null || overlay.Animator == null) continue;
                 overlay.Animator.PostRender();
             }
         }
