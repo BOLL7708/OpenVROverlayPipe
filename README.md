@@ -1,3 +1,6 @@
+# DEPRECATED
+This project has been archived with the intent of transferring the features to [BVRTK](https://github.com/BOLL7708/BVRTK) which will then act as direct replacement.
+
 # OpenVROverlayPipe
 WebSocket server that lets you submit a payload that results in a SteamVR overlay or notification, download the latest release [here](https://github.com/BOLL7708/OpenVROverlayPipe/releases).
 
